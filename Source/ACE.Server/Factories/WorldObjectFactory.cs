@@ -302,25 +302,22 @@ namespace ACE.Server.Factories
                 var biota = biotas.FirstOrDefault(b => b.Id == instance.Guid);
                 if (biota == null)
                 {
-                    worldObject = CreateWorldObject(weenie, guid, ruleset);
-
-                    if (disableHousing && worldObject is House || worldObject is Storage || worldObject is Hook || worldObject is Hooker || worldObject is HousePortal || worldObject is SlumLord)
-                    {
-                        worldObject.Destroy();
-                        worldObject = null;
-                        continue;
-                    }
-
+                    worldObject = CreateWorldObject(weenie, guid);
                     worldObject.Location = new Position(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
+                    worldObject = MutationsManager.ProcessWorldObject(worldObject, ruleset);
                 }
                 else
                 {
                     worldObject = CreateWorldObject(biota);
 
-                    if (disableHousing && worldObject is House || worldObject is Storage || worldObject is Hook || worldObject is Hooker || worldObject is HousePortal || worldObject is SlumLord)
+                    if (worldObject is House || worldObject is Storage || worldObject is Hook || worldObject is Hooker || worldObject is HousePortal || worldObject is SlumLord)
                     {
-                        worldObject = null;
-                        continue;
+                        if (disableHousing)
+                        {
+                            worldObject = null;
+                            continue;
+                        }
+
                     }
 
                     if (worldObject.Location == null)

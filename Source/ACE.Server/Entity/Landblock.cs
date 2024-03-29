@@ -267,7 +267,7 @@ namespace ACE.Server.Entity
                     }
 
                     AddWorldObject(fo);
-                    fo.ActivateLinks(objects, shardObjects, parent);
+                    fo.ActivateLinks(objects, shardObjects, RealmRuleset, parent);
 
                     if (fo.PhysicsObj != null)
                         fo.PhysicsObj.Order = 0;

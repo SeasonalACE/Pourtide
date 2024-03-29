@@ -110,6 +110,15 @@ namespace ACE.Server.Entity
                 if (Generator is Chest)
                     return 0;
 
+                var weenie = DatabaseManager.World.GetCachedWeenie(WeenieClassId);
+                if (weenie != null && weenie.WeenieType == WeenieType.Creature)
+                {
+                    var creatureSpawnGeneratorDuration = Generator?.RealmRuleset?.GetProperty(RealmPropertyFloat.CreatureRespawnDuration) ?? 0;
+                    var isMonster = weenie.GetProperty(PropertyBool.Attackable) ?? false || (TargetingTactic)(weenie.GetProperty(PropertyInt.TargetingTactic) ?? 0) != TargetingTactic.None;
+                    if (creatureSpawnGeneratorDuration > 0 && isMonster)
+                        return (5f); // 5 second generator delay if respawn duration is set
+                }
+
                 return Biota.Delay ?? Generator.GeneratorProfiles[0].Biota.Delay ?? 0.0f;
             }
         }
@@ -163,7 +172,7 @@ namespace ACE.Server.Entity
         /// </summary>
         public DateTime GetSpawnTime()
         {
-                return DateTime.UtcNow;
+            return DateTime.UtcNow;
         }
 
         /// <summary>
@@ -249,26 +258,27 @@ namespace ACE.Server.Entity
             }
             else
             {
-                var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId, Generator.RealmRuleset);
+                var creatureSpawnMultiplier = Convert.ToInt32(Generator.RealmRuleset.GetProperty(RealmPropertyFloat.CreatureSpawnMultiplier));
+                var replaceMobs = Generator.RealmRuleset.GetProperty(RealmPropertyBool.ReplaceMobs);
+
+                var wo = AddWorldObject();
+
                 if (wo == null)
-                {
-                    log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");
-                    return null;
-                }
+                    return objects;
 
-                if (Biota.PaletteId.HasValue && Biota.PaletteId > 0)
-                    wo.PaletteTemplate = (int)Biota.PaletteId;
+                // never multiply an npc spawn
+                if (wo is Creature creature && creature.IsNPC)
+                    objects.Add(wo);
+                else
+                    for (var i = 0; i < creatureSpawnMultiplier; i++)
+                    {
 
-                if (Biota.Shade.HasValue && Biota.Shade > 0)
-                    wo.Shade = Biota.Shade;
+                        if (!replaceMobs && i == 0)
+                            objects.Add(AddWorldObject(false));
+                        else
+                            objects.Add(AddWorldObject());
 
-                if ((Biota.Shade.HasValue && Biota.Shade > 0) || (Biota.PaletteId.HasValue && Biota.PaletteId > 0))
-                    wo.CalculateObjDesc(); // to update icon
-
-                if (Biota.StackSize.HasValue && Biota.StackSize > 0)
-                    wo.SetStackSize(Biota.StackSize);
-
-                objects.Add(wo);
+                    }
             }
 
             var spawned = new List<WorldObject>();
@@ -311,6 +321,32 @@ namespace ACE.Server.Entity
             }
 
             return spawned;
+        }
+
+        public WorldObject AddWorldObject(bool replace = true)
+        {
+            var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId);
+            wo.Location = new ACE.Entity.Position(Generator.Location);
+            wo = MutationsManager.ProcessWorldObject(wo, Generator.RealmRuleset, replace);
+            if (wo == null)
+            {
+                log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");
+                return null;
+            }
+
+            if (Biota.PaletteId.HasValue && Biota.PaletteId > 0)
+                wo.PaletteTemplate = (int)Biota.PaletteId;
+
+            if (Biota.Shade.HasValue && Biota.Shade > 0)
+                wo.Shade = Biota.Shade;
+
+            if ((Biota.Shade.HasValue && Biota.Shade > 0) || (Biota.PaletteId.HasValue && Biota.PaletteId > 0))
+                wo.CalculateObjDesc(); // to update icon
+
+            if (Biota.StackSize.HasValue && Biota.StackSize > 0)
+                wo.SetStackSize(Biota.StackSize);
+
+            return wo;
         }
 
         /// <summary>

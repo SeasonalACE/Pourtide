@@ -7,6 +7,8 @@ using ACE.Database.Models.World;
 using ACE.Database.Models.Shard;
 using ACE.Entity;
 using ACE.Server.Factories;
+using ACE.Server.Realms;
+using ACE.Server.Managers;
 
 namespace ACE.Server.WorldObjects
 {
@@ -17,7 +19,7 @@ namespace ACE.Server.WorldObjects
         public WorldObject ParentLink;
         public List<WorldObject> ChildLinks = new List<WorldObject>();
 
-        public void ActivateLinks(List<LandblockInstance> sourceObjects, List<Biota> biotas, WorldObject parent = null)
+        public void ActivateLinks(List<LandblockInstance> sourceObjects, List<Biota> biotas, AppliedRuleset ruleset, WorldObject parent = null)
         {
             if (LinkedInstances.Count == 0) return;
 
@@ -35,7 +37,11 @@ namespace ACE.Server.WorldObjects
                 WorldObject wo = null;
                 var biota = biotas.FirstOrDefault(b => b.Id == link.Guid);
                 if (biota == null)
+                {
                     wo = WorldObjectFactory.CreateWorldObject(DatabaseManager.World.GetCachedWeenie(link.WeenieClassId), new ObjectGuid(link.Guid));
+                    wo.Location = new Position(parent.Location);
+                    wo = MutationsManager.ProcessWorldObject(wo, ruleset);
+                }
                 else
                 {
                     wo = WorldObjectFactory.CreateWorldObject(biota);
@@ -63,7 +69,7 @@ namespace ACE.Server.WorldObjects
                 }
 
                 if (wo.LinkedInstances.Count > 0)
-                    wo.ActivateLinks(sourceObjects, biotas);
+                    wo.ActivateLinks(sourceObjects, biotas, ruleset);
             }
         }
 
