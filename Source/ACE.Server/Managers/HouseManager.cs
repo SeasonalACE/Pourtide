@@ -464,6 +464,10 @@ namespace ACE.Server.Managers
 
             house.ClearPermissions();
 
+            if (realmEviction)
+                foreach (var storage in house.Storage)
+                    storage.Destroy();
+
             house.SaveBiotaToDatabase();
 
             // relink
@@ -681,10 +685,6 @@ namespace ACE.Server.Managers
                 }, playerHouse.RealmId);
             }
 
-            var biotas = DatabaseManager.Shard.BaseDatabase.GetBiotasByType(WeenieType.Storage);
-            var ids = biotas.Select(r => r.Id).ToList();
-
-            DatabaseManager.Shard.BaseDatabase.RemoveBiotasInParallel(ids);
 
             RealmManager.HandleUpdateServerBaseRealm();
         }
