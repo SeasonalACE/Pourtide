@@ -119,7 +119,7 @@ namespace ACE.Server.Managers
 
         }
 
-        private static readonly uint[] apartmentLandblocks =
+        public static readonly uint[] apartmentLandblocks =
         {
             0x7200FFFF,
             0x7300FFFF,

@@ -735,6 +735,14 @@ namespace ACE.Server.WorldObjects
             if (_newPosition.Instance == 0)
                 _newPosition.Instance = Location.Instance;
 
+            var apartments = LandblockManager.apartmentLandblocks.Select(r => new LandblockId(r).Landblock);
+            var lb = _newPosition.LandblockId.Landblock;
+            if (apartments.Contains(lb))
+            {
+                _newPosition = new Position(HouseManager.PourApartmentLoc);
+                _newPosition.Instance = RealmManager.ServerBaseRealmInstance;
+            }
+
             Position.ParseInstanceID(Location.Instance, out var isTemporaryRuleset, out ushort _a, out ushort _b);
             if (isTemporaryRuleset)
             {
