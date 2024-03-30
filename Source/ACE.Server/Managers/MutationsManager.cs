@@ -18,17 +18,11 @@ namespace ACE.Server.Managers
             {
                 if (disableHousing)
                 {
-                    wo.Destroy();
-
                     wo = null;
-
                 }
-
             }
 
             return wo;
         }
-
     }
-
 }
