@@ -119,35 +119,35 @@
                 "Description": "Holtburg",
                 "Permaload": true,
                 "IncludeAdjacents": true,
-                "Enabled": false
+                "Enabled": true
             },
             {
                 "Id": "DA55FFFF",
                 "Description": "Shoushi",
                 "Permaload": true,
                 "IncludeAdjacents": true,
-                "Enabled": false
+                "Enabled": true
             },
             {
                 "Id": "7D64FFFF",
                 "Description": "Yaraq",
                 "Permaload": true,
                 "IncludeAdjacents": true,
-                "Enabled": false
+                "Enabled": true
             },
             {
                 "Id": "0007FFFF",
                 "Description": "Town Network",
                 "Permaload": true,
                 "IncludeAdjacents": false,
-                "Enabled": false
+                "Enabled": true
             },
             {
-                "Id": "00000000",
-                "Description": "Apartment Landblocks",
+                "Id": "7200FFFF",
+                "Description": "Qalabar Apartment, Atrium Residential",
                 "Permaload": true,
                 "IncludeAdjacents": false,
-                "Enabled": false
+                "Enabled": true
             }
         ]
     },
