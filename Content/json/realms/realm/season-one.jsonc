@@ -1,0 +1,9 @@
+{
+  "name": "Season One",
+  "type": "Realm",
+  "parent": "Modern Realm (PvP)",
+  "properties": {
+    "Description": "The first season of Pourtide",
+    "HideoutEnabled": false
+  }
+}
