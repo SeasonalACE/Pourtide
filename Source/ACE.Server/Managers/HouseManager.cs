@@ -46,12 +46,23 @@ namespace ACE.Server.Managers
         /// </summary>
         private static readonly RateLimiter updateHouseManagerRateLimiter = new RateLimiter(1, TimeSpan.FromMinutes(1));
 
+        public static readonly uint[] PourHousing = new uint[] { 0x7200FFFF, 0xA454FFFF }; // Winthur Gate, Random Villas
+
+        public static readonly Position PourApartmentLoc = Position.slocToPosition("0x72000161 [83.740000 -93.750000 0.000000] 0.393140 0.000000 0.000000 -0.919479");
+
+
         public static void Initialize()
         {
             BuildHouseIdToGuid();
 
             BuildRentQueue();
         }
+
+        public static bool ValidatePourHousing(ushort landblock)
+        {
+            var whitelisted = PourHousing.Select(r => new LandblockId(r).Landblock); // Winthur Gate, Random Villas
+            return whitelisted.Contains(landblock);
+        } 
 
         /// <summary>
         /// Builds the lookup table for HouseId => HouseGuid

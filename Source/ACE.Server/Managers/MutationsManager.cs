@@ -1,3 +1,5 @@
+using ACE.Common;
+using ACE.Entity;
 using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
 using System;
@@ -16,9 +18,11 @@ namespace ACE.Server.Managers
 
             if (wo is House || wo is Storage || wo is Hook || wo is Hooker || wo is HousePortal || wo is SlumLord)
             {
-                if (disableHousing)
+                if (disableHousing || !HouseManager.ValidatePourHousing(wo.Location.LandblockId.Landblock))
+
                 {
                     wo = null;
+                    return wo;
                 }
             }
 

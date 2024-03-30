@@ -312,12 +312,11 @@ namespace ACE.Server.Factories
 
                     if (worldObject is House || worldObject is Storage || worldObject is Hook || worldObject is Hooker || worldObject is HousePortal || worldObject is SlumLord)
                     {
-                        if (disableHousing)
+                        if (disableHousing || !HouseManager.ValidatePourHousing(worldObject.Location.LandblockId.Landblock))
                         {
                             worldObject = null;
                             continue;
                         }
-
                     }
 
                     if (worldObject.Location == null)
