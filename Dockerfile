@@ -1,6 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /Source
 
+ADD Content /ace/Content
+
 # copy csproj and restore as distinct layers
 COPY ./Source/*.sln ./
 COPY ./Source/ACE.Adapter/*.csproj ./ACE.Adapter/
@@ -40,7 +42,7 @@ ENTRYPOINT ["dotnet", "ACE.Server.dll"]
 
 # ports and volumes
 EXPOSE 9000-9001/udp
-VOLUME /ace/Config /ace/Content /ace/Dats /ace/Logs
+VOLUME /ace/Config /ace/Content /ace/Dats /ace/Logs /ace/Mods
 
 # health check
 HEALTHCHECK --start-period=5m --interval=1m --timeout=3s \
