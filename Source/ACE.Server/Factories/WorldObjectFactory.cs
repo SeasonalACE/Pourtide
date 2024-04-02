@@ -309,15 +309,7 @@ namespace ACE.Server.Factories
                 else
                 {
                     worldObject = CreateWorldObject(biota);
-
-                    if (worldObject is House || worldObject is Storage || worldObject is Hook || worldObject is Hooker || worldObject is HousePortal || worldObject is SlumLord)
-                    {
-                        if (disableHousing || !HouseManager.ValidatePourHousing(worldObject.Location.LandblockId.Landblock))
-                        {
-                            worldObject = null;
-                            continue;
-                        }
-                    }
+                    worldObject = MutationsManager.ProcessWorldObject(worldObject, worldObject.RealmRuleset ?? ruleset);
 
                     if (worldObject.Location == null)
                     {
