@@ -45,7 +45,7 @@ VALUES (33610,   1,   33554556) /* Setup */
 
 INSERT INTO `weenie_properties_generator` (`object_Id`, `probability`, `weenie_Class_Id`, `delay`, `init_Create`, `max_Create`, `when_Create`, `where_Create`, `stack_Size`, `palette_Id`, `shade`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`)
 VALUES (33610, -1, 41513, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Pathwarden Trinket (41513) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 70223, 0, 2, 2, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Claw (70223) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
+     , (33610, -1, 70223, 0, 2, 2, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Claw (70223) (x2 up to max of 2) - Regenerate upon PickUp - Location to (re)Generate: Contain */
      , (33610, -1, 45958, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Baton (45958) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
      , (33610, -1, 45954, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate  (45954) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
      , (33610, -1, 45932, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate  (45932) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
@@ -57,17 +57,7 @@ VALUES (33610, -1, 41513, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Ge
      , (33610, -1, 45934, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate  (45934) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
      , (33610, -1, 45944, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate  (45944) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
      , (33610, -1, 45956, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Nether Staff (45956) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45961, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Breastplate (45961) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45963, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Gauntlets (45963) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45965, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Girth (45965) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45967, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Greaves (45967) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45969, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Helm (45969) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45971, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Pauldrons (45971) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
      , (33610, -1, 45973, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate  (45973) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45977, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Tassets (45977) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45979, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Vambraces (45979) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 45975, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Vambraces (45979) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 23356, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Vambraces (45979) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 7595, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Vambraces (45979) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 15408, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Vambraces (45979) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
-     , (33610, -1, 34257, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Seasoned Explorer Vambraces (45979) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
+     , (33610, -1, 23356, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Sanguinary Aegis (23356) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
+     , (33610, -1, 7595, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Refined Low-Grade Chorizite (7595) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */
+     , (33610, -1, 34257, 0, 1, 1, 2, 8, -1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0) /* Generate Asheron's Lesser Benediction (34257) (x1 up to max of 1) - Regenerate upon PickUp - Location to (re)Generate: Contain */;
