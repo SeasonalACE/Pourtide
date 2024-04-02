@@ -740,7 +740,7 @@ namespace ACE.Server.WorldObjects
             if (apartments.Contains(lb))
             {
                 _newPosition = new Position(HouseManager.PourApartmentLoc);
-                _newPosition.Instance = RealmManager.ServerBaseRealmInstance;
+                _newPosition.Instance = Location.Instance; 
             }
 
             Position.ParseInstanceID(Location.Instance, out var isTemporaryRuleset, out ushort _a, out ushort _b);
