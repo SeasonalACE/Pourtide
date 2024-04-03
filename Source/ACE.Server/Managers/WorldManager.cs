@@ -204,6 +204,9 @@ namespace ACE.Server.Managers
                 }
             }
 
+            // ensure players are always attackable
+            player.Attackable = true;
+
             // If the client is missing a location, we start them off in the starter town they chose
             if (session.Player.Location == null)
             {
@@ -250,6 +253,7 @@ namespace ACE.Server.Managers
             if (olthoiPlayerReturnedToLifestone)
                 session.Player.Location = new Position(session.Player.Sanctuary);
 
+
             session.Player.PlayerEnterWorld();
 
             var success = LandblockManager.AddObject(session.Player, true);
@@ -260,8 +264,6 @@ namespace ACE.Server.Managers
 
                 log.Error($"WorldManager.DoPlayerEnterWorld: failed to spawn {session.Player.Name}, relocating to {fixLoc.ToLOCString()}");
 
-                // ensure players are always attackable
-                player.Attackable = true;
 
                 session.Player.Location = new Position(fixLoc);
                 LandblockManager.AddObject(session.Player, true);
