@@ -967,7 +967,7 @@ namespace ACE.Server.WorldObjects
                 var lb = LandblockManager.GetLandblockUnsafe(newPosition.LandblockId, newPosition.Instance);
                 if (lb?.InnerRealmInfo == null)
                     return false;
-                if (lb.InnerRealmInfo.Owner == this)
+                /*if (lb.InnerRealmInfo.Owner == this)
                     return true;
                 if (lb.InnerRealmInfo.AllowedPlayers.Contains(this))
                     return true;
@@ -975,8 +975,8 @@ namespace ACE.Server.WorldObjects
                 {
                     if (lb.InnerRealmInfo.Owner.Fellowship?.GetFellowshipMembers().Values.Contains(this) == true)
                         return true;
-                }
-                return false;
+                }*/
+                return true;
             }
             else
             {
