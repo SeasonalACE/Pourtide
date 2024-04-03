@@ -260,6 +260,9 @@ namespace ACE.Server.Managers
 
                 log.Error($"WorldManager.DoPlayerEnterWorld: failed to spawn {session.Player.Name}, relocating to {fixLoc.ToLOCString()}");
 
+                // ensure players are always attackable
+                player.Attackable = true;
+
                 session.Player.Location = new Position(fixLoc);
                 LandblockManager.AddObject(session.Player, true);
 
