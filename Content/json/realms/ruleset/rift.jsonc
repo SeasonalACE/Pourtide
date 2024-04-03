@@ -1,0 +1,25 @@
+{
+  "name": "Rift",
+  "type": "Ruleset",
+    "properties": {
+        "Description": "This represents a dungeon rift",
+        //"IsFullLootOnDeath": false,
+        "IsNeutralZone": true,
+        "ReplaceMobs":  false,
+        "ExperienceMultiplierAll": {
+          "low": 1.5,
+          "high": 4.5,
+          "reroll": "landblock"
+        },
+        "CreatureSpawnMultiplier": {
+          "low": 2.0,
+          "high": 3.1,
+          "reroll": "landblock"
+        },
+        "CreatureRespawnDuration": {
+            "low": 30.0,
+            "high": 120.0,
+            "reroll": "landblock"
+        }
+    }
+}
