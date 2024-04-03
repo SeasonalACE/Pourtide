@@ -30,6 +30,20 @@ namespace ACE.Server.Factories
             ClientServerSkillsMismatch
         }
 
+
+
+        public static void AddAllSpells(Player player)
+        {
+            for (uint spellLevel = 1; spellLevel <= 3; spellLevel++)
+            {
+                player.LearnSpellsInBulk(MagicSchool.CreatureEnchantment, spellLevel, true);
+                player.LearnSpellsInBulk(MagicSchool.ItemEnchantment, spellLevel, true);
+                player.LearnSpellsInBulk(MagicSchool.LifeMagic, spellLevel, true);
+                player.LearnSpellsInBulk(MagicSchool.VoidMagic, spellLevel, true);
+                player.LearnSpellsInBulk(MagicSchool.WarMagic, spellLevel, true);
+            }
+        }
+
         public static CreateResult Create(CharacterCreateInfo characterCreateInfo, Weenie weenie, ObjectGuid guid, uint accountId, WeenieType weenieType, out Player player)
         {
             var heritageGroup = DatManager.PortalDat.CharGen.HeritageGroups[(uint)characterCreateInfo.Heritage];

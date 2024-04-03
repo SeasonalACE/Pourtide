@@ -85,6 +85,14 @@ namespace ACE.Server.WorldObjects
             }
         }
 
+        private List<uint> BlacklistedRecalls = new List<uint>()
+        {
+            2943,
+            2023,
+            2931,
+            4198,
+            5175
+        };
         /// <summary>
         ///  Learns spells in bulk, without notification, filtered by school and level
         /// </summary>
@@ -94,6 +102,9 @@ namespace ACE.Server.WorldObjects
 
             foreach (var spellID in PlayerSpellTable)
             {
+                if (!Player.AllNonAdminSpellTable.Contains(spellID) || BlacklistedRecalls.Contains(spellID))
+                    continue;
+
                 if (!spellTable.Spells.ContainsKey(spellID))
                 {
                     Console.WriteLine($"Unknown spell ID in PlayerSpellID table: {spellID}");

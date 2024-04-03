@@ -24,6 +24,7 @@ using ACE.Server.Physics.Common;
 
 using Character = ACE.Database.Models.Shard.Character;
 using Position = ACE.Entity.Position;
+using ACE.Server.Factories;
 
 namespace ACE.Server.Managers
 {
@@ -295,7 +296,11 @@ namespace ACE.Server.Managers
                 if (player.IsOlthoiPlayer)
                     session.Network.EnqueueSend(new GameEventPopupString(session, AppendLines(popup_welcome, popup_motd)));
                 else
+                {
+
+                    PlayerFactory.AddAllSpells(player);
                     session.Network.EnqueueSend(new GameEventPopupString(session, AppendLines(popup_header, popup_motd, popup_welcome)));
+                }
             }
             else if (!string.IsNullOrEmpty(popup_motd))
             {
