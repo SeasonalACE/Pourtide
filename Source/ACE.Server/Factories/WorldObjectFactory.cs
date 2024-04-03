@@ -277,8 +277,6 @@ namespace ACE.Server.Factories
         /// </summary>
         public static List<WorldObject> CreateNewWorldObjects(List<LandblockInstance> sourceObjects, List<Biota> biotas, uint? restrict_wcid, uint iid, AppliedRuleset ruleset)
         {
-            var disableHousing = ruleset.Realm.Id != RealmManager.ServerBaseRealm.Realm.Id;
-
             var results = new List<WorldObject>();
 
             // spawn direct landblock objects
