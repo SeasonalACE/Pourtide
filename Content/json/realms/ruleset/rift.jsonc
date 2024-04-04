@@ -6,6 +6,7 @@
         //"IsFullLootOnDeath": false,
         "IsNeutralZone": true,
         "ReplaceMobs":  false,
+        "HasRecalls": false,
         "ExperienceMultiplierAll": {
           "low": 1.5,
           "high": 4.5,
