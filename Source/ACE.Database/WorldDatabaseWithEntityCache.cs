@@ -1160,5 +1160,91 @@ namespace ACE.Database
         {
             cachedWieldedTreasure.Clear();
         }
+
+        private class CreatureTierProps
+        {
+            public uint Tier { get; }
+            public uint MinLevel { get; }
+            public uint MaxLevel { get; }
+            public uint MinXp { get; }
+            public uint MaxXp { get; }
+            public uint TreasureMax { get; }
+            public uint TreasureMin { get; }
+            public uint MaxHealth { get; }
+
+            public CreatureTierProps(uint tier, uint minLevel, uint maxLevel, uint minXp, uint maxXp, uint treasureMin, uint treasureMax, uint maxHealth)
+            {
+                Tier = tier;
+                MinLevel = minLevel;
+                MaxLevel = maxLevel;
+                MinXp = minXp;
+                MaxXp = maxXp;
+                TreasureMax = treasureMax;
+                TreasureMin = treasureMin;
+                MaxHealth = maxHealth;
+            }
+        }
+
+        private readonly Dictionary<uint, CreatureTierProps> CreatureCacheProps = new Dictionary<uint, CreatureTierProps>()
+        {
+
+            { 0, new CreatureTierProps(1, 5, 20, 100, 10000, 0, 1000, 1000) },
+            { 1, new CreatureTierProps(1, 20, 50, 10000, 30000, 0, 1000, 1000) },
+            { 2, new CreatureTierProps(1, 50, 100, 10000, 50000, 0, 1000, 1000) },
+            { 3, new CreatureTierProps(1, 100, 115, 80000, 100000, 0, 1000, 1000) },
+            { 4, new CreatureTierProps(3, 130, 150, 200000, 500000, 0, 1000, 1000) },
+            { 5, new CreatureTierProps(4, 185, 220, 800000, 1200000, 0, 1000, 3000) },
+            { 6, new CreatureTierProps(5, 200, 300, 800000, 2000000, 2000, 3000, 5000) },
+        };
+
+        public List<uint> GetCreatureWeenieIdsByTier(uint tier)
+        {
+            var props = CreatureCacheProps[tier];
+
+
+            using (var context = new WorldDbContext())
+            {
+
+                var query = from weenieRecord in context.Weenie
+                            join name in context.WeeniePropertiesString on weenieRecord.ClassId equals name.ObjectId
+                            join xp in context.WeeniePropertiesInt on weenieRecord.ClassId equals xp.ObjectId
+                            join level in context.WeeniePropertiesInt on weenieRecord.ClassId equals level.ObjectId
+                            join type in context.WeeniePropertiesInt on weenieRecord.ClassId equals type.ObjectId
+                            join treasure in context.WeeniePropertiesDID on weenieRecord.ClassId equals treasure.ObjectId
+                            join attackable in context.WeeniePropertiesBool on weenieRecord.ClassId equals attackable.ObjectId
+                            join health in context.WeeniePropertiesAttribute2nd on weenieRecord.ClassId equals health.ObjectId
+                            where name.Type == (short)PropertyString.Name &&
+                            type.Type == (ushort)PropertyInt.ItemType &&
+                            type.Value == 16 &&
+                            attackable.Type == (ushort)PropertyBool.Attackable &&
+                            xp.Type == (ushort)PropertyInt.XpOverride &&
+                            xp.Value >= props.MinXp &&
+                            xp.Value <= props.MaxXp &&
+                            health.Type == 1 &&
+                            health.InitLevel < props.MaxHealth &&
+                            health.CurrentLevel < props.MaxHealth &&
+                            treasure.Value >= props.TreasureMin &&
+                            treasure.Value <= props.TreasureMax &&
+                            level.Type == 25 &&
+                            level.Value >= props.MinLevel &&
+                            level.Value <= props.MaxLevel
+                            select weenieRecord.ClassId;
+
+                return query.Distinct().ToList();
+            }
+        }
+
+        private static Dictionary<uint, List<uint>> CachedDungeonCreatures = new Dictionary<uint, List<uint>>();
+
+        public List<uint> GetDungeonCreatureWeenieIds(uint tier)
+        {
+            if (CachedDungeonCreatures.ContainsKey(tier)) return CachedDungeonCreatures[tier];
+            else
+            {
+                var creatures = GetCreatureWeenieIdsByTier(tier);
+                CachedDungeonCreatures.Add(tier, creatures);
+                return creatures;
+            }
+        }
     }
 }
