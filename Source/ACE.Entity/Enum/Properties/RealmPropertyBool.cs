@@ -43,6 +43,9 @@ namespace ACE.Entity.Enum.Properties
 
         [RealmPropertyBool(false)]
         ReplaceMobs,
+
+        [RealmPropertyBool(true)]
+        HasRecalls,
     }
 
     public static class RealmPropertyBoolExtensions
