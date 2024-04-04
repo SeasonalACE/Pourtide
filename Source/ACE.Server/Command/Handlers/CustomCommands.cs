@@ -53,11 +53,11 @@ namespace ACE.Server.Command.Handlers
         public static void HandleSeasonInfo(Session session, params string[] paramters)
         {
             var player  = session?.Player;
-            var playerRealm = RealmManager.GetRealm(player.HomeRealm);
+            var season = RealmManager.ServerBaseRealm;
             
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Season Information>", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n{playerRealm.Realm.Name} - Id: {playerRealm.Realm.Id} - Instance: {playerRealm.StandardRules.GetDefaultInstanceID()}", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n{playerRealm.StandardRules.DebugOutputString()}", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n{season.Realm.Name} - Id: {season.Realm.Id} - Instance: {season.StandardRules.GetDefaultInstanceID()}", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n{season.StandardRules.DebugOutputString()}", ChatMessageType.System));
         }
 
         [CommandHandler("season-list", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available seasons to choose from.")]
@@ -98,7 +98,7 @@ namespace ACE.Server.Command.Handlers
             session.Network.EnqueueSend(positionMessage);
         }
 
-        [CommandHandler("realm-info", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Lists all properties for the current realm.")]
+        [CommandHandler("realm-info", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Lists all properties for the current realm.")]
         public static void HandleZoneInfo(Session session, params string[] parameters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Realm Information>", ChatMessageType.System));

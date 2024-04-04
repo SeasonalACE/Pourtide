@@ -30,9 +30,14 @@ namespace ACE.Server.Factories
             ClientServerSkillsMismatch
         }
 
+        private static List<uint> Foci = new List<uint>()
+        {
+            15268,
+            15269,
+            15270
+        };
 
-
-        public static void AddAllSpells(Player player)
+        public static void AddStarterEssentials(Player player)
         {
             for (uint spellLevel = 1; spellLevel <= 3; spellLevel++)
             {
@@ -41,6 +46,12 @@ namespace ACE.Server.Factories
                 player.LearnSpellsInBulk(MagicSchool.LifeMagic, spellLevel, true);
                 player.LearnSpellsInBulk(MagicSchool.VoidMagic, spellLevel, true);
                 player.LearnSpellsInBulk(MagicSchool.WarMagic, spellLevel, true);
+            }
+
+            foreach (var id in Foci)
+            {
+                var wo = WorldObjectFactory.CreateNewWorldObject(id);
+                player.TryCreateInInventoryWithNetworking(wo);
             }
         }
 
@@ -116,35 +127,32 @@ namespace ACE.Server.Factories
             // skip over this for olthoi, use the weenie defaults
             if (!player.IsOlthoiPlayer)
             {
-                if (player.Heritage != (int)HeritageGroup.Gearknight) // Gear Knights do not get clothing (pcap verified)
+                if (characterCreateInfo.Appearance.HeadgearStyle < uint.MaxValue) // No headgear is max UINT
                 {
-                    if (characterCreateInfo.Appearance.HeadgearStyle < uint.MaxValue) // No headgear is max UINT
-                    {
-                        var hat = GetClothingObject(sex.GetHeadgearWeenie(characterCreateInfo.Appearance.HeadgearStyle), characterCreateInfo.Appearance.HeadgearColor, characterCreateInfo.Appearance.HeadgearHue);
-                        if (hat != null)
-                            player.TryEquipObject(hat, hat.ValidLocations ?? 0);
-                        else
-                            player.TryAddToInventory(CreateIOU(sex.GetHeadgearWeenie(characterCreateInfo.Appearance.HeadgearStyle)));
-                    }
-
-                    var shirt = GetClothingObject(sex.GetShirtWeenie(characterCreateInfo.Appearance.ShirtStyle), characterCreateInfo.Appearance.ShirtColor, characterCreateInfo.Appearance.ShirtHue);
-                    if (shirt != null)
-                        player.TryEquipObject(shirt, shirt.ValidLocations ?? 0);
+                    var hat = GetClothingObject(sex.GetHeadgearWeenie(characterCreateInfo.Appearance.HeadgearStyle), characterCreateInfo.Appearance.HeadgearColor, characterCreateInfo.Appearance.HeadgearHue);
+                    if (hat != null)
+                        player.TryEquipObject(hat, hat.ValidLocations ?? 0);
                     else
-                        player.TryAddToInventory(CreateIOU(sex.GetShirtWeenie(characterCreateInfo.Appearance.ShirtStyle)));
-
-                    var pants = GetClothingObject(sex.GetPantsWeenie(characterCreateInfo.Appearance.PantsStyle), characterCreateInfo.Appearance.PantsColor, characterCreateInfo.Appearance.PantsHue);
-                    if (pants != null)
-                        player.TryEquipObject(pants, pants.ValidLocations ?? 0);
-                    else
-                        player.TryAddToInventory(CreateIOU(sex.GetPantsWeenie(characterCreateInfo.Appearance.PantsStyle)));
-
-                    var shoes = GetClothingObject(sex.GetFootwearWeenie(characterCreateInfo.Appearance.FootwearStyle), characterCreateInfo.Appearance.FootwearColor, characterCreateInfo.Appearance.FootwearHue);
-                    if (shoes != null)
-                        player.TryEquipObject(shoes, shoes.ValidLocations ?? 0);
-                    else
-                        player.TryAddToInventory(CreateIOU(sex.GetFootwearWeenie(characterCreateInfo.Appearance.FootwearStyle)));
+                        player.TryAddToInventory(CreateIOU(sex.GetHeadgearWeenie(characterCreateInfo.Appearance.HeadgearStyle)));
                 }
+
+                var shirt = GetClothingObject(sex.GetShirtWeenie(characterCreateInfo.Appearance.ShirtStyle), characterCreateInfo.Appearance.ShirtColor, characterCreateInfo.Appearance.ShirtHue);
+                if (shirt != null)
+                    player.TryEquipObject(shirt, shirt.ValidLocations ?? 0);
+                else
+                    player.TryAddToInventory(CreateIOU(sex.GetShirtWeenie(characterCreateInfo.Appearance.ShirtStyle)));
+
+                var pants = GetClothingObject(sex.GetPantsWeenie(characterCreateInfo.Appearance.PantsStyle), characterCreateInfo.Appearance.PantsColor, characterCreateInfo.Appearance.PantsHue);
+                if (pants != null)
+                    player.TryEquipObject(pants, pants.ValidLocations ?? 0);
+                else
+                    player.TryAddToInventory(CreateIOU(sex.GetPantsWeenie(characterCreateInfo.Appearance.PantsStyle)));
+
+                var shoes = GetClothingObject(sex.GetFootwearWeenie(characterCreateInfo.Appearance.FootwearStyle), characterCreateInfo.Appearance.FootwearColor, characterCreateInfo.Appearance.FootwearHue);
+                if (shoes != null)
+                    player.TryEquipObject(shoes, shoes.ValidLocations ?? 0);
+                else
+                    player.TryAddToInventory(CreateIOU(sex.GetFootwearWeenie(characterCreateInfo.Appearance.FootwearStyle)));
 
                 string templateName = heritageGroup.Templates[characterCreateInfo.TemplateOption].Name;
                 player.SetProperty(PropertyString.Template, templateName);
@@ -349,6 +357,10 @@ namespace ACE.Server.Factories
             }
             else
             {
+                // No Olthoi Support
+                return CreateResult.InvalidSkillRequested;
+
+                /*
                 if (player.CharacterTitleId > 0)
                     player.AddTitle((uint)player.CharacterTitleId.Value, true);
 
@@ -360,26 +372,23 @@ namespace ACE.Server.Factories
                         player.HandleActionAddSpellFavorite((uint)spell.Key, i++, 0);
                     }
                 }
+                */
             }
 
             player.Name = characterCreateInfo.Name;
             player.Character.Name = characterCreateInfo.Name;
 
-
             // Index used to determine the starting location
+            /*
             var startArea = characterCreateInfo.StartArea;
 
             var starterArea = DatManager.PortalDat.CharGen.StarterAreas[(int)startArea];
 
-            var serverBaseRealm = RealmManager.ServerBaseRealm;
-            var instance = RealmManager.ServerBaseRealmInstance;
-            player.HomeRealm = serverBaseRealm.Realm.Id;
-
             player.Location = new Position(starterArea.Locations[0].ObjCellID,
                 starterArea.Locations[0].Frame.Origin.X, starterArea.Locations[0].Frame.Origin.Y, starterArea.Locations[0].Frame.Origin.Z,
-                starterArea.Locations[0].Frame.Orientation.X, starterArea.Locations[0].Frame.Orientation.Y, starterArea.Locations[0].Frame.Orientation.Z, starterArea.Locations[0].Frame.Orientation.W, instance);
+                starterArea.Locations[0].Frame.Orientation.X, starterArea.Locations[0].Frame.Orientation.Y, starterArea.Locations[0].Frame.Orientation.Z, starterArea.Locations[0].Frame.Orientation.W);
 
-            var instantiation = new Position(0xA9B40019, 84, 7.1f, 94, 0, 0, -0.0784591f, 0.996917f, instance); // ultimate fallback.
+            var instantiation = new Position(0xA9B40019, 84, 7.1f, 94, 0, 0, -0.0784591f, 0.996917f); // ultimate fallback.
             var spellFreeRide = new Database.Models.World.Spell();
             switch (starterArea.Name)
             {
@@ -402,26 +411,28 @@ namespace ACE.Server.Factories
                     break;
             }
             if (spellFreeRide != null && spellFreeRide.Name != "")
-                instantiation = new Position(spellFreeRide.PositionObjCellId.Value, spellFreeRide.PositionOriginX.Value, spellFreeRide.PositionOriginY.Value, spellFreeRide.PositionOriginZ.Value, spellFreeRide.PositionAnglesX.Value, spellFreeRide.PositionAnglesY.Value, spellFreeRide.PositionAnglesZ.Value, spellFreeRide.PositionAnglesW.Value, instance);
-
-            player.Instantiation = new Position(instantiation);
+                instantiation = new Position(spellFreeRide.PositionObjCellId.Value, spellFreeRide.PositionOriginX.Value, spellFreeRide.PositionOriginY.Value, spellFreeRide.PositionOriginZ.Value, spellFreeRide.PositionAnglesX.Value, spellFreeRide.PositionAnglesY.Value, spellFreeRide.PositionAnglesZ.Value, spellFreeRide.PositionAnglesW.Value);
+            */
 
             if (!player.IsOlthoiPlayer)
             {
-                var isPkOnly = serverBaseRealm.StandardRules.GetProperty(RealmPropertyBool.IsPKOnly);
+                player.Location = new Position(0x8903012E, 87.738312f, -47.704556f, .005f, 0.0f, 0.0f, -0.926821f, 0.375504f, accountId);
+                player.Instantiation = new Position(player.Location);
                 player.Sanctuary = new Position(player.Location);
                 player.SetProperty(PropertyBool.RecallsDisabled, true);
 
-                if (isPkOnly)
+                /*
+                if (PropertyManager.GetBool("pk_server").Item)
                     player.SetProperty(PropertyInt.PlayerKillerStatus, (int)PlayerKillerStatus.PK);
                 else if (PropertyManager.GetBool("pkl_server").Item)
                     player.SetProperty(PropertyInt.PlayerKillerStatus, (int)PlayerKillerStatus.NPK);
 
-                if ((isPkOnly || PropertyManager.GetBool("pkl_server").Item) && PropertyManager.GetBool("pk_server_safe_training_academy").Item)
+                if ((PropertyManager.GetBool("pk_server").Item || PropertyManager.GetBool("pkl_server").Item) && PropertyManager.GetBool("pk_server_safe_training_academy").Item)
                 {
                     player.SetProperty(PropertyFloat.MinimumTimeSincePk, -PropertyManager.GetDouble("pk_new_character_grace_period").Item);
                     player.SetProperty(PropertyInt.PlayerKillerStatus, (int)PlayerKillerStatus.NPK);
                 }
+                */
             }
 
             if (player is Sentinel || player is Admin)
@@ -680,4 +691,3 @@ namespace ACE.Server.Factories
         }
     }
 }
-
