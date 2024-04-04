@@ -298,7 +298,7 @@ namespace ACE.Server.Managers
                 else
                 {
 
-                    PlayerFactory.AddAllSpells(player);
+                    PlayerFactory.AddStarterEssentials(player);
                     session.Network.EnqueueSend(new GameEventPopupString(session, AppendLines(popup_header, popup_motd, popup_welcome)));
                 }
             }

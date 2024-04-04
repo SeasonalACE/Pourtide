@@ -623,16 +623,12 @@ namespace ACE.Server.Managers
             }
             log.Info($"Setting HomeRealm for character {player.Name} to {realm.Realm.Id}.");
             // Setting Home Realm Start 
-            /*
             player.SetProperty(PropertyInt.HomeRealm, realm.Realm.Id);
             player.SetProperty(PropertyBool.RecallsDisabled, false);
             var loc = realm.DefaultStartingLocation(player);
             player.SetPosition(PositionType.Sanctuary, new ACE.Entity.Position(loc));
-            WorldManager.ThreadSafeTeleport(player, loc, false, new Entity.Actions.ActionEventDelegate(() =>
-            player.GrantXP((long)player.GetXPToNextLevel(10), XpType.Emote, ShareType.None);
-
+            WorldManager.ThreadSafeTeleport(player, loc, false);
             // Setting Home Realm End
-            */
         }
     }
 }
