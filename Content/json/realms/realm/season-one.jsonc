@@ -4,6 +4,7 @@
   "parent": "Modern Realm (PvP)",
   "properties": {
     "Description": "The first season of Pourtide",
+    "CanBeHomeworld": true,
     "HideoutEnabled": false
   }
 }
