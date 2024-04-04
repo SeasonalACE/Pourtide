@@ -49,24 +49,14 @@
                     "stacksize": "10000"
                 },
                 {
-                    "weenieId": "166",
-                    "name": "Sack",
-                    "stacksize": "1"
-                },
-                {
-                    "weenieId": "5084",
-                    "name": "Calling Stone",
-                    "stacksize": "1"
-                },
-                {
                     "weenieId": "33613",
                     "name": "Pathwarden Token",
                     "stacksize": "1"
                 },
                 {
-                    "weenieId": "259",
-                    "name": "Bread",
-                    "stacksize": "1"
+                    "weenieId": "29335",
+                    "name": "Academy Exit Token",
+                    "stacksize":  "1"
                 },
                 {
                     "weenieId": "20646",
@@ -79,66 +69,42 @@
                     "id": "1",
                     "name": "Aluvian",
                     "gear": [
-                        {
-                            "weenieId": "30988",
-                            "name": "Letter From Home",
-                            "stacksize": "1"
-                        }
+
                     ]
                 },
                 {
                     "id": "2",
                     "name": "Gharu'ndim",
                     "gear": [
-                        {
-                            "weenieId": "30986",
-                            "name": "Letter From Home",
-                            "stacksize": "1"
-                        }
+
                     ]
                 },
                 {
                     "id": "3",
                     "name": "Sho",
                     "gear": [
-                        {
-                            "weenieId": "30985",
-                            "name": "Letter From Home",
-                            "stacksize": "1"
-                        }
+
                     ]
                 },
                 {
                     "id": "4",
                     "name": "Viamontian",
                     "gear": [
-                        {
-                            "weenieId": "30987",
-                            "name": "Letter From Home",
-                            "stacksize": "1"
-                        }
+
                     ]
                 },
                 {
                     "id": "5",
                     "name": "Umbrean",
                     "gear": [
-                        {
-                            "weenieId": "43019",
-                            "name": "Letter From Home",
-                            "stacksize": "1"
-                        }
+
                     ]
                 },
                 {
                     "id": "6",
                     "name": "Gear",
                     "gear": [
-                        {
-                            "weenieId": "43018",
-                            "name": "Letter From Home",
-                            "stacksize": "1"
-                        },
+
                         {
                             "weenieId": "42979",
                             "name": "Core Plating Integrator",
@@ -155,11 +121,7 @@
                     "id": "10",
                     "name": "Penumbraen",
                     "gear": [
-                        {
-                            "weenieId": "43019",
-                            "name": "Letter From Home",
-                            "stacksize": "1"
-                        }
+
                     ]
                 }
             ]
