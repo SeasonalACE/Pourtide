@@ -12,11 +12,7 @@
           "high": 4.5,
           "reroll": "landblock"
         },
-        "CreatureSpawnMultiplier": {
-          "low": 2.0,
-          "high": 3.1,
-          "reroll": "landblock"
-        },
+        "CreatureSpawnMultiplier": 2,
         "CreatureRespawnDuration": {
             "low": 30.0,
             "high": 120.0,
