@@ -16,6 +16,8 @@ using ACE.Server.Managers;
 using ACE.Server.Network.Structure;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Database.Models.Shard;
+using ACE.Database.Models.Shard;
 
 namespace ACE.Server.WorldObjects
 {
@@ -60,7 +62,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Restore a WorldObject from the database.
         /// </summary>
-        public House(Biota biota) : base(biota)
+        public House(ACE.Entity.Models.Biota biota) : base(biota)
         {
             InitializePropertyDictionaries();
             SetEphemeralValues();
@@ -140,7 +142,9 @@ namespace ACE.Server.WorldObjects
                         biota = ACE.Database.Adapter.BiotaConverter.ConvertFromEntityBiota(newWorldObject.Biota);
                     }
                 }
-            }
+            } else
+                ruleset = RealmManager.GetRealm(biota.GetPosition(PositionType.Location).RealmID).StandardRules;
+
 
             var linkedHouses = WorldObjectFactory.CreateNewWorldObjects(instances, new List<ACE.Database.Models.Shard.Biota> { biota }, biota.WeenieClassId, instance, ruleset);
 
