@@ -186,9 +186,10 @@ namespace ACE.Server.WorldObjects
             // possible acrealms related, a null reference exception is thrown sometimes?
             if (MoveToParams == null)
             {
-                log.Warn("MoveToParams is null when it shouldn't be, investigate OnMoveComplete_MoveTo2, reloading landblock");
+                log.Warn("MoveToParams is null when it shouldn't be, investigate OnMoveComplete_MoveTo2");
                 // this is temporary fix, until it is determined why this is code block is happening
-                ReloadLandblock(Session);
+                //ReloadLandblock(Session);
+                Session.Network.EnqueueSend(new GameMessageSystemChat("This landblock is bugged, it is advised you leave as objects may not react properly", ChatMessageType.Broadcast));
                 return;
             }
 
