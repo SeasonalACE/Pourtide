@@ -66,6 +66,7 @@ namespace ACE.Server.Managers
 
             var recipe = GetRecipe(player, source, target);
 
+
             if (recipe == null)
             {
                 if (TryHandleHardcodedRecipe(player, source, target))
@@ -73,6 +74,16 @@ namespace ACE.Server.Managers
                 player.Session.Network.EnqueueSend(new GameMessageSystemChat($"The {source.NameWithMaterial} cannot be used on the {target.NameWithMaterial}.", ChatMessageType.Craft));
                 player.SendUseDoneEvent();
                 return;
+            }
+
+            if (recipe.IsTinkering() || recipe.IsImbuing())
+            {
+                if (source.LootSpawnOrigin != 1)
+                {
+                    player.SendUseDoneEvent(WeenieError.YouDoNotPassCraftingRequirements);
+                    player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Your source material {source.NameWithMaterial} was not crafted in a Rift, you may not use this material for tinkering.", ChatMessageType.Craft));
+                    return;
+                }
             }
 
             // verify requirements
@@ -84,6 +95,7 @@ namespace ACE.Server.Managers
 
             if (recipe.IsTinkering())
                 log.Debug($"[TINKERING] {player.Name}.UseObjectOnTarget({source.NameWithMaterial}, {target.NameWithMaterial}) | Status: {(confirmed ? "" : "un")}confirmed");
+
 
             var percentSuccess = GetRecipeChance(player, source, target, recipe);
 

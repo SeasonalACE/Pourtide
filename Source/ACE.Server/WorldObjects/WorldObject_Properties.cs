@@ -1683,6 +1683,13 @@ namespace ACE.Server.WorldObjects
         // =========== Other Properties ===========
         // ========================================
 
+        public int? LootSpawnOrigin
+        {
+            get => GetProperty(PropertyInt.LootSpawnOrigin) ?? 0;
+            set { if (!value.HasValue) RemoveProperty(PropertyInt.LootSpawnOrigin); else SetProperty(PropertyInt.LootSpawnOrigin, value.Value); }
+        }
+
+
         public int? Level
         {
             get => GetProperty(PropertyInt.Level);
