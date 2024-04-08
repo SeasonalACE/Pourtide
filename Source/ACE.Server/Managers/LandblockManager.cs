@@ -408,17 +408,6 @@ namespace ACE.Server.Managers
         /// </summary>
         public static Landblock GetLandblock(LandblockId landblockId, uint instance, EphemeralRealm ephemeralRealm, bool loadAdjacents, bool permaload = false)
         {
-            if (instance == 0)
-            {
-                var owner = "none";
-                if (ephemeralRealm != null && ephemeralRealm.Owner != null)
-                    owner = ephemeralRealm.Owner.Name;
-
-                var landblockIdClean = new LandblockId(landblockId.Raw | 0xFFFF);
-                log.Error($"Error: Getting Landblock with instance = 0, landblock = {LandblockKey(landblockIdClean.Raw, instance):X8}, ephemeralRealm = {owner} permaload = {permaload}");
-
-            }
-
             if (loadAdjacents && ephemeralRealm != null)
             {
                 throw new ArgumentException("Ephemeral Realms may not be used with load adjacents (suggestion: use indoor areas only)");
