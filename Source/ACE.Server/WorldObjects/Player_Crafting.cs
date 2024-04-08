@@ -9,7 +9,6 @@ using ACE.Server.Entity;
 using ACE.Server.Factories;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
-using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects.Entity;
 
 namespace ACE.Server.WorldObjects
@@ -127,21 +126,10 @@ namespace ACE.Server.WorldObjects
         {
             var salvageBags = new List<WorldObject>();
             var salvageResults = new SalvageResults();
-            var hasNonRift = salvageItems
-                .Select(guid => GetInventoryItem(guid))
-                .Any(item => item != null && item.LootSpawnOrigin != 1);
-
-            if (hasNonRift)
-            {
-                SendWeenieError(WeenieError.UnableToMakeCraftReq);
-                Session.Network.EnqueueSend(new GameMessageSystemChat($"One or more of your salvage items were not found in a Rift, you may not salvage this material.", ChatMessageType.Craft));
-                return;
-            }
 
             foreach (var itemGuid in salvageItems)
             {
                 var item = GetInventoryItem(itemGuid);
-
                 if (item == null)
                 {
                     //log.Debug($"[CRAFTING] {Name}.HandleSalvaging({itemGuid:X8}): couldn't find inventory item");
@@ -199,7 +187,6 @@ namespace ACE.Server.WorldObjects
                 // this will create a new salvage bag, and adds it to salvageBags
 
                 var salvageBag = GetSalvageBag(materialType, salvageBags);
-                salvageBag.LootSpawnOrigin = 1; // stamp with rift origin
 
                 var added = TryAddSalvage(salvageBag, item, remaining);
                 remaining -= added;

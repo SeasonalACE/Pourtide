@@ -648,10 +648,7 @@ namespace ACE.Entity.Enum.Properties
         RulesetStampVendorType                  = 42004,
 
         [ServerOnly]
-        LastRebuffTimestamp                     = 42005,
-
-        [ServerOnly]
-        LootSpawnOrigin                         = 42006
+        LastRebuffTimestamp                     = 42005
     }
 
     public static class PropertyIntExtensions
