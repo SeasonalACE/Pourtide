@@ -3,6 +3,7 @@ using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity.Actions;
+using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
@@ -164,6 +165,47 @@ namespace ACE.Server.Command.Handlers
             player.SetProperty(PropertyInt.LastRebuffTimestamp, (int)Time.GetUnixTime());
             player.CreateSentinelBuffPlayers(new Player[] { player }, true);
         }
+
+        /** HotDungeons Start **/
+
+        [CommandHandler("dungeons", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
+        public static void HandleCheckDungeonsNew(Session session, params string[] paramters)
+        {
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Active Dungeon List>", ChatMessageType.System));
+            foreach (var dungeon in DungeonManager.GetDungeons())
+            {
+                var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
+                var message = $"Dungeon {dungeon.Name} is active {at}, and has a an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x";
+                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{message}", ChatMessageType.System));
+            }
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\nTime Remaining before reset: {DungeonManager.FormatTimeRemaining(DungeonManager.DungeonsTimeRemaining)}", ChatMessageType.System));
+        }
+
+        [CommandHandler("dungeons-potential", AccessLevel.Developer, CommandHandlerFlag.None, 0, "Get a list of available potential dungeons.")]
+        public static void HandleCheckDungeonsPotential(Session session, params string[] paramters)
+        {
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Active Potential Dungeon List>", ChatMessageType.System));
+            foreach (var dungeon in DungeonManager.GetPotentialDungeons())
+            {
+                var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
+                var message = $"Dungeon {dungeon.Name} has potential {at}";
+                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{message}", ChatMessageType.System));
+
+                var xp = dungeon.TotalXpEarned;
+                var playersTouched = dungeon.PlayerTouches;
+
+                var xpMessage = $"--> Xp Earned: {Formatting.FormatIntWithCommas((uint)xp)}";
+                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{xpMessage}", ChatMessageType.System));
+
+                var playersTouchedMessage = $"--> Amount of creatures killed by players: {Formatting.FormatIntWithCommas(playersTouched)}";
+                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{playersTouchedMessage}", ChatMessageType.System));
+            }
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\nTime Remaining before reset: {DungeonManager.FormatTimeRemaining(DungeonManager.DungeonsTimeRemaining)}", ChatMessageType.System));
+        }
+
+        /** Hot Dungeons End **/
 
     }
 }
