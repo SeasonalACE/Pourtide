@@ -28,6 +28,9 @@ using ACE.Server.WorldObjects;
 
 using Position = ACE.Entity.Position;
 using ACE.Server.Realms;
+using ACE.Server.HotDungeons.Managers;
+using ACE.Server.HotDungeons;
+using ACE.Server.Mods;
 
 namespace ACE.Server.Entity
 {
@@ -676,7 +679,20 @@ namespace ACE.Server.Entity
                     worldObjects[kvp.Key] = kvp.Value;
 
                     if (kvp.Value is Player player)
+                    {
                         players.Add(player);
+                        var currentLb = $"{Id.Raw:X8}".Substring(0, 4);
+
+                        if (InnerRealmInfo == null)
+                        {
+                            if (DungeonManager.HasDungeon(currentLb))
+                                log.Info($"Player {player.Name} has entered {DungeonManager.GetDungeonLandblock(currentLb).Name}");
+
+                            if (DungeonManager.HasHotspotDungeon(currentLb))
+                                DungeonManager.AddDungeonPlayer(currentLb, player);
+                        }
+
+                    }
                     else if (kvp.Value is Creature creature)
                         sortedCreaturesByNextTick.AddLast(creature);
 
@@ -698,7 +714,22 @@ namespace ACE.Server.Entity
                     if (worldObjects.Remove(objectGuid, out var wo))
                     {
                         if (wo is Player player)
+                        {
                             players.Remove(player);
+                            players.Remove(player);
+                            var currentLb = $"{Id.Raw:X8}".Substring(0, 4);
+
+                            if (InnerRealmInfo == null)
+                            {
+                                if (DungeonManager.HasDungeon(currentLb))
+                                    log.Info($"Player {player.Name} has left {DungeonManager.GetDungeonLandblock(currentLb).Name}");
+
+                                if (DungeonManager.HasHotspotDungeon(currentLb))
+                                    DungeonManager.RemoveDungeonPlayer(currentLb, player);
+                            }
+
+
+                        }
                         else if (wo is Creature creature)
                             sortedCreaturesByNextTick.Remove(creature);
 

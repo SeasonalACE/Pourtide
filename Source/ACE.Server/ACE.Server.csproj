@@ -323,6 +323,9 @@
     <None Update="Config.js.docker">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="HotDungeons\dungeon_ids.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="images\ace-retro-icon2.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
