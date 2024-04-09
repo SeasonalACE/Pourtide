@@ -31,6 +31,7 @@ using ACE.Server.Realms;
 using ACE.Server.HotDungeons.Managers;
 using ACE.Server.HotDungeons;
 using ACE.Server.Mods;
+using ACE.Server.Rifts;
 
 namespace ACE.Server.Entity
 {
@@ -691,6 +692,8 @@ namespace ACE.Server.Entity
                             if (DungeonManager.HasHotspotDungeon(currentLb))
                                 DungeonManager.AddDungeonPlayer(currentLb, player);
                         }
+                        else if (RiftManager.HasActiveRift(currentLb))
+                            RiftManager.AddRiftPlayer(currentLb, player);
 
                     }
                     else if (kvp.Value is Creature creature)
@@ -727,6 +730,8 @@ namespace ACE.Server.Entity
                                 if (DungeonManager.HasHotspotDungeon(currentLb))
                                     DungeonManager.RemoveDungeonPlayer(currentLb, player);
                             }
+                            else if (RiftManager.HasActiveRift(currentLb))
+                                RiftManager.RemoveRiftPlayer(currentLb, player);
 
 
                         }

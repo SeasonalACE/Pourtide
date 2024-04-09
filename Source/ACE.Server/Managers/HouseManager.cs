@@ -18,6 +18,7 @@ using ACE.Server.Factories;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Network.Structure;
 using ACE.Server.WorldObjects;
+using ACE.Server.Rifts;
 
 namespace ACE.Server.Managers
 {
@@ -332,6 +333,8 @@ namespace ACE.Server.Managers
         /// </summary>
         public static void Tick()
         {
+            RiftManager.Tick();
+
             if (updateHouseManagerRateLimiter.GetSecondsToWaitBeforeNextEvent() > 0)
                 return;
 

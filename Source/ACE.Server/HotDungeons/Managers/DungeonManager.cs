@@ -94,6 +94,17 @@ namespace ACE.Server.HotDungeons.Managers
             return DungeonRepository.ReadonlyLandblocks[lb];
         }
 
+        public static bool HasDungeonLandblock(string lb)
+        {
+            return DungeonRepository.ReadonlyLandblocks.ContainsKey(lb);
+        }
+
+
+        public static bool TryGetDungeonLandblock(string lb, out DungeonLandblock landblock)
+        {
+            return DungeonRepository.ReadonlyLandblocks.TryGetValue(lb, out landblock);
+        }
+
         public static void Reset()
         {
 
