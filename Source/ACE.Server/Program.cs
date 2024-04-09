@@ -16,6 +16,7 @@ using ACE.Server.Managers;
 using ACE.Server.Mods;
 using ACE.Server.Network.Managers;
 using ACE.Server.HotDungeons.Managers;
+using ACE.Server.Rifts;
 
 namespace ACE.Server
 {
@@ -269,6 +270,12 @@ namespace ACE.Server
 
             if (ConfigManager.Config.Server.WorldDatabasePrecaching)
             {
+                for (var i = 0; i <= 6; i++)
+                {
+                    // load cache of mob ids
+                    DatabaseManager.World.GetDungeonCreatureWeenieIds((uint)i);
+                }
+
                 log.Info("Precaching Weenies...");
                 DatabaseManager.World.CacheAllWeenies();
                 log.Info("Precaching Cookbooks...");
@@ -318,6 +325,11 @@ namespace ACE.Server
 
             log.Info("Initializing DungeonManager...");
             DungeonManager.Initialize();
+
+            log.Info("Initializing RiftManager...");
+            RiftManager.Initialize();
+
+
 
             // Free up memory before the server goes online. This can free up 6 GB+ on larger servers.
             log.Info("Forcing .net garbage collection...");
