@@ -270,10 +270,20 @@ namespace ACE.Server.Entity
                     }
 
                     AddWorldObject(fo);
-                    fo.ActivateLinks(objects, shardObjects, RealmRuleset, parent);
 
-                    if (fo.PhysicsObj != null)
-                        fo.PhysicsObj.Order = 0;
+                    try
+                    {
+                        fo.ActivateLinks(objects, shardObjects, RealmRuleset, parent);
+
+                        if (fo.PhysicsObj != null)
+                            fo.PhysicsObj.Order = 0;
+                    } catch (Exception ex)
+                    {
+                        log.Warn("Error trying to activate links");
+                        log.Error(ex.Message);
+                        log.Error(ex.StackTrace);
+                    }
+
                 }
 
                 CreateWorldObjectsCompleted = true;
