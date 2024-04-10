@@ -268,8 +268,8 @@ namespace ACE.Server.Rifts
                 rift.Previous = last;
                 last.Next = rift;
 
-                _ = SpawnNextAsync(last);
-                _ = SpawnPreviousAsync(rift);
+                 SpawnNextAsync(last);
+                 SpawnPreviousAsync(rift);
             }
 
             ActiveRifts[currentLb] = rift;
@@ -301,81 +301,99 @@ namespace ACE.Server.Rifts
         }
 
 
-        internal static async Task SpawnPreviousAsync(Rift rift)
+        internal static void SpawnPreviousAsync(Rift rift)
         {
-            while (!rift.LandblockInstance.CreateWorldObjectsCompleted)
+            var landblock = rift.LandblockInstance;
+            var chain = new ActionChain();
+            chain.AddDelaySeconds(5);
+
+            chain.AddAction(landblock, () =>
             {
-                await Task.Delay(TimeSpan.FromSeconds(5));
-            }
 
-            List<WorldObject> creatures;
-
-
-            creatures = FindRandomCreatures(rift);
-
-            if (rift.Previous != null)
-            {
-                log.Info($"Creatures Count {creatures.Count} in {rift.Name}");
-
-                foreach (var wo in creatures)
+                if (!landblock.CreateWorldObjectsCompleted)
                 {
-                    var portal = WorldObjectFactory.CreateNewWorldObject(600004);
-                    portal.Name = $"Rift Portal {rift.Previous.Name}";
-                    portal.Location = new Position(wo.Location);
-                    portal.Destination = rift.Previous.DropPosition;
-                    portal.Lifespan = int.MaxValue;
+                    SpawnPreviousAsync(rift);
+                    return;
+                }
 
-                    var name = "Portal to " + rift.Previous.Name;
-                    portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
-                    portal.ObjScale *= 0.25f;
+                List<WorldObject> creatures;
 
-                    log.Info($"Attempting to link Portal for previous in {rift.Name}");
-                    if (portal.EnterWorld())
+                creatures = FindRandomCreatures(rift);
+
+                if (rift.Previous != null)
+                {
+                    log.Info($"Creatures Count {creatures.Count} in {rift.Name}");
+
+                    foreach (var wo in creatures)
                     {
-                        log.Info($"Added Linked Portal for previous in {rift.Name}");
-                        rift.LinkedPortals.Add(portal);
-                        return;
+                        var portal = WorldObjectFactory.CreateNewWorldObject(600004);
+                        portal.Name = $"Rift Portal {rift.Previous.Name}";
+                        portal.Location = new Position(wo.Location);
+                        portal.Destination = rift.Previous.DropPosition;
+                        portal.Lifespan = int.MaxValue;
+
+                        var name = "Portal to " + rift.Previous.Name;
+                        portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
+                        portal.ObjScale *= 0.25f;
+
+                        log.Info($"Attempting to link Portal for previous in {rift.Name}");
+                        if (portal.EnterWorld())
+                        {
+                            log.Info($"Added Linked Portal for previous in {rift.Name}");
+                            rift.LinkedPortals.Add(portal);
+                            return;
+                        }
                     }
                 }
-            }
+            });
+            chain.EnqueueChain();
         }
 
-        internal static async Task SpawnNextAsync(Rift rift)
+        internal static void SpawnNextAsync(Rift rift)
         {
-            while (!rift.LandblockInstance.CreateWorldObjectsCompleted)
+            var landblock = rift.LandblockInstance;
+            var chain = new ActionChain();
+            chain.AddDelaySeconds(5);
+
+            chain.AddAction(landblock, () =>
             {
-                await Task.Delay(TimeSpan.FromSeconds(5));
-            }
-
-            List<WorldObject> creatures;
-
-
-            creatures = FindRandomCreatures(rift);
-
-            if (rift.Next != null)
-            {
-                log.Info($"Creatures Count {creatures.Count} in {rift.Name}");
-                foreach (var wo in creatures)
+                if (!landblock.CreateWorldObjectsCompleted)
                 {
-                    var portal = WorldObjectFactory.CreateNewWorldObject(600004);
-                    portal.Name = $"Rift Portal {rift.Next.Name}";
-                    portal.Location = new Position(wo.Location);
-                    portal.Destination = rift.Next.DropPosition;
-                    portal.Lifespan = int.MaxValue;
+                    SpawnNextAsync(rift);
+                    return;
+                }
 
-                    var name = "Portal to " + rift.Next.Name;
-                    portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
-                    portal.ObjScale *= 0.25f;
+                List<WorldObject> creatures;
 
-                    log.Info($"Attempting to link Portal for next in {rift.Name}");
-                    if (portal.EnterWorld())
+                creatures = FindRandomCreatures(rift);
+
+                if (rift.Next != null)
+                {
+                    log.Info($"Creatures Count {creatures.Count} in {rift.Name}");
+                    foreach (var wo in creatures)
                     {
-                        log.Info($"Added Linked Portal for next in {rift.Name}");
-                        rift.LinkedPortals.Add(portal);
-                        return;
+                        var portal = WorldObjectFactory.CreateNewWorldObject(600004);
+                        portal.Name = $"Rift Portal {rift.Next.Name}";
+                        portal.Location = new Position(wo.Location);
+                        portal.Destination = rift.Next.DropPosition;
+                        portal.Lifespan = int.MaxValue;
+
+                        var name = "Portal to " + rift.Next.Name;
+                        portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
+                        portal.ObjScale *= 0.25f;
+
+                        log.Info($"Attempting to link Portal for next in {rift.Name}");
+                        if (portal.EnterWorld())
+                        {
+                            log.Info($"Added Linked Portal for next in {rift.Name}");
+                            rift.LinkedPortals.Add(portal);
+                            return;
+                        }
                     }
                 }
-            }
+            });
+
+            chain.EnqueueChain();
         }
     }
 }
