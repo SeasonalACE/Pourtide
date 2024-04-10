@@ -202,11 +202,18 @@ namespace ACE.Server.WorldObjects
 
                     var xp = (double)(XpOverride ?? 0);
 
+
+
                     DungeonManager.ProcessCreaturesDeath(currentLb, playerDamager, (int)xp, out double hotSpotModifier);
+
+
 
                     xp *= hotSpotModifier;
 
                     var totalXP = (xp) * damagePercent;
+
+                    if (!DungeonManager.HasDungeonLandblock(currentLb))
+                        hotSpotModifier = totalXP * 0.25;
 
                     playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);
 
