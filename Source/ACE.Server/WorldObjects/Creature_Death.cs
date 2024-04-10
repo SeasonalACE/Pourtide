@@ -213,7 +213,7 @@ namespace ACE.Server.WorldObjects
                     var totalXP = (xp) * damagePercent;
 
                     if (!DungeonManager.HasDungeonLandblock(currentLb))
-                        hotSpotModifier = totalXP * 0.25;
+                        totalXP *= 0.25;
 
                     playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);
 
