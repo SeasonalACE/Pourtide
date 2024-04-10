@@ -57,7 +57,9 @@ namespace ACE.Server.WorldObjects
             if (position != null)
             {
                 var teleportDest = new Position(position);
-                teleportDest.SetToDefaultRealmInstance(Location.RealmID);
+                // not sure but maybe this should only be checked if instance is 0?
+                if (teleportDest.Instance == 0)
+                    teleportDest.SetToDefaultRealmInstance(Location.RealmID);
                 AdjustDungeon(teleportDest);
 
                 Teleport(teleportDest);
@@ -768,17 +770,14 @@ namespace ACE.Server.WorldObjects
 
             var currentLbRaw = Location.LandblockId.Raw;
             var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
-            RiftManager.TryGetActiveRift(currentLb, out Rift currentActiveRift);
-
-            // stamp pre teleport positions (alias is DungeonSurface)
-            if (!Location.IsEphemeralRealm && DungeonManager.HasDungeonLandblock(nextLb))
-            {
-                var stamped = new Position(Location).InFrontOf(-10.0f);
-                SetPosition(PositionType.DungeonSurface, stamped);
-            }
 
             if (RiftManager.TryGetActiveRift(nextLb, out Rift nextActiveRift))
+            {
+                var instance = _newPosition.Instance;
                 _newPosition = new Position(nextActiveRift.DropPosition);
+                if (teleportingFromInstance)
+                    _newPosition.Instance = instance;
+            }
 
             if (_newPosition.Instance == 0)
             {
@@ -888,7 +887,7 @@ namespace ACE.Server.WorldObjects
 
             if (newLocation.IsEphemeralRealm && !Location.IsEphemeralRealm)
             {
-                SetPosition(PositionType.EphemeralRealmExitTo, new Position(Location.InFrontOf(-7f)));
+                SetPosition(PositionType.EphemeralRealmExitTo, new Position(Location.InFrontOf(-5f)));
                 SetPosition(PositionType.EphemeralRealmLastEnteredDrop, new Position(newLocation));
             }
             else if (!newLocation.IsEphemeralRealm)
