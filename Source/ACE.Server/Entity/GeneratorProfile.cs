@@ -261,7 +261,17 @@ namespace ACE.Server.Entity
                 var creatureSpawnMultiplier = Convert.ToInt32(Generator.RealmRuleset.GetProperty(RealmPropertyFloat.CreatureSpawnMultiplier));
                 var replaceMobs = Generator.RealmRuleset.GetProperty(RealmPropertyBool.ReplaceMobs);
 
-                var wo = AddWorldObject();
+                WorldObject wo;
+                try
+                {
+                    wo = AddWorldObject();
+                } catch (Exception ex)
+                {
+                    log.Warn("Failed to create AddWorldObject during Spawn in Generator Profile");
+                    log.Error(ex.Message);
+                    log.Error(ex.StackTrace);
+                    return objects;
+                }
 
                 if (wo == null)
                     return objects;
@@ -325,28 +335,38 @@ namespace ACE.Server.Entity
 
         public WorldObject AddWorldObject(bool replace = true)
         {
-            var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId);
-            wo.Location = new ACE.Entity.Position(Generator.Location);
-            wo = MutationsManager.ProcessWorldObject(wo, Generator.RealmRuleset, replace);
-            if (wo == null)
+            try
             {
-                log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");
+                var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId);
+                wo.Location = new ACE.Entity.Position(Generator.Location);
+                wo = MutationsManager.ProcessWorldObject(wo, Generator.RealmRuleset, replace);
+                if (wo == null)
+                {
+                    log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");
+                    return null;
+                }
+
+                if (Biota.PaletteId.HasValue && Biota.PaletteId > 0)
+                    wo.PaletteTemplate = (int)Biota.PaletteId;
+
+                if (Biota.Shade.HasValue && Biota.Shade > 0)
+                    wo.Shade = Biota.Shade;
+
+                if ((Biota.Shade.HasValue && Biota.Shade > 0) || (Biota.PaletteId.HasValue && Biota.PaletteId > 0))
+                    wo.CalculateObjDesc(); // to update icon
+
+                if (Biota.StackSize.HasValue && Biota.StackSize > 0)
+                    wo.SetStackSize(Biota.StackSize);
+
+                return wo;
+            } catch (Exception ex)
+            {
+                log.Warn("Failed to create AddWorldObject  in Generator Profile");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
                 return null;
             }
 
-            if (Biota.PaletteId.HasValue && Biota.PaletteId > 0)
-                wo.PaletteTemplate = (int)Biota.PaletteId;
-
-            if (Biota.Shade.HasValue && Biota.Shade > 0)
-                wo.Shade = Biota.Shade;
-
-            if ((Biota.Shade.HasValue && Biota.Shade > 0) || (Biota.PaletteId.HasValue && Biota.PaletteId > 0))
-                wo.CalculateObjDesc(); // to update icon
-
-            if (Biota.StackSize.HasValue && Biota.StackSize > 0)
-                wo.SetStackSize(Biota.StackSize);
-
-            return wo;
         }
 
         /// <summary>
