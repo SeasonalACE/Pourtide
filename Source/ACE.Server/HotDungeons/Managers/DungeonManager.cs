@@ -2,8 +2,11 @@ using ACE.Adapter.GDLE.Models;
 using ACE.Common;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
+using ACE.Server.Entity.Actions;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Server.Physics.Common;
+using ACE.Server.Rifts;
 using ACE.Server.WorldObjects;
 using log4net;
 using System;
@@ -23,6 +26,8 @@ namespace ACE.Server.HotDungeons.Managers
         public double BonuxXp { get; set; } = 1.0f;
 
         public uint PlayerTouches { get; set; } = 0;
+
+        public Player LastPlayerTouched { get; set; }
         public Dungeon(string landblock, string name, string coords) : base(landblock, name, coords)
         {
             Landblock = landblock;
@@ -40,6 +45,7 @@ namespace ACE.Server.HotDungeons.Managers
             TotalXpEarned = 0;
             BonuxXp = 1.0f;
             PlayerTouches = 0;
+            LastPlayerTouched = null;
             Players.Clear();
         }
     }
@@ -67,11 +73,11 @@ namespace ACE.Server.HotDungeons.Managers
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint interval = 1, uint intialDelay = 20, float maxBonuxXp = 4.0f, uint maxHotspots = 3, string webhookGeneral = "")
+        public static void Initialize(uint interval = 3, uint intialDelay = 2, float maxBonuxXp = 4.0f, uint maxHotspots = 3, string webhookGeneral = "")
         {
             log.Info("Initializing DungeonManager");
             DungeonRepository.Initialize();
-            DungeonsInterval = TimeSpan.FromHours(interval);
+            DungeonsInterval = TimeSpan.FromMinutes(interval);
             MaxBonuxXp = maxBonuxXp;
             MaxHotspots = maxHotspots;
             DungeonsLastCheck = DateTime.UtcNow - DungeonsInterval + TimeSpan.FromMinutes(intialDelay);
@@ -115,6 +121,8 @@ namespace ACE.Server.HotDungeons.Managers
 
                 DungeonsLastCheck = DateTime.UtcNow;
 
+                RiftManager.Close();
+
                 foreach (var dungeon in HotspotDungeons.Values.ToList())
                 {
                     dungeon.Close();
@@ -135,7 +143,21 @@ namespace ACE.Server.HotDungeons.Managers
 
                 foreach (var dungeon in sorted)
                 {
-                    dungeon.BonuxXp = ThreadSafeRandom.Next(1.5f, MaxBonuxXp);
+                    RiftManager.TryAddRift(dungeon.Landblock, dungeon.LastPlayerTouched, dungeon, out Rift activeRift);
+                    var lb = LandblockManager.GetLandblock(activeRift.LandblockInstance.Id, RealmManager.ServerBaseRealmInstance, null, false);
+                    var objects = lb.GetAllWorldObjectsForDiagnostics();
+                    var players = objects.Where(wo => wo is Player).ToList();
+
+                    foreach (var player in players)
+                    {
+                        if (player != null)
+                        {
+                            var newPosition = new ACE.Entity.Position(activeRift.DropPosition); ;
+                            WorldManager.ThreadSafeTeleport(player as Player, newPosition, false);
+                        }
+                    }
+
+                    dungeon.BonuxXp = activeRift.BonuxXp;
                     HotspotDungeons.Add(dungeon.Landblock, dungeon);
                     var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
                     var message = $"{dungeon.Name} {at} has been very active, this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
@@ -187,7 +209,7 @@ namespace ACE.Server.HotDungeons.Managers
                     nextDungeon.Players.TryAdd(guid, player);
         }
 
-        internal static void ProcessCreaturesDeath(string currentLb, int xpOverride, out double returnValue)
+        internal static void ProcessCreaturesDeath(string currentLb, Player damager, int xpOverride, out double returnValue)
         {
             returnValue = 1.0; // Default value
 
@@ -205,6 +227,7 @@ namespace ACE.Server.HotDungeons.Managers
                     PotentialHotspotCandidates.TryAdd(currentLb, potentialDungeon);
                     potentialDungeon.AddTotalXp(xpOverride);
                     potentialDungeon.PlayerTouches++;
+                    potentialDungeon.LastPlayerTouched = damager;
                 }
             }
             else
@@ -214,6 +237,7 @@ namespace ACE.Server.HotDungeons.Managers
                 {
                     potentialDungeon.AddTotalXp(xpOverride);
                     potentialDungeon.PlayerTouches++;
+                    potentialDungeon.LastPlayerTouched = damager;
                 }
             }
 

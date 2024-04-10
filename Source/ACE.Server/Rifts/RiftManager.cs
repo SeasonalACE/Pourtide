@@ -24,13 +24,21 @@ namespace ACE.Server.Rifts
     internal class Rift : DungeonBase
     {
         public Position DropPosition = null;
-        public double BonuxXp { get; private set; } = 1.0f;
+        public double BonuxXp
+        {
+            get
+            {
+                var rules = LandblockInstance?.RealmRuleset;
+                if (rules != null)
+                    return rules.GetProperty(ACE.Entity.Enum.Properties.RealmPropertyFloat.ExperienceMultiplierAll);
+                else
+                    return 1.0;
+            }
+        } 
 
         public Rift Next = null;
 
         public Rift Previous = null;
-
-        public List<WorldObject> LinkedPortals = new List<WorldObject>();
 
         public Landblock? LandblockInstance = null;
 
@@ -59,14 +67,12 @@ namespace ACE.Server.Rifts
                 }
             }
 
-            LandblockInstance.DestroyAllNonPlayerObjects();
             Instance = 0;
             DropPosition = null;
             Next = null;
             Previous = null;
             LandblockInstance.Permaload = false;
             LandblockInstance = null;
-            LinkedPortals.Clear();
             Players.Clear();
         }
     }
@@ -77,49 +83,18 @@ namespace ACE.Server.Rifts
 
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private static Dictionary<string, Rift> Rifts = new Dictionary<string, Rift>();
-
         public static Dictionary<string, Rift> ActiveRifts = new Dictionary<string, Rift>();
 
-        private static float MaxBonusXp { get; set; }
-
-        private static uint MaxActiveRifts { get; set; }
-
-        private static TimeSpan ResetInterval { get; set; }
-
-        private static DateTime LastResetCheck = DateTime.MinValue;
-
-        private static string WebhookGeneral { get; set; }
-
-        private static TimeSpan TimeRemaining => LastResetCheck + ResetInterval - DateTime.UtcNow;
-
-        public static void Initialize(uint interval = 1, float bonuxXpModifier = 4.0f, uint maxActiveRifts = 3, string generalWebhook = "")
+        public static void Close()
         {
-
-            ResetInterval = TimeSpan.FromHours(interval);
-            MaxBonusXp = bonuxXpModifier;
-            WebhookGeneral = generalWebhook;
-            MaxActiveRifts = maxActiveRifts;
-        }
-
-        public static void Tick()
-        {
-            if (LastResetCheck + ResetInterval <= DateTime.UtcNow)
+            lock (lockObject)
             {
-                LastResetCheck = DateTime.UtcNow;
+                var message = $"Rifts are currently resetting!";
+                log.Info(message);
+                foreach (var rift in ActiveRifts)
+                    rift.Value.Close();
 
-                lock (lockObject)
-                {
-
-                    var message = $"Rifts are currently resetting!";
-                    log.Info(message);
-                    PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
-
-                    foreach (var rift in ActiveRifts)
-                        rift.Value.Close();
-
-                    ActiveRifts.Clear();
-                }
+                ActiveRifts.Clear();
             }
         }
 
@@ -149,11 +124,6 @@ namespace ACE.Server.Rifts
                     log.Info($"Added {player.Name} to {rift.Name}");
                 }
             }
-        }
-
-        public static bool HasRift(string lb)
-        {
-            return Rifts.ContainsKey(lb);
         }
 
         public static bool HasActiveRift(string lb)
@@ -225,29 +195,7 @@ namespace ACE.Server.Rifts
             }
         }
 
-        public static string FormatTimeRemaining()
-        {
-            TimeSpan timeRemaining = TimeRemaining;
-
-            if (timeRemaining.TotalSeconds < 1)
-            {
-                return "less than a second";
-            }
-            else if (timeRemaining.TotalMinutes < 1)
-            {
-                return $"{timeRemaining.Seconds} second{(timeRemaining.Seconds != 1 ? "s" : "")}";
-            }
-            else if (timeRemaining.TotalHours < 1)
-            {
-                return $"{timeRemaining.Minutes} minute{(timeRemaining.Minutes != 1 ? "s" : "")} and {timeRemaining.Seconds} second{(timeRemaining.Seconds != 1 ? "s" : "")}";
-            }
-            else
-            {
-                return $"{timeRemaining.Hours} hour{(timeRemaining.Hours != 1 ? "s" : "")}, {timeRemaining.Minutes} minute{(timeRemaining.Minutes != 1 ? "s" : "")}, and {timeRemaining.Seconds} second{(timeRemaining.Seconds != 1 ? "s" : "")}";
-            }
-        }
-
-        internal static bool TryAddRift(string currentLb, Player killer, DungeonLandblock dungeon, out Rift addedRift)
+        internal static bool TryAddRift(string currentLb, Player creator, DungeonLandblock dungeon, out Rift addedRift)
         {
             addedRift = null;
 
@@ -255,10 +203,7 @@ namespace ACE.Server.Rifts
             if (ActiveRifts.ContainsKey(currentLb))
                 return false;
 
-            if (ActiveRifts.Count >= MaxActiveRifts) return false;
-
-
-            var rift = CreateRiftInstance(killer, dungeon);
+            var rift = CreateRiftInstance(creator, dungeon);
             var rifts = ActiveRifts.Values.ToList();
 
             var last = rifts.LastOrDefault();
@@ -279,23 +224,6 @@ namespace ACE.Server.Rifts
             var at = rift.Coords.Length > 0 ? $"at {rift.Coords}" : "";
             var message = $"Dungeon {rift.Name} {at} is now an activated Rift";
             log.Info(message);
-            PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
-
-
-            /*try
-            {
-                var channel = ChatType.General;
-                Player sender = null;
-                var formattedMessage = $"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{message}\"";
-                _ = WebhookRepository.SendWebhookChat(DiscordChatChannel.General, formattedMessage, WebhookGeneral);
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex.StackTrace);
-            }*/
-
-
-
 
             return true;
         }
@@ -340,7 +268,6 @@ namespace ACE.Server.Rifts
                         if (portal.EnterWorld())
                         {
                             log.Info($"Added Linked Portal for previous in {rift.Name}");
-                            rift.LinkedPortals.Add(portal);
                             return;
                         }
                     }
@@ -386,7 +313,6 @@ namespace ACE.Server.Rifts
                         if (portal.EnterWorld())
                         {
                             log.Info($"Added Linked Portal for next in {rift.Name}");
-                            rift.LinkedPortals.Add(portal);
                             return;
                         }
                     }

@@ -15,7 +15,6 @@ using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
-using ACE.Server.Tar;
 
 namespace ACE.Server.WorldObjects
 {
@@ -203,15 +202,10 @@ namespace ACE.Server.WorldObjects
 
                     var xp = (double)(XpOverride ?? 0);
 
-                    DungeonManager.ProcessCreaturesDeath(currentLb, (int)xp, out double hotSpotModifier);
-                    TarManager.ProcessCreaturesDeath(currentLb, CurrentLandblock, playerDamager, out double tarModifier);
+                    DungeonManager.ProcessCreaturesDeath(currentLb, playerDamager, (int)xp, out double hotSpotModifier);
 
-
-                    log.Info($"Xp before modifiers: {xp}");
                     xp *= hotSpotModifier;
-                    xp *= tarModifier;
 
-                    log.Info($"Xp after modifiers: {xp}");
                     var totalXP = (xp) * damagePercent;
 
                     playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);

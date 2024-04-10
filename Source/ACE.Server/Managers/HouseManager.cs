@@ -333,8 +333,6 @@ namespace ACE.Server.Managers
         /// </summary>
         public static void Tick()
         {
-            RiftManager.Tick();
-
             if (updateHouseManagerRateLimiter.GetSecondsToWaitBeforeNextEvent() > 0)
                 return;
 
