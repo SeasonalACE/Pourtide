@@ -218,7 +218,7 @@ namespace ACE.Server.Managers
 
             //Otherwise use the current location, or the exit location (or alternatively the home realm) if already in an ephemeral realm
             if (!player.Location.IsEphemeralRealm)
-                return GetRealm(player.RealmRuleset.Template.Realm.Id);
+                return GetRealm(player.Location.RealmID);
 
             return GetRealm(player.GetPosition(PositionType.EphemeralRealmExitTo)?.RealmID ?? player.HomeRealm);
         }

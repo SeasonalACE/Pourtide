@@ -17,6 +17,9 @@ using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Managers;
 using ACE.Server.Realms;
+using ACE.Server.Rifts;
+using ACE.Server.HotDungeons;
+using ACE.Server.HotDungeons.Managers;
 
 namespace ACE.Server.WorldObjects
 {
@@ -54,7 +57,9 @@ namespace ACE.Server.WorldObjects
             if (position != null)
             {
                 var teleportDest = new Position(position);
-                teleportDest.SetToDefaultRealmInstance(Location.RealmID);
+                // not sure but maybe this should only be checked if instance is 0?
+                if (teleportDest.Instance == 0)
+                    teleportDest.SetToDefaultRealmInstance(Location.RealmID);
                 AdjustDungeon(teleportDest);
 
                 Teleport(teleportDest);
@@ -760,8 +765,26 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         public void Teleport(Position _newPosition, bool teleportingFromInstance = false, bool fromPortal = false)
         {
+            var newLbRaw = _newPosition.LandblockId.Raw;
+            var nextLb = $"{newLbRaw:X8}".Substring(0, 4);
+
+            var currentLbRaw = Location.LandblockId.Raw;
+            var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
+
+            if (RiftManager.TryGetActiveRift(nextLb, out Rift nextActiveRift))
+            {
+                var instance = _newPosition.Instance;
+                _newPosition = new Position(nextActiveRift.DropPosition);
+                if (teleportingFromInstance)
+                    _newPosition.Instance = instance;
+            }
+
             if (_newPosition.Instance == 0)
+            {
+                log.Warn($"Trying to teleporting character: {Name} from instance {Location.Instance} replacing destination with current instance! logging destination!!");
+                log.Info(_newPosition.ToString());
                 _newPosition.Instance = Location.Instance;
+            }
 
             var apartments = LandblockManager.apartmentLandblocks.Select(r => new LandblockId(r).Landblock);
             var lb = _newPosition.LandblockId.Landblock;
@@ -864,7 +887,7 @@ namespace ACE.Server.WorldObjects
 
             if (newLocation.IsEphemeralRealm && !Location.IsEphemeralRealm)
             {
-                SetPosition(PositionType.EphemeralRealmExitTo, new Position(Location.InFrontOf(-7f)));
+                SetPosition(PositionType.EphemeralRealmExitTo, new Position(Location.Indoors ? Location : Location.InFrontOf(-7f)));
                 SetPosition(PositionType.EphemeralRealmLastEnteredDrop, new Position(newLocation));
             }
             else if (!newLocation.IsEphemeralRealm)
@@ -888,13 +911,18 @@ namespace ACE.Server.WorldObjects
             EnqueueBroadcast(new GameMessagePublicUpdatePropertyInt(this, PropertyInt.PlayerKillerStatus, (int)PlayerKillerStatus));
 
             if (newLocation.IsEphemeralRealm)
-                Session.Network.EnqueueSend(new GameMessageSystemChat($"Entering ephemeral instance. Type /exiti to leave instantly. Type /zoneinfo to view zone properties.", ChatMessageType.System));
+                Session.Network.EnqueueSend(new GameMessageSystemChat($"Entering ephemeral instance. Type /realm-info to view realm properties.", ChatMessageType.System));
             else if (Location.IsEphemeralRealm && !newLocation.IsEphemeralRealm)
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"Leaving instance and returning to realm {newRealm.Realm.Name}.", ChatMessageType.System));
             else
             {
                 if (prevrealm.Realm.Id != HomeRealm)
-                    Session.Network.EnqueueSend(new GameMessageSystemChat($"You are temporarily leaving your home realm. Some actions may be restricted and your corpse will appear at your hideout if you die.", ChatMessageType.System));
+                {
+                    if (newRealm == RealmManager.ServerBaseRealm && prevrealm.GetDefaultInstanceID(this) == Account.AccountId)
+                        Session.Network.EnqueueSend(new GameMessageSystemChat($"You have chosen {newRealm.Realm.Name} as your home realm.", ChatMessageType.System));
+                    else
+                        Session.Network.EnqueueSend(new GameMessageSystemChat($"You are temporarily leaving your home realm.", ChatMessageType.System));
+                }
                 else if (newRealm.Realm.Id == HomeRealm)
                     Session.Network.EnqueueSend(new GameMessageSystemChat($"Returning to home realm.", ChatMessageType.System));
                 else
@@ -933,6 +961,17 @@ namespace ACE.Server.WorldObjects
 
         public void ValidateCurrentRealm()
         {
+            var currentLbRaw = Location.LandblockId.Raw;
+            var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
+
+            RiftManager.TryGetActiveRift(currentLb, out Rift activeRift);
+
+            if (activeRift == null  && Location.IsEphemeralRealm)
+                TeleportToHomeRealm();
+
+            if (activeRift != null && !Location.IsEphemeralRealm)
+                WorldManager.ThreadSafeTeleport(this, activeRift.DropPosition, false);
+
             if (IsAdmin)
                 return;
             if (!ValidatePlayerRealmPosition(Location))

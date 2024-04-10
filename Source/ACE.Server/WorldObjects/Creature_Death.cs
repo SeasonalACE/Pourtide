@@ -11,6 +11,7 @@ using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
+using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
@@ -166,40 +167,61 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         public void OnDeath_GrantXP()
         {
-            if (this is Player && PlayerKillerStatus == PlayerKillerStatus.PKLite)
-                return;
-
-            var totalHealth = DamageHistory.TotalHealth;
-
-            if (totalHealth == 0)
-                return;
-
-            foreach (var kvp in DamageHistory.TotalDamage)
+            try
             {
-                var damager = kvp.Value.TryGetAttacker();
+                var currentLb = $"{Location.LandblockId.Raw:X8}".Substring(0, 4);
 
-                var playerDamager = damager as Player;
+                // mobs from a dungeon may be destroyed and not have a landblock assigned to them
+                if (CurrentLandblock == null)
+                    return;
 
-                if (playerDamager == null && kvp.Value.PetOwner != null)
-                    playerDamager = kvp.Value.TryGetPetOwner();
+                if (this is Player && PlayerKillerStatus == PlayerKillerStatus.PKLite)
+                    return;
 
-                if (playerDamager == null)
-                    continue;
+                var totalHealth = DamageHistory.TotalHealth;
 
-                var totalDamage = kvp.Value.TotalDamage;
+                if (totalHealth == 0)
+                    return;
 
-                var damagePercent = totalDamage / totalHealth;
 
-                var totalXP = (XpOverride ?? 0) * damagePercent;
-
-                playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);
-
-                // handle luminance
-                if (LuminanceAward != null)
+                foreach (var kvp in DamageHistory.TotalDamage)
                 {
-                    var totalLuminance = (long)Math.Round(LuminanceAward.Value * damagePercent);
-                    playerDamager.EarnLuminance(totalLuminance, XpType.Kill);
+                    var damager = kvp.Value.TryGetAttacker();
+
+                    var playerDamager = damager as Player;
+
+                    if (playerDamager == null && kvp.Value.PetOwner != null)
+                        playerDamager = kvp.Value.TryGetPetOwner();
+
+                    if (playerDamager == null)
+                        continue;
+
+                    var totalDamage = kvp.Value.TotalDamage;
+
+                    var damagePercent = totalDamage / totalHealth;
+
+                    var xp = (double)(XpOverride ?? 0);
+
+                    DungeonManager.ProcessCreaturesDeath(currentLb, playerDamager, (int)xp, out double hotSpotModifier);
+
+                    xp *= hotSpotModifier;
+
+                    var totalXP = (xp) * damagePercent;
+
+                    playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);
+
+                    // handle luminance
+                    if (LuminanceAward != null)
+                    {
+                        var totalLuminance = (long)Math.Round(LuminanceAward.Value * damagePercent);
+                        playerDamager.EarnLuminance(totalLuminance, XpType.Kill);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
             }
         }
 
