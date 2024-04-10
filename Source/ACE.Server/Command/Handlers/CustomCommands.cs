@@ -177,6 +177,12 @@ namespace ACE.Server.Command.Handlers
                 var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
                 var message = $"Dungeon {dungeon.Name} is active {at}, and has a an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x";
                 session.Network.EnqueueSend(new GameMessageSystemChat($"\n{message}", ChatMessageType.System));
+
+                if (DungeonManager.DungeonsTimeRemaining.TotalMilliseconds <= 0)
+                {
+                    DungeonManager.Reset();
+                }
+
             }
 
             session.Network.EnqueueSend(new GameMessageSystemChat($"\nTime Remaining before reset: {DungeonManager.FormatTimeRemaining(DungeonManager.DungeonsTimeRemaining)}", ChatMessageType.System));
