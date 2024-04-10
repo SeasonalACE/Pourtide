@@ -102,8 +102,9 @@ namespace ACE.Server.Managers
                 return wo;
             }
 
-            if (ruleset.Realm.Id == 1016 && wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator)
+            /*if (ruleset.Realm.Id == 1016 && wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator)
             {
+                /
                 var lbRaw = wo.Location.LandblockId.Raw;
                 var lb = $"{lbRaw:X8}".Substring(0, 4);
 
@@ -130,7 +131,7 @@ namespace ACE.Server.Managers
                     }
 
                 }
-            }
+            }*/
 
             return wo;
         }
