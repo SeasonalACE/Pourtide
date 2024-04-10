@@ -13,8 +13,8 @@
           "reroll": "landblock"
         },
         "CreatureRespawnDuration": {
-            "low": 30.0,
-            "high": 60.0,
+            "low": 60.0,
+            "high": 180.0,
             "reroll": "landblock"
         }
     }
