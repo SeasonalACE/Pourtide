@@ -25,7 +25,7 @@ namespace ACE.Server.WorldObjects
 
             if (IsGenerator)
             {
-                AddGeneratorLinks();
+                AddGeneratorLinks(ruleset);
                 return;
             }
 

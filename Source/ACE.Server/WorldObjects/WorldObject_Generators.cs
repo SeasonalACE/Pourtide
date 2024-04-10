@@ -8,6 +8,7 @@ using ACE.Entity.Enum.Properties;
 using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Managers;
+using ACE.Server.Realms;
 
 namespace ACE.Server.WorldObjects
 {
@@ -587,7 +588,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Called by ActivateLinks in WorldObject_Links for generators
         /// </summary>
-        public void AddGeneratorLinks()
+        public void AddGeneratorLinks(AppliedRuleset ruleset)
         {
             if (GeneratorProfiles == null || GeneratorProfiles.Count == 0)
             {
@@ -619,7 +620,7 @@ namespace ACE.Server.WorldObjects
                 GeneratorProfiles.Add(new GeneratorProfile(this, profile, link.Guid));
                 if (profile.Probability == -1)
                 {
-                    var creatureSpawnMultiplier = Convert.ToInt32(RealmRuleset.GetProperty(RealmPropertyFloat.CreatureSpawnMultiplier));
+                    var creatureSpawnMultiplier = Convert.ToInt32(ruleset.GetProperty(RealmPropertyFloat.CreatureSpawnMultiplier));
                     InitCreate += profile.InitCreate;
                     MaxCreate += profile.MaxCreate * (int)(creatureSpawnMultiplier);
                 }
