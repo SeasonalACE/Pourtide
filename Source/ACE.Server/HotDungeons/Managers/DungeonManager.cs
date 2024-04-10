@@ -73,7 +73,7 @@ namespace ACE.Server.HotDungeons.Managers
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint interval = 60, uint intialDelay = 20, float maxBonuxXp = 4.0f, uint maxHotspots = 3, string webhookGeneral = "")
+        public static void Initialize(uint interval = 60, uint intialDelay = 10, float maxBonuxXp = 4.0f, uint maxHotspots = 5, string webhookGeneral = "")
         {
             log.Info("Initializing DungeonManager");
             DungeonRepository.Initialize();
