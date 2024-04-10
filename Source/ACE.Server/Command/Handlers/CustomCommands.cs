@@ -14,6 +14,7 @@ using ACE.Server.Tar;
 using ACE.Server.WorldObjects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ACE.Server.Command.Handlers
