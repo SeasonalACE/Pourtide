@@ -969,9 +969,6 @@ namespace ACE.Server.WorldObjects
             if (activeRift == null  && Location.IsEphemeralRealm)
                 TeleportToHomeRealm();
 
-            if (activeRift != null && !Location.IsEphemeralRealm)
-                WorldManager.ThreadSafeTeleport(this, activeRift.DropPosition, false);
-
             if (IsAdmin)
                 return;
             if (!ValidatePlayerRealmPosition(Location))
