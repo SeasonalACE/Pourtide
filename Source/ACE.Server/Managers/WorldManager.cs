@@ -157,6 +157,11 @@ namespace ACE.Server.Managers
             else
                 player = new Player(playerBiota, possessedBiotas.Inventory, possessedBiotas.WieldedItems, character, session);
 
+            // players should never log into an ephemeral realm
+            if (player.Location != null && player.Location.IsEphemeralRealm)
+                player.Location = new Position(player.Sanctuary);
+
+
             session.SetPlayer(player);
 
             if (stripAdminProperties) // continue stripping properties
