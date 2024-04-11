@@ -5,6 +5,7 @@ using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
+using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameMessages.Messages;
@@ -46,7 +47,7 @@ namespace ACE.Server.Rifts
 
         public uint Instance { get; set; } = 0;
 
-        public Rift(string landblock, string name, string coords, Position dropPosition, uint instance, Landblock ephemeralRealm, Player creator) : base(landblock, name, coords)
+        public Rift(string landblock, string name, string coords, Position dropPosition, uint instance, Landblock ephemeralRealm) : base(landblock, name, coords)
         {
             Landblock = landblock;
             Name = name;
@@ -54,7 +55,6 @@ namespace ACE.Server.Rifts
             DropPosition = dropPosition;
             Instance = instance;
             LandblockInstance = ephemeralRealm;
-            Creator = creator;
         }
 
         public void Close()
@@ -144,22 +144,21 @@ namespace ACE.Server.Rifts
             }
         }
 
-        public static Rift CreateRiftInstance(Player creator, DungeonLandblock dungeon)
+        public static Rift CreateRiftInstance(Dungeon dungeon)
         {
             var rules = new List<Realm>()
             {
-                RealmManager.ServerBaseRealm.Realm,
                 RealmManager.GetRealm(1016).Realm // rift ruleset
             };
-            var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(creator.Location.LandblockId, creator, rules, true);
+            var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(dungeon.DropPosition.LandblockId, rules, true);
             var instance = ephemeralRealm.Instance;
 
-            var dropPosition = new Position(creator.Location)
+            var dropPosition = new Position(dungeon.DropPosition)
             {
-                Instance = instance
+                Instance = instance,
             };
 
-            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creator);
+            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm);
 
             log.Info($"Creating Rift instance for {rift.Name} - {instance}");
 
@@ -195,7 +194,7 @@ namespace ACE.Server.Rifts
             }
         }
 
-        internal static bool TryAddRift(string currentLb, Player creator, DungeonLandblock dungeon, out Rift addedRift)
+        internal static bool TryAddRift(string currentLb, Dungeon dungeon, out Rift addedRift)
         {
             addedRift = null;
 
@@ -203,7 +202,7 @@ namespace ACE.Server.Rifts
             if (ActiveRifts.ContainsKey(currentLb))
                 return false;
 
-            var rift = CreateRiftInstance(creator, dungeon);
+            var rift = CreateRiftInstance(dungeon);
             var rifts = ActiveRifts.Values.ToList();
 
             var last = rifts.LastOrDefault();

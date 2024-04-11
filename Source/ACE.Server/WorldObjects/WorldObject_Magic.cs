@@ -1290,6 +1290,7 @@ namespace ACE.Server.WorldObjects
                 return false;
 
             Position targetPosition = new Position(portal.Destination);
+            /*
             var summonTargetRealms = source.GetRealmsToApply();
 
             bool doEphemeralInstance = false;
@@ -1318,8 +1319,9 @@ namespace ACE.Server.WorldObjects
                     }
                     var landblock = RealmManager.GetNewEphemeralLandblock(portal.Destination.LandblockId, summoner, summonTargetRealms.Select(x => x.Realm).ToList());
                     targetPosition.Instance = landblock.Instance;
-                }
+                } 
             }
+            */
 
             var gateway = WorldObjectFactory.CreateNewWorldObject("portalgateway") as Portal;
 

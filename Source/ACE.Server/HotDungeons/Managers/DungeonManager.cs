@@ -1,5 +1,6 @@
 using ACE.Adapter.GDLE.Models;
 using ACE.Common;
+using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
@@ -27,12 +28,14 @@ namespace ACE.Server.HotDungeons.Managers
 
         public uint PlayerTouches { get; set; } = 0;
 
-        public Player LastPlayerTouched { get; set; }
-        public Dungeon(string landblock, string name, string coords) : base(landblock, name, coords)
+        public ACE.Entity.Position DropPosition { get; set; }
+
+        public Dungeon(string landblock, string name, string coords, ACE.Entity.Position drop) : base(landblock, name, coords)
         {
             Landblock = landblock;
             Name = name;
             Coords = coords;
+            DropPosition = drop;
         }
 
         internal void AddTotalXp(int xpOverride)
@@ -45,7 +48,6 @@ namespace ACE.Server.HotDungeons.Managers
             TotalXpEarned = 0;
             BonuxXp = 1.0f;
             PlayerTouches = 0;
-            LastPlayerTouched = null;
             Players.Clear();
         }
     }
@@ -61,8 +63,6 @@ namespace ACE.Server.HotDungeons.Managers
 
         private static Dictionary<string, Dungeon> PotentialHotspotCandidates = new Dictionary<string, Dungeon>();
 
-        private static string WebhookGeneral = "";
-
         private static float MaxBonuxXp = 4.0f;
 
         private static uint MaxHotspots { get; set; }
@@ -73,7 +73,7 @@ namespace ACE.Server.HotDungeons.Managers
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint interval = 60, uint intialDelay = 10, float maxBonuxXp = 4.0f, uint maxHotspots = 2, string webhookGeneral = "")
+        public static void Initialize(uint interval = 60, uint intialDelay = 10, float maxBonuxXp = 4.0f, uint maxHotspots = 2)
         {
             log.Info("Initializing DungeonManager");
             DungeonRepository.Initialize();
@@ -81,7 +81,6 @@ namespace ACE.Server.HotDungeons.Managers
             MaxBonuxXp = maxBonuxXp;
             MaxHotspots = maxHotspots;
             DungeonsLastCheck = DateTime.UtcNow - DungeonsInterval + TimeSpan.FromMinutes(intialDelay);
-            WebhookGeneral = webhookGeneral;
             log.Info($"Dungeons will be reset in {FormatTimeRemaining(DungeonsTimeRemaining)}");
         }
 
@@ -143,7 +142,7 @@ namespace ACE.Server.HotDungeons.Managers
 
                 foreach (var dungeon in sorted)
                 {
-                    RiftManager.TryAddRift(dungeon.Landblock, dungeon.LastPlayerTouched, dungeon, out Rift activeRift);
+                    RiftManager.TryAddRift(dungeon.Landblock, dungeon, out Rift activeRift);
                     var lb = LandblockManager.GetLandblock(activeRift.LandblockInstance.Id, RealmManager.ServerBaseRealmInstance, null, false);
                     var objects = lb.GetAllWorldObjectsForDiagnostics();
                     var players = objects.Where(wo => wo is Player).ToList();
@@ -223,11 +222,10 @@ namespace ACE.Server.HotDungeons.Managers
                 var dungeonLandblock = DungeonRepository.GetDungeon(currentLb);
                 if (dungeonLandblock != null)
                 {
-                    var potentialDungeon = new Dungeon(dungeonLandblock.Landblock, dungeonLandblock.Name, dungeonLandblock.Coords);
+                    var potentialDungeon = new Dungeon(dungeonLandblock.Landblock, dungeonLandblock.Name, dungeonLandblock.Coords, new ACE.Entity.Position(damager.Location));
                     PotentialHotspotCandidates.TryAdd(currentLb, potentialDungeon);
                     potentialDungeon.AddTotalXp(xpOverride);
                     potentialDungeon.PlayerTouches++;
-                    potentialDungeon.LastPlayerTouched = damager;
                 }
             }
             else
@@ -237,7 +235,6 @@ namespace ACE.Server.HotDungeons.Managers
                 {
                     potentialDungeon.AddTotalXp(xpOverride);
                     potentialDungeon.PlayerTouches++;
-                    potentialDungeon.LastPlayerTouched = damager;
                 }
             }
 
