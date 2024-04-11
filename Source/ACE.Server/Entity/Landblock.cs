@@ -684,17 +684,14 @@ namespace ACE.Server.Entity
                         players.Add(player);
                         var currentLb = $"{Id.Raw:X8}".Substring(0, 4);
 
-                        if (InnerRealmInfo == null)
-                        {
-                            if (DungeonManager.HasDungeon(currentLb))
-                                log.Info($"Player {player.Name} has entered {DungeonManager.GetDungeonLandblock(currentLb).Name}");
+                        if (DungeonManager.HasDungeonLandblock(currentLb))
+                            log.Info($"Player {player.Name} has entered {DungeonManager.GetDungeonLandblock(currentLb).Name}");
 
-                            if (DungeonManager.HasHotspotDungeon(currentLb))
-                                DungeonManager.AddDungeonPlayer(currentLb, player);
-                        }
-                        else if (RiftManager.HasActiveRift(currentLb))
+                        if (DungeonManager.HasHotspotDungeon(currentLb))
+                            DungeonManager.AddDungeonPlayer(currentLb, player);
+
+                        if (RiftManager.HasActiveRift(currentLb))
                             RiftManager.AddRiftPlayer(currentLb, player);
-
                     }
                     else if (kvp.Value is Creature creature)
                         sortedCreaturesByNextTick.AddLast(creature);
@@ -719,21 +716,16 @@ namespace ACE.Server.Entity
                         if (wo is Player player)
                         {
                             players.Remove(player);
-                            players.Remove(player);
                             var currentLb = $"{Id.Raw:X8}".Substring(0, 4);
 
-                            if (InnerRealmInfo == null)
-                            {
-                                if (DungeonManager.HasDungeon(currentLb))
-                                    log.Info($"Player {player.Name} has left {DungeonManager.GetDungeonLandblock(currentLb).Name}");
+                            if (DungeonManager.HasDungeon(currentLb))
+                                log.Info($"Player {player.Name} has left {DungeonManager.GetDungeonLandblock(currentLb).Name}");
 
-                                if (DungeonManager.HasHotspotDungeon(currentLb))
-                                    DungeonManager.RemoveDungeonPlayer(currentLb, player);
-                            }
-                            else if (RiftManager.HasActiveRift(currentLb))
+                            if (DungeonManager.HasHotspotDungeon(currentLb))
+                                DungeonManager.RemoveDungeonPlayer(currentLb, player);
+
+                            if (RiftManager.HasActiveRift(currentLb))
                                 RiftManager.RemoveRiftPlayer(currentLb, player);
-
-
                         }
                         else if (wo is Creature creature)
                             sortedCreaturesByNextTick.Remove(creature);
