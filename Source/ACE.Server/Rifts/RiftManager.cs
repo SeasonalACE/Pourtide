@@ -94,6 +94,22 @@ namespace ACE.Server.Rifts
                 foreach (var rift in ActiveRifts)
                     rift.Value.Close();
 
+                var landblocks = LandblockManager.GetLoadedLandblocks();
+
+                var ephemeralRealms = landblocks.Where(lb => lb.InnerRealmInfo != null).ToList();
+
+                foreach (var realm in ephemeralRealms)
+                {
+                    var objects = realm.GetAllWorldObjectsForDiagnostics();
+                    var players = objects.Where(o => o is Player).ToList();
+
+                    foreach (var player in players)
+                    {
+                        if (player is Player pl)
+                            pl.ExitInstance();
+                    }
+                }
+
                 ActiveRifts.Clear();
             }
         }
