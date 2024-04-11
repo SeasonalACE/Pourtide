@@ -1120,6 +1120,8 @@ namespace ACE.Server.WorldObjects
 
             EnqueueBroadcastPhysicsState();
 
+            FixInvis();
+
             // hijacking this for both start/end on portal teleport
             if (LastTeleportStartTimestamp == LastPortalTeleportTimestamp)
                 LastPortalTeleportTimestamp = Time.GetUnixTime();

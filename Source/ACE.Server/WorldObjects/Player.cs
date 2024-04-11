@@ -246,6 +246,15 @@ namespace ACE.Server.WorldObjects
 
         public MotionStance stance = MotionStance.NonCombat;
 
+        public void FixInvis()
+        {
+            var knownObjects = GetKnownObjects();
+            foreach (var entry in knownObjects)
+            {
+                TrackObject(entry, true);
+            }
+        }
+
         /// <summary>
         /// Called when player presses the 'e' key to appraise an object
         /// </summary>
