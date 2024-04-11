@@ -887,7 +887,7 @@ namespace ACE.Server.WorldObjects
 
             if (newLocation.IsEphemeralRealm && !Location.IsEphemeralRealm)
             {
-                SetPosition(PositionType.EphemeralRealmExitTo, new Position(Location.Indoors ? Location : Location.InFrontOf(-7f)));
+                SetPosition(PositionType.EphemeralRealmExitTo, new Position(Location.Indoors ? Location : Location.InFrontOf(-3f)));
                 SetPosition(PositionType.EphemeralRealmLastEnteredDrop, new Position(newLocation));
             }
             else if (!newLocation.IsEphemeralRealm)
@@ -961,13 +961,13 @@ namespace ACE.Server.WorldObjects
 
         public void ValidateCurrentRealm()
         {
-            var currentLbRaw = Location.LandblockId.Raw;
+            /*var currentLbRaw = Location.LandblockId.Raw;
             var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
 
             RiftManager.TryGetActiveRift(currentLb, out Rift activeRift);
 
             if (activeRift == null  && Location.IsEphemeralRealm)
-                TeleportToHomeRealm();
+                TeleportToHomeRealm();*/
 
             if (IsAdmin)
                 return;
