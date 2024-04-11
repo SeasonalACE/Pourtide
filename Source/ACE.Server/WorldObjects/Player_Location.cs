@@ -765,11 +765,8 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         public void Teleport(Position _newPosition, bool teleportingFromInstance = false, bool fromPortal = false)
         {
-            var newLbRaw = _newPosition.LandblockId.Raw;
-            var nextLb = $"{newLbRaw:X8}".Substring(0, 4);
-
-            var currentLbRaw = Location.LandblockId.Raw;
-            var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
+            var nextLb = _newPosition.LandblockHex;
+            var currentLb = Location.LandblockHex;
 
             if (RiftManager.TryGetActiveRift(nextLb, out Rift nextActiveRift))
             {
@@ -961,14 +958,6 @@ namespace ACE.Server.WorldObjects
 
         public void ValidateCurrentRealm()
         {
-            /*var currentLbRaw = Location.LandblockId.Raw;
-            var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
-
-            RiftManager.TryGetActiveRift(currentLb, out Rift activeRift);
-
-            if (activeRift == null  && Location.IsEphemeralRealm)
-                TeleportToHomeRealm();*/
-
             if (IsAdmin)
                 return;
             if (!ValidatePlayerRealmPosition(Location))

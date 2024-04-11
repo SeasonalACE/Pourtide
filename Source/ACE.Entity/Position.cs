@@ -608,5 +608,16 @@ namespace ACE.Entity
 
             return new Position(cell, positionData[0], positionData[1], positionData[2], positionData[4], positionData[5], positionData[6], positionData[3], inst);
         }
+
+        public string LandblockHex
+        {
+            get
+            {
+                var currentLbRaw = LandblockId.Raw;
+                var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
+                return currentLb;
+            }
+        }
+
     }
 }

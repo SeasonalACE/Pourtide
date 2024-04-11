@@ -169,7 +169,7 @@ namespace ACE.Server.WorldObjects
         {
             try
             {
-                var currentLb = $"{Location.LandblockId.Raw:X8}".Substring(0, 4);
+                var currentLb = Location.LandblockHex;
 
                 // mobs from a dungeon may be destroyed and not have a landblock assigned to them
                 if (CurrentLandblock == null)

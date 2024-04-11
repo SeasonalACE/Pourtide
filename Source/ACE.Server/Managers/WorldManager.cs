@@ -25,6 +25,7 @@ using ACE.Server.Physics.Common;
 using Character = ACE.Database.Models.Shard.Character;
 using Position = ACE.Entity.Position;
 using ACE.Server.Factories;
+using ACE.Server.Rifts;
 
 namespace ACE.Server.Managers
 {
@@ -157,9 +158,16 @@ namespace ACE.Server.Managers
             else
                 player = new Player(playerBiota, possessedBiotas.Inventory, possessedBiotas.WieldedItems, character, session);
 
+            var loc = player.Location;
             // players should never log into an ephemeral realm
-            if (player.Location != null && player.Location.IsEphemeralRealm)
+            if (loc != null && loc.IsEphemeralRealm)
                 player.Location = new Position(player.Sanctuary);
+
+            if (loc != null && !loc.IsEphemeralRealm && RiftManager.TryGetActiveRift(loc.LandblockHex, out Rift activeRift))
+            {
+                player.Location = new Position(player.Location);
+                player.Location.Instance = activeRift.Instance;
+            }
 
 
             session.SetPlayer(player);
