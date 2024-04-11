@@ -73,7 +73,7 @@ namespace ACE.Server.HotDungeons.Managers
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint interval = 60, uint intialDelay = 10, float maxBonuxXp = 4.0f, uint maxHotspots = 5, string webhookGeneral = "")
+        public static void Initialize(uint interval = 60, uint intialDelay = 10, float maxBonuxXp = 4.0f, uint maxHotspots = 2, string webhookGeneral = "")
         {
             log.Info("Initializing DungeonManager");
             DungeonRepository.Initialize();
@@ -111,12 +111,12 @@ namespace ACE.Server.HotDungeons.Managers
             return DungeonRepository.ReadonlyLandblocks.TryGetValue(lb, out landblock);
         }
 
-        public static void Reset()
+        public static void Reset(bool force = false)
         {
 
             lock (dungeonsLock)
             {
-                if (DungeonsTimeRemaining.TotalMilliseconds > 0)
+                if (!force && DungeonsTimeRemaining.TotalMilliseconds > 0)
                     return;
 
                 DungeonsLastCheck = DateTime.UtcNow;
