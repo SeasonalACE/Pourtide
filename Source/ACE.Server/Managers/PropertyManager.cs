@@ -580,6 +580,18 @@ namespace ACE.Server.Managers
                 ("permit_corpse_all", new Property<bool>(false, "If TRUE, /permit grants permittees access to all corpses of the permitter. Defaults to FALSE as per retail, where /permit only grants access to 1 locked corpse")),
                 ("persist_movement", new Property<bool>(false, "If TRUE, persists autonomous movements such as turns and sidesteps through non-autonomous server actions. Retail didn't appear to do this, but some players may prefer this.")),
                 ("pet_stow_replace", new Property<bool>(false, "pet stowing for different pet devices becomes a stow and replace. defaults to retail value of false")),
+
+                // tracing
+                ("player_trace", new Property<bool>(false, "Enable this for enhanced tracing of player activity.")),
+                ("player_trace_death", new Property<bool>(true, "If player_trace is enabled, toggles logging of deaths.")),
+                ("player_trace_teleport", new Property<bool>(true, "If player_trace is enabled, toggles logging of teleportation (travel) of any kind.")),
+                ("player_trace_quest", new Property<bool>(true, "If player_trace is enabled, toggles logging of quest completions.")),
+                ("player_trace_xp", new Property<bool>(true, "If player_trace is enabled, toggles logging of xp rewards.")),
+                ("player_trace_lum", new Property<bool>(true, "If player_trace is enabled, toggles logging of luminance rewards.")),
+                ("player_trace_item_reward", new Property<bool>(true, "If player_trace is enabled, toggles logging of item rewards.")),
+                ("player_trace_item_give", new Property<bool>(true, "If player_trace is enabled, toggles logging of giving of items.")),
+
+
                 ("player_config_command", new Property<bool>(false, "If enabled, players can use /config to change their settings via text commands")),
                 ("player_receive_immediate_save", new Property<bool>(false, "if enabled, when the player receives items from an NPC, they will be saved immediately")),
                 ("pk_server", new Property<bool>(false, "set this to TRUE for darktide servers")),

@@ -62,7 +62,7 @@ namespace ACE.Server.WorldObjects
                     teleportDest.SetToDefaultRealmInstance(Location.RealmID);
                 AdjustDungeon(teleportDest);
 
-                Teleport(teleportDest);
+                Teleport(teleportDest, false, false, TeleportType.RecallCast);
                 return true;
             }
 
@@ -153,7 +153,7 @@ namespace ACE.Server.WorldObjects
                 var instance = Location.Instance;
                 var newLocation = new Position(house.SlumLord.Location);
                 newLocation.Instance = instance;
-                Teleport(newLocation);
+                Teleport(newLocation, false, false, TeleportType.RecallCommand);
             });
 
             actionChain.EnqueueChain();
@@ -285,7 +285,7 @@ namespace ACE.Server.WorldObjects
                     return;
                 }
 
-                Teleport(Sanctuary);
+                Teleport(Sanctuary, false, false, TeleportType.RecallCommand);
             });
 
             lifestoneChain.EnqueueChain();
@@ -354,7 +354,7 @@ namespace ACE.Server.WorldObjects
                     return;
                 }
 
-                Teleport(MarketplaceDrop);
+                Teleport(MarketplaceDrop, false, false, TeleportType.RecallCommand);
             });
 
             // Set the chain to run
@@ -433,7 +433,7 @@ namespace ACE.Server.WorldObjects
                 if (!VerifyRecallAllegianceHometown())
                     return;
 
-                Teleport(Allegiance.Sanctuary);
+                Teleport(Allegiance.Sanctuary, false, false, TeleportType.RecallCommand);
             });
 
             actionChain.EnqueueChain();
@@ -533,7 +533,7 @@ namespace ACE.Server.WorldObjects
                 if (allegianceHouse == null)
                     return;
 
-                Teleport(allegianceHouse.SlumLord.Location);
+                Teleport(allegianceHouse.SlumLord.Location, false, false, TeleportType.RecallCommand);
             }); 
 
             actionChain.EnqueueChain();
@@ -649,7 +649,7 @@ namespace ACE.Server.WorldObjects
                 var rng = ThreadSafeRandom.Next(0, pkArenaLocs.Count - 1);
                 var loc = pkArenaLocs[rng];
 
-                Teleport(loc);
+                Teleport(loc, false, false, TeleportType.RecallCommand);
             });
 
             actionChain.EnqueueChain();
@@ -736,7 +736,7 @@ namespace ACE.Server.WorldObjects
                 var rng = ThreadSafeRandom.Next(0, pklArenaLocs.Count - 1);
                 var loc = pklArenaLocs[rng];
 
-                Teleport(loc);
+                Teleport(loc, false, false, TeleportType.RecallCommand);
             });
 
             actionChain.EnqueueChain();
@@ -763,8 +763,19 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// This is not thread-safe. Consider using WorldManager.ThreadSafeTeleport() instead if you're calling this from a multi-threaded subsection.
         /// </summary>
-        public void Teleport(Position _newPosition, bool teleportingFromInstance = false, bool fromPortal = false)
+        public void Teleport(Position _newPosition, bool teleportingFromInstance = false, bool fromPortal = false, TeleportType teleportType = TeleportType.Unknown)
         {
+            Trace(new PlayerTeleportEntry()
+            {
+                FullDestination = _newPosition.ToString(),
+                LandblockFrom = Location.LandblockId.Landblock.ToString("X2"),
+                InstanceFrom = Location.Instance.ToString(),
+                InstanceTo = _newPosition.Instance.ToString(),
+                LandblockTo = _newPosition.LandblockId.Landblock.ToString("X2"),
+                PlayerName = this.Name,
+                TeleportType = teleportType
+            }); ;
+
             var nextLb = _newPosition.LandblockHex;
             var currentLb = Location.LandblockHex;
 
@@ -972,7 +983,7 @@ namespace ACE.Server.WorldObjects
 
             var iid = homerealm.GetDefaultInstanceID(this);
             var pos = new Position(Home) { Instance = iid };
-            Teleport(pos);
+            Teleport(pos, false, false, TeleportType.RecallCommand);
         }
 
         private void TeleportToHideout()
@@ -984,7 +995,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            Teleport(HideoutLocation);
+            Teleport(HideoutLocation, false, false, TeleportType.RecallCommand);
         }
 
         public bool ValidatePlayerRealmPosition(Position newPosition)

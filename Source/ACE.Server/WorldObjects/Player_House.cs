@@ -1363,7 +1363,7 @@ namespace ACE.Server.WorldObjects
             }
 
             // play script?
-            player.Teleport(house.BootSpot.Location);
+            player.Teleport(house.BootSpot.Location, false, false, TeleportType.HouseBoot);
 
             owner = allegianceHouse ? "the allegiance" : "your";
             Session.Network.EnqueueSend(new GameMessageSystemChat($"Booted {player.Name} from {owner} house.", ChatMessageType.Broadcast));
@@ -1410,7 +1410,7 @@ namespace ACE.Server.WorldObjects
                 // If realm season has changed, housing WorldObjects may not be created in previous seasons, players in basement must be removed.
                 if (rootHouse == null)
                 {
-                    Teleport(Sanctuary);
+                    Teleport(Sanctuary, false, false, TeleportType.HouseBoot);
                     return true;
                 }
 
@@ -1421,7 +1421,7 @@ namespace ACE.Server.WorldObjects
                 {
                     if (!rootHouse.IsOpen || (rootHouse.HouseType != HouseType.Apartment && CurrentLandblock.HasDungeon))
                     {
-                        Teleport(rootHouse.BootSpot.Location);
+                        Teleport(rootHouse.BootSpot.Location, false, false, TeleportType.HouseBoot);
                         return true;
                     }
                 }

@@ -337,6 +337,12 @@ namespace ACE.Server.Entity
         {
             try
             {
+                if (Biota == null)
+                    log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): Biota is null");
+
+                if (Generator == null)
+                    log.Warn($"GeneratorProfile.AddWorldObject failed to Spawn(): failed to create wcid {Biota.WeenieClassId} Generator is null");
+
                 var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId);
                 wo.Location = new ACE.Entity.Position(Generator.Location);
                 wo = MutationsManager.ProcessWorldObject(wo, Generator.RealmRuleset, replace);
