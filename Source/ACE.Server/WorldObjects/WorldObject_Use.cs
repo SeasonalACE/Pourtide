@@ -93,22 +93,8 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-
-
             if (player != null)
-            {
                 player.EnchantmentManager.StartCooldown(this);
-                player.Trace(new PlayerItemUseEntry()
-                {
-                    PlayerClient = player.ClientID,
-                    PlayerName = player.Name,
-                    WeenieID = WeenieClassId,
-                    ItemGuid = Guid.ToString(),
-                    ItemName = Name,
-                    PlayerInstance = player.Location.Instance.ToString(),
-                    ItemInstance = Location.Instance.ToString()
-                }); ;
-            }
 
             // perform motion animation - rarely used (only 4 instances in PY16 db)
             if (ActivationResponse.HasFlag(ActivationResponse.Animate))
@@ -157,7 +143,6 @@ namespace ACE.Server.WorldObjects
         public virtual void ActOnUse(WorldObject activator)
         {
             // empty base - individual WorldObject types should override
-
 
             var msg = $"{Name}.ActOnUse({activator.Name}) - undefined for wcid {WeenieClassId} type {WeenieType}";
             log.Error(msg);

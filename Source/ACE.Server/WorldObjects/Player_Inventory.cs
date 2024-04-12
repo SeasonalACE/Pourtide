@@ -3222,18 +3222,6 @@ namespace ACE.Server.WorldObjects
                     return;
                 }
 
-                Trace(new PlayerItemGiveEntry()
-                {
-                    GivenTo = target.Name,
-                    GivenToClient = target is Player p ? p.ClientID : $"NPC-{target.WeenieClassId}",
-                    ItemGuid = item.Guid.ToString(),
-                    ItemName = item.Name,
-                    PlayerClient = this.ClientID,
-                    PlayerName = this.Name,
-                    WeenieID = item.WeenieClassId
-                });
-
-
                 if (target is Player targetAsPlayer)
                     GiveObjectToPlayer(targetAsPlayer, item, itemFoundInContainer, itemRootOwner, itemWasEquipped, amount);
                 else
