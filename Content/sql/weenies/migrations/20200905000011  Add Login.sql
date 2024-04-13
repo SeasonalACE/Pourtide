@@ -11,4 +11,3 @@ CREATE TABLE IF NOT EXISTS `character_login` (
   `logoutDateTime` DATETIME,
   PRIMARY KEY (`characterLoginLogId`)  
 ) ENGINE=INNODB DEFAULT CHARSET=utf8mb4;
-/*!40101 SET character_set_client = @saved_cs_client */;
