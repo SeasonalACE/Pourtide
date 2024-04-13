@@ -19,6 +19,7 @@ namespace ACE.Database.Models.Auth
 
         public virtual DbSet<Accesslevel> Accesslevel { get; set; }
         public virtual DbSet<Account> Account { get; set; }
+        public virtual DbSet<CharacterLogin> CharacterLogin { get; set; }
         public virtual DbSet<XpCap> XpCap { get; set; }
 
 
@@ -163,6 +164,38 @@ namespace ACE.Database.Models.Auth
                   .IsRequired()
                   .HasDefaultValue(1);
             });
+
+            modelBuilder.Entity<CharacterLogin>(entity =>
+            {
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id).HasColumnName("characterLoginLogId");
+
+                entity.ToTable("character_login");
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("accountId");
+
+                entity.Property(e => e.AccountName)
+                    .HasColumnName("accountName");
+
+                entity.Property(e => e.SessionIP)
+                    .HasColumnName("sessionIP");
+
+                entity.Property(e => e.CharacterId)
+                    .HasColumnName("characterId");
+
+                entity.Property(e => e.CharacterName)
+                    .HasColumnName("characterName");
+
+                entity.Property(e => e.LoginDateTime)
+                    .HasColumnName("loginDateTime");
+
+                entity.Property(e => e.LogoutDateTime)
+                    .HasColumnName("logoutDateTime");
+            });
+
 
             OnModelCreatingPartial(modelBuilder);
         }
