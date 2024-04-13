@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
-
+using System.Runtime.CompilerServices;
+using ACE.Database;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
@@ -59,6 +60,38 @@ namespace ACE.Server.WorldObjects
             set { if (value) RemoveProperty(PropertyBool.ExistedBeforeAllegianceXpChanges); else SetProperty(PropertyBool.ExistedBeforeAllegianceXpChanges, value); }
         }
 
+        public bool ValidateAllegiancePledge(Player patron)
+        {
+            try
+            {
+                var ip = Session.EndPointC2S.Address.ToString() ?? "";
+                var characterNames = DatabaseManager.Authentication.GetCharactersAssociatedWithIp(ip);
+                foreach (var name in characterNames)
+                {
+                    var player = PlayerManager.FindByName(name);
+
+                    if (player.MonarchId == null || AllegianceManager.GetAllegiance(player) == null)
+                        continue;
+
+                    var playerMonarch = AllegianceManager.GetMonarch(player);
+                    var patronMonarch = AllegianceManager.GetMonarch(patron);
+
+                    if (patronMonarch.Guid.Full != playerMonarch.Guid.Full)
+                        return false;
+
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error("An error occurred while trying to get allegiance associated with ip address");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
+                return false;
+            }
+        }
+
         /// <summary>
         /// Called when a player tries to Swear Allegiance to a target
         /// </summary>
@@ -70,6 +103,8 @@ namespace ACE.Server.WorldObjects
             if (patron == null) return;
 
             if (!IsPledgable(patron)) return;
+
+            if (!ValidateAllegiancePledge(patron)) return;
 
             // perform moveto / turnto
             CreateMoveToChain(patron, (success) => SwearAllegiance(patron.Guid.Full, success), Allegiance_MaxSwearDistance);
@@ -169,6 +204,8 @@ namespace ACE.Server.WorldObjects
         /// <param name="targetGuid">The target this player is attempting to break allegiance from</param>
         public void HandleActionBreakAllegiance(uint targetGuid)
         {
+            return;
+
             if (!IsBreakable(targetGuid)) return;
 
             var target = PlayerManager.FindByGuid(targetGuid, out var targetIsOnline);
@@ -1007,7 +1044,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            if (action == AllegianceLockAction.On && Allegiance.IsLocked || action== AllegianceLockAction.Off && !Allegiance.IsLocked)
+            if (action == AllegianceLockAction.On && Allegiance.IsLocked || action == AllegianceLockAction.Off && !Allegiance.IsLocked)
             {
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"The allegiance is already {lockStatus}.", ChatMessageType.Broadcast));
                 return;
@@ -1394,6 +1431,8 @@ namespace ACE.Server.WorldObjects
 
         public void HandleActionBreakAllegianceBoot(string playerName, bool accountBoot)
         {
+            return;
+
             log.Debug($"[ALLEGIANCE] {Name}.HandleActionBreakAllegianceBoot({playerName}, {accountBoot})");
 
             // TODO: handle account boot
