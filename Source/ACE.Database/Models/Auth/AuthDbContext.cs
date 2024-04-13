@@ -19,6 +19,8 @@ namespace ACE.Database.Models.Auth
 
         public virtual DbSet<Accesslevel> Accesslevel { get; set; }
         public virtual DbSet<Account> Account { get; set; }
+        public virtual DbSet<XpCap> XpCap { get; set; }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -138,6 +140,28 @@ namespace ACE.Database.Models.Auth
                     .HasForeignKey(d => d.AccessLevel)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("fk_accesslevel");
+            });
+
+            modelBuilder.Entity<XpCap>(entity =>
+            {
+                entity.ToTable("xp_cap");
+
+                // Configure properties
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.DailyTimestamp)
+                    .HasColumnType("datetime")
+                    .IsRequired()
+                    .HasDefaultValueSql("GETDATE()"); // Set default value to current date/time
+
+                entity.Property(e => e.WeeklyTimestamp)
+                    .HasColumnType("datetime")
+                    .IsRequired()
+                    .HasDefaultValueSql("DATEADD(DAY, 6, CAST(GETDATE() AS DATE))"); // Set default value to current date + 6 days
+
+                entity.Property(e => e.Week)
+                  .IsRequired()
+                  .HasDefaultValue(1);
             });
 
             OnModelCreatingPartial(modelBuilder);

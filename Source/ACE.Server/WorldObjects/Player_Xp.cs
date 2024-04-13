@@ -8,6 +8,7 @@ using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Server.Xp;
 
 namespace ACE.Server.WorldObjects
 {
@@ -29,10 +30,14 @@ namespace ACE.Server.WorldObjects
             if (xpType == XpType.Quest)
                 modifier *= questModifier;
 
+            var realmMultiplierAll = RealmRuleset?.GetProperty(RealmPropertyFloat.ExperienceMultiplierAll) ?? 1;
+
             // should this be passed upstream to fellowship / allegiance?
             var enchantment = GetXPAndLuminanceModifier(xpType);
 
-            var m_amount = (long)Math.Round(amount * enchantment * modifier);
+            var capped = amount * enchantment * modifier * realmMultiplierAll;
+
+            var m_amount = (long)Math.Round(capped);
 
             if (m_amount < 0)
             {
@@ -86,6 +91,53 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         private void UpdateXpAndLevel(long amount, XpType xpType)
         {
+            switch (xpType)
+            {
+                case XpType.Quest:
+                    if (QuestXpDailyMax <= QuestXp)
+                        return;
+
+                    var questTotal = amount + QuestXp;
+                    if (questTotal >= QuestXpDailyMax)
+                    {
+                        amount = QuestXpDailyMax - QuestXp;
+                        QuestXp = QuestXpDailyMax;
+                    }
+                    else
+                        QuestXp = questTotal;
+                    break;
+
+                case XpType.Kill:
+                case XpType.Fellowship:
+                case XpType.Allegiance:
+                    if (MonsterXpDailyMax <= MonsterXp)
+                        return;
+
+                    var monsterTotal = amount + MonsterXp;
+                    if (monsterTotal >= MonsterXpDailyMax)
+                    {
+                        amount = MonsterXpDailyMax - MonsterXp;
+                        MonsterXp = MonsterXpDailyMax;
+                    }
+                    else
+                        MonsterXp = monsterTotal;
+                    break;
+
+                case XpType.Pvp:
+                    if (PvpXpDailyMax <= PvpXp)
+                        return;
+
+                    var pvpTotal = amount + PvpXp;
+                    if (pvpTotal > PvpXpDailyMax)
+                    {
+                        amount = PvpXpDailyMax - PvpXp;
+                        PvpXp = PvpXpDailyMax;
+                    }
+                    else
+                        PvpXp = pvpTotal;
+                    break;
+            }
+
             // until we are max level we must make sure that we send
             var xpTable = DatManager.PortalDat.XpTable;
 

@@ -166,6 +166,42 @@ namespace ACE.Server.WorldObjects
             set { if (!value.HasValue) RemoveProperty(PropertyInt.Age); else SetProperty(PropertyInt.Age, value.Value); }
         }
 
+        public long MonsterXpDailyMax
+        {
+            get => GetProperty(PropertyInt64.MonsterXpDailyMax) ?? 0;
+            set { if (value == 0) RemoveProperty(PropertyInt64.MonsterXpDailyMax); else SetProperty(PropertyInt64.MonsterXpDailyMax, value); }
+        }
+
+        public long PvpXpDailyMax
+        {
+            get => GetProperty(PropertyInt64.PvpXpDailyMax) ?? 0;
+            set { if (value == 0) RemoveProperty(PropertyInt64.PvpXpDailyMax); else SetProperty(PropertyInt64.PvpXpDailyMax, value); }
+        }
+
+        public long QuestXpDailyMax
+        {
+            get => GetProperty(PropertyInt64.QuestXpDailyMax) ?? 0;
+            set { if (value == 0) RemoveProperty(PropertyInt64.QuestXpDailyMax); else SetProperty(PropertyInt64.QuestXpDailyMax, value); }
+        }
+
+        public long QuestXp
+        {
+            get => GetProperty(PropertyInt64.QuestXp) ?? 0;
+            set { if (value == 0) RemoveProperty(PropertyInt64.QuestXp); else SetProperty(PropertyInt64.QuestXp, value); }
+        }
+
+        public long PvpXp
+        {
+            get => GetProperty(PropertyInt64.PvpXp) ?? 0;
+            set { if (value == 0) RemoveProperty(PropertyInt64.PvpXp); else SetProperty(PropertyInt64.PvpXp, value); }
+        }
+
+        public long MonsterXp
+        {
+            get => GetProperty(PropertyInt64.MonsterXp) ?? 0;
+            set { if (value == 0) RemoveProperty(PropertyInt64.MonsterXp); else SetProperty(PropertyInt64.MonsterXp, value); }
+        }
+
         public long? AvailableExperience
         {
             get => GetProperty(PropertyInt64.AvailableExperience);

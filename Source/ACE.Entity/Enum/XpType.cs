@@ -8,6 +8,7 @@ namespace ACE.Entity.Enum
     {
         Kill,
         Quest,
+        Pvp,
         Proficiency,
         Fellowship,
         Allegiance,

@@ -176,5 +176,47 @@ namespace ACE.Database
                 return result;
             }
         }
+
+        public (DateTime Daily, DateTime Weekly, uint Week) GetXpCapTimestamps()
+        {
+            using (var context = new AuthDbContext())
+            {
+                var timestamps = context.XpCap.FirstOrDefault();
+
+                if (timestamps == null)
+                {
+                    timestamps = new XpCap
+                    {
+                        DailyTimestamp = DateTime.UtcNow.AddDays(1),
+                        WeeklyTimestamp = DateTime.UtcNow.AddDays(7),
+                        Week = 1
+                    };
+
+                    context.XpCap.Add(timestamps);
+                }
+                else
+                {
+                    DateTime currentDateTime = DateTime.UtcNow;
+
+
+                    if (currentDateTime > timestamps.DailyTimestamp)
+                    {
+                        timestamps.DailyTimestamp = currentDateTime.AddDays(1);
+                    }
+
+                    if (currentDateTime > timestamps.WeeklyTimestamp)
+                    {
+                        timestamps.WeeklyTimestamp = currentDateTime.AddDays(7);
+
+                        timestamps.Week++;
+
+                    }
+                }
+
+                context.SaveChanges();
+
+                return (timestamps.DailyTimestamp, timestamps.WeeklyTimestamp, timestamps.Week);
+            }
+        }
     }
 }

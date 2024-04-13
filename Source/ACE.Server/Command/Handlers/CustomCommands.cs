@@ -229,5 +229,32 @@ namespace ACE.Server.Command.Handlers
             session.Player.FixInvis();
 
         }
+
+        /** Xp Cap Start **/
+        [CommandHandler("show-xp", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show xp cap information.")]
+        public static void HandleShowXp(Session session, params string[] paramters)
+        {
+            var player = session.Player;
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Xp Cap Information>", ChatMessageType.System));
+            var queryXp = player.QuestXp;
+            var pvpXp = player.PvpXp;
+            var monsterXp = player.MonsterXp;
+
+            var queryXpDailyCap = player.QuestXpDailyMax;
+            var pvpXpDailyCap = player.PvpXpDailyMax;
+            var monsterXpDailyCap = player.MonsterXpDailyMax;
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)queryXp)} quest xp for the day.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)pvpXp)} pvp xp for the day.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)monsterXp)} monster xp for the day.", ChatMessageType.System));
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your max quest xp for the day is {Formatting.FormatIntWithCommas((ulong)queryXpDailyCap)}.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your max pvp xp for the day is {Formatting.FormatIntWithCommas((ulong)monsterXpDailyCap)}.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your max monster xp for the day is {Formatting.FormatIntWithCommas((ulong)pvpXpDailyCap)}.", ChatMessageType.System));
+
+        }
+        /** Xp Cap End **/
+
+
     }
 }

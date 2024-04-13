@@ -13,6 +13,7 @@ using ACE.Entity.Enum.Properties;
 using ACE.Entity.Models;
 using ACE.Server.WorldObjects;
 using ACE.Server.Managers;
+using ACE.Server.Xp;
 
 namespace ACE.Server.Factories
 {
@@ -53,6 +54,11 @@ namespace ACE.Server.Factories
                 var wo = WorldObjectFactory.CreateNewWorldObject(id);
                 player.TryCreateInInventoryWithNetworking(wo);
             }
+
+            var dailyCap = XpManager.DailyXpCap;
+            player.QuestXpDailyMax = (long)dailyCap;
+            player.MonsterXpDailyMax = (long)dailyCap;
+            player.PvpXpDailyMax = (long)dailyCap;
         }
 
         public static CreateResult Create(CharacterCreateInfo characterCreateInfo, Weenie weenie, ObjectGuid guid, uint accountId, WeenieType weenieType, out Player player)

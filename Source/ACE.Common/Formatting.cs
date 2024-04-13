@@ -6,7 +6,7 @@ namespace ACE.Common
 {
     public static class Formatting
     {
-        public static string FormatIntWithCommas(uint number)
+        public static string FormatIntWithCommas(ulong number)
         {
             return number.ToString("#,0");
         }

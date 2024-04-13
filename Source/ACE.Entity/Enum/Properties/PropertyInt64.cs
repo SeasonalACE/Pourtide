@@ -30,7 +30,21 @@ namespace ACE.Entity.Enum.Properties
         [ServerOnly]
         AllegianceXPReceived  = 9002,
         [ServerOnly]
-        VerifyXp              = 9003
+        VerifyXp              = 9003,
+
+        [ServerOnly]
+        QuestXp               = 9004,
+        [ServerOnly]
+        PvpXp                 = 9005,
+        [ServerOnly]
+        MonsterXp             = 9006,
+        [ServerOnly]
+        QuestXpDailyMax               = 9007,
+        [ServerOnly]
+        PvpXpDailyMax                 = 9008,
+        [ServerOnly]
+        MonsterXpDailyMax             = 9009,
+
     }
 
     public static class PropertyInt64Extensions
