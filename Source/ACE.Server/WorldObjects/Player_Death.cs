@@ -590,23 +590,34 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
-            var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
-            var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
-            var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
-            var isPkDeath = IsPKDeath(corpse.KillerId);
-            var isAlly = IsAlly(onlineKiller);
-
-            if (isPkDeath && TrackKill(corpse.KillerId.Value, corpse.VictimId.Value))
+            try
             {
-                // add player head
-                /*if (onlineKiller != null && !isAlly)
+
+                var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
+
+                var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
+                var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
+                var isPkDeath = IsPKDeath(corpse.KillerId);
+                var isAlly = IsAlly(onlineKiller);
+
+                if (isPkDeath && TrackKill(corpse.KillerId.Value, corpse.VictimId.Value))
                 {
-                    var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
-                    playerHead.Name = $"Head of {victim.Name}";
-                    playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
-                    corpse.TryAddToInventory(playerHead);
-                }*/
+                    // add player head
+                    /*if (onlineKiller != null && !isAlly)
+                    {
+                        var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
+                        playerHead.Name = $"Head of {victim.Name}";
+                        playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
+                        corpse.TryAddToInventory(playerHead);
+                    }*/
+                }
+            } catch (Exception ex)
+            {
+                log.Error("Error: during pk death check");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
             }
+
 
 
             // notify player of destroyed items?
