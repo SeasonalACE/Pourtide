@@ -60,28 +60,32 @@ namespace ACE.Server.WorldObjects
             set { if (value) RemoveProperty(PropertyBool.ExistedBeforeAllegianceXpChanges); else SetProperty(PropertyBool.ExistedBeforeAllegianceXpChanges, value); }
         }
 
-        public bool ValidatePourtideAllegiance(IPlayer patron)
+        public bool IsAlly(Player potentialAlly)
         {
             try
             {
                 var ip = Session.EndPointC2S.Address.ToString() ?? "";
                 var characterNames = DatabaseManager.Authentication.GetCharactersAssociatedWithIp(ip);
+                var potentialAllyMonarch = AllegianceManager.GetMonarch(potentialAlly);
+
                 foreach (var name in characterNames)
                 {
                     var player = PlayerManager.FindByName(name);
 
-                    if (player.MonarchId == null || AllegianceManager.GetAllegiance(player) == null)
+                    if (potentialAllyMonarch.Guid.Full == player.Guid.Full)
+                        return true;
+
+                    if (player.MonarchId == null)
                         continue;
 
                     var playerMonarch = AllegianceManager.GetMonarch(player);
-                    var patronMonarch = AllegianceManager.GetMonarch(patron);
 
-                    if (patronMonarch.Guid.Full != playerMonarch.Guid.Full)
-                        return false;
+                    if (potentialAllyMonarch.Guid.Full == playerMonarch.Guid.Full)
+                        return true;
 
                 }
 
-                return true;
+                return potentialAlly.IsAlly(this);
             }
             catch (Exception ex)
             {
@@ -104,7 +108,7 @@ namespace ACE.Server.WorldObjects
 
             if (!IsPledgable(patron)) return;
 
-            if (!ValidatePourtideAllegiance(patron)) return;
+            if (!IsAlly(patron)) return;
 
             // perform moveto / turnto
             CreateMoveToChain(patron, (success) => SwearAllegiance(patron.Guid.Full, success), Allegiance_MaxSwearDistance);

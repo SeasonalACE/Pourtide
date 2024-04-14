@@ -596,7 +596,9 @@ namespace ACE.Server.WorldObjects
                 var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
                 var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
 
-                if (!ValidatePourtideAllegiance(killer))
+                var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
+
+                if (onlineKiller != null && !IsAlly(onlineKiller))
                 {
                     playerHead.Name = $"Head of {victim.Name}";
                     playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
