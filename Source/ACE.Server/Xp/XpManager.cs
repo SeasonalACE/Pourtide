@@ -1,6 +1,7 @@
 using ACE.Database;
 using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
+using log4net;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,8 @@ namespace ACE.Server.Xp
 {
     internal class XpManager
     {
+        private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         private static readonly object xpLock = new object();
         private static DateTime DailyTimestamp { get; set; }
         private static DateTime WeeklyTimestamp { get; set; }
@@ -61,6 +64,12 @@ namespace ACE.Server.Xp
             {
                 if (IsDailyTimestampExpired())
                 {
+
+
+                    log.Info($"DailyXpCap has expired showing timestamps");
+                    log.Info($"Daily: {DailyTimestamp}");
+                    log.Info($"Now: {DateTime.UtcNow}");
+
                     var previousDaily = DailyXpCap;
                     GetXpCapTimestamps();
 
