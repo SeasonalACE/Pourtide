@@ -73,14 +73,12 @@ namespace ACE.Server.Xp
 
                 if (IsDailyTimestampExpired())
                 {
-
-
-                    log.Info($"DailyXpCap has expired showing timestamps");
-                    log.Info($"Daily: {DailyTimestamp}");
-                    log.Info($"Now: {DateTime.UtcNow}");
-
                     var previousDaily = DailyXpCap;
                     GetXpCapTimestamps();
+                    log.Info($"[XpManager]: DailyXpCap has expired showing timestamps");
+                    log.Info($"[XpManager]: PreviousDaily: {previousDaily}");
+                    log.Info($"[XpManager]: Now: {DateTime.UtcNow}");
+                    log.Info($"[XpManager]: NextDaily: {DailyXpCap}");
 
                     // season ends at week 16
                     if (Week > 16)
@@ -110,7 +108,6 @@ namespace ACE.Server.Xp
                         player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, (long)DailyXpCap + questDiff);
                         player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, (long)DailyXpCap + monsterDiff);
                         player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, (long)DailyXpCap + pvpDiff);
-
                     }
                 }
             }
@@ -119,7 +116,7 @@ namespace ACE.Server.Xp
 
         public static void GetXpCapTimestamps()
         {
-            var (daily, weekly, week) = DatabaseManager.Authentication.GetXpCapTimestamps();
+            var (daily, weekly, week) = DatabaseManager.Shard.BaseDatabase.GetXpCapTimestamps();
             DailyTimestamp = daily;
             WeeklyTimestamp = weekly;
             Week = week;

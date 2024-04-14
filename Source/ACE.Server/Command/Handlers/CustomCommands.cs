@@ -1,4 +1,5 @@
 using ACE.Common;
+using ACE.Database;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
@@ -244,12 +245,28 @@ namespace ACE.Server.Command.Handlers
             var pvpXpDailyCap = player.PvpXpDailyMax;
             var monsterXpDailyCap = player.MonsterXpDailyMax;
 
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)queryXp)} / {(ulong)queryXpDailyCap} quest xp for the day.", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)pvpXp)} / {(ulong)pvpXpDailyCap} pvp xp for the day.", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)monsterXp)} / {(ulong)monsterXpDailyCap} monster xp for the day.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)queryXp)} / {Formatting.FormatIntWithCommas((ulong)queryXpDailyCap)} quest xp for the day.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)pvpXp)} / {Formatting.FormatIntWithCommas((ulong)pvpXpDailyCap)} pvp xp for the day.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)monsterXp)} / {Formatting.FormatIntWithCommas((ulong)monsterXpDailyCap)} monster xp for the day.", ChatMessageType.System));
 
         }
         /** Xp Cap End **/
+
+        /** Leaderboards/Stats Start **/
+        [CommandHandler("leaderboards-kills", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 kills leaderboard.")]
+        public static void HandleLeaderboardsKills(Session session, params string[] paramters)
+        {
+            var players = DatabaseManager.Shard.BaseDatabase.GetTopTenPlayersWithMostKills();
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Top 10 Kills Leaderboard>", ChatMessageType.System));
+            for (var i = 0; i < players.Count; i++)
+            {
+                var stats = players[i];
+                var player = PlayerManager.FindByGuid(stats.PlayerId);
+                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{i + 1}. Name = {player.Name}, Kills = {stats.KillCount}", ChatMessageType.System));
+            }
+        }
+        /** Leadearboards/Stats End **/
 
 
     }

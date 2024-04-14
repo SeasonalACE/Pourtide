@@ -12,6 +12,7 @@ using ACE.Entity.Enum;
 using System.Collections.Generic;
 using System;
 using System.Net;
+using ACE.Database.Models.Shard;
 
 namespace ACE.Database
 {
@@ -177,79 +178,6 @@ namespace ACE.Database
             }
         }
 
-        public (DateTime Daily, DateTime Weekly, uint Week) GetXpCapTimestamps()
-        {
-            using (var context = new AuthDbContext())
-            {
-                var timestamps = context.XpCap.FirstOrDefault();
-
-                if (timestamps == null)
-                {
-                    timestamps = new XpCap
-                    {
-                        DailyTimestamp = DateTime.UtcNow.AddDays(1),
-                        WeeklyTimestamp = DateTime.UtcNow.AddDays(7),
-                        Week = 1
-                    };
-
-                    context.XpCap.Add(timestamps);
-                }
-                else
-                {
-                    DateTime currentDateTime = DateTime.UtcNow;
-
-
-                    if (currentDateTime > timestamps.DailyTimestamp)
-                    {
-                        timestamps.DailyTimestamp = currentDateTime.AddDays(1);
-                    }
-
-                    if (currentDateTime > timestamps.WeeklyTimestamp)
-                    {
-                        timestamps.WeeklyTimestamp = currentDateTime.AddDays(7);
-
-                        timestamps.Week++;
-
-                    }
-                }
-
-                context.SaveChanges();
-
-                return (timestamps.DailyTimestamp, timestamps.WeeklyTimestamp, timestamps.Week);
-            }
-        }
-
-        public void LogCharacterLogin(uint accountId, string accountName, string sessionIP, uint characterId, string characterName)
-        {
-            var logEntry = new CharacterLogin();
-
-            try
-            {
-                logEntry.AccountId = accountId;
-                logEntry.AccountName = accountName;
-                logEntry.SessionIP = sessionIP;
-                logEntry.CharacterId = characterId;
-                logEntry.CharacterName = characterName;
-                logEntry.LoginDateTime = DateTime.Now;
-
-                using (var context = new AuthDbContext())
-                {
-                    context.CharacterLogin.Add(logEntry);
-                    context.SaveChanges();
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"Exception in LogCharacterLogin saving character login info to DB. Ex: {ex}");
-            }
-        }
-        public List<string> GetCharactersAssociatedWithIp(string sessionIp)
-        {
-            using (var context = new AuthDbContext())
-            {
-                var logins = context.CharacterLogin.Where(login => login.SessionIP == sessionIp);
-                return logins.Select(login => login.CharacterName).ToList();
-            }
-        }
+      
     }
 }

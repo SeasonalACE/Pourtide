@@ -58,6 +58,14 @@ namespace ACE.Database.Models.Shard
         public virtual DbSet<ConfigPropertiesString> ConfigPropertiesString { get; set; }
         public virtual DbSet<HousePermission> HousePermission { get; set; }
 
+        // pourtide related
+       public virtual DbSet<CharacterLogin> CharacterLogin { get; set; }
+        public virtual DbSet<XpCap> XpCap { get; set; }
+        public DbSet<PKStatsDamage> PKStatsDamages { get; set; }
+        public DbSet<PKStatsKill> PKStatsKills { get; set; }
+        public DbSet<PkTrophyCooldown> PkTrophyCooldowns { get; set; }
+
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
@@ -1552,6 +1560,98 @@ namespace ACE.Database.Models.Shard
                     .HasForeignKey(d => d.HouseId)
                     .HasConstraintName("biota_Id_house_Id");
             });
+
+            modelBuilder.Entity<XpCap>(entity =>
+            {
+                entity.ToTable("xp_cap");
+
+                // Configure properties
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.DailyTimestamp)
+                    .HasColumnType("datetime")
+                    .IsRequired()
+                    .HasDefaultValueSql("GETDATE()"); // Set default value to current date/time
+
+                entity.Property(e => e.WeeklyTimestamp)
+                    .HasColumnType("datetime")
+                    .IsRequired()
+                    .HasDefaultValueSql("DATEADD(DAY, 6, CAST(GETDATE() AS DATE))"); // Set default value to current date + 6 days
+
+                entity.Property(e => e.Week)
+                  .IsRequired()
+                  .HasDefaultValue(1);
+            });
+
+            modelBuilder.Entity<CharacterLogin>(entity =>
+            {
+                entity.HasKey(e => e.Id)
+                    .HasName("PRIMARY");
+
+                entity.Property(e => e.Id).HasColumnName("characterLoginLogId");
+
+                entity.ToTable("character_login");
+
+                entity.Property(e => e.AccountId)
+                    .HasColumnName("accountId");
+
+                entity.Property(e => e.AccountName)
+                    .HasColumnName("accountName");
+
+                entity.Property(e => e.SessionIP)
+                    .HasColumnName("sessionIP");
+
+                entity.Property(e => e.CharacterId)
+                    .HasColumnName("characterId");
+
+                entity.Property(e => e.CharacterName)
+                    .HasColumnName("characterName");
+
+                entity.Property(e => e.LoginDateTime)
+                    .HasColumnName("loginDateTime");
+
+                entity.Property(e => e.LogoutDateTime)
+                    .HasColumnName("logoutDateTime");
+            });
+
+            modelBuilder.Entity<PKStatsDamage>(entity =>
+            {
+                entity.ToTable("pk_stats_damage"); // Set the table name
+
+                entity.HasKey(e => e.PKDamageId); // Set the primary key
+
+                entity.Property(e => e.PKDamageId).HasColumnName("pk_damage_id"); // Map PKDamageId to pk_damage_id column
+                entity.Property(e => e.AttackerId).HasColumnName("attacker_id"); // Map AttackerId to attacker_id column
+                entity.Property(e => e.DefenderId).HasColumnName("defender_id"); // Map DefenderId to defender_id column
+                entity.Property(e => e.DamageAmount).HasColumnName("damage_amount"); // Map DamageAmount to damage_amount column
+                entity.Property(e => e.EventTime).HasColumnName("event_time"); // Map EventTime to event_time column
+            });
+
+            modelBuilder.Entity<PKStatsKill>(entity =>
+            {
+                entity.ToTable("pk_stats_kills"); // Set the table name
+
+                entity.HasKey(e => e.PKKillsId); // Set the primary key
+
+                entity.Property(e => e.PKKillsId).HasColumnName("pk_kills_id"); // Map PKKillsId to pk_kills_id column
+                entity.Property(e => e.KillerId).HasColumnName("killer_id"); // Map KillerId to killer_id column
+                entity.Property(e => e.VictimId).HasColumnName("victim_id"); // Map VictimId to victim_id column
+                entity.Property(e => e.EventTime).HasColumnName("event_time"); // Map EventTime to event_time column
+            });
+
+            modelBuilder.Entity<PkTrophyCooldown>(entity =>
+            {
+                entity.ToTable("pk_trophy_cooldown"); // Set the table name
+
+                entity.HasKey(e => e.TrophyCooldownId); // Set the primary key
+
+                entity.Property(e => e.TrophyCooldownId).HasColumnName("trophy_cooldown_id"); // Map TrophyCooldownId to trophy_cooldown_id column
+                entity.Property(e => e.KillerId).HasColumnName("killer_id"); // Map KillerId to killer_id column
+                entity.Property(e => e.VictimId).HasColumnName("victim_id"); // Map VictimId to victim_id column
+                entity.Property(e => e.CooldownEndTime).HasColumnName("cooldown_end_time"); // Map CooldownEndTime to cooldown_end_time column
+            });
+
+
 
             OnModelCreatingPartial(modelBuilder);
         }

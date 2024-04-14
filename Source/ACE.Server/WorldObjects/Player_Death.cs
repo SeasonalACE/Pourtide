@@ -15,6 +15,7 @@ using ACE.Server.Managers;
 using ACE.Server.Network.Structure;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Database;
 
 namespace ACE.Server.WorldObjects
 {
@@ -589,10 +590,9 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
-            if (IsPKDeath(corpse.KillerId))
+            if (IsPKDeath(corpse.KillerId) && TrackKill(corpse.KillerId.Value, corpse.VictimId.Value))
             {
                 // add player head
-                var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
                 var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
                 var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
 
@@ -600,6 +600,7 @@ namespace ACE.Server.WorldObjects
 
                 if (onlineKiller != null && !IsAlly(onlineKiller))
                 {
+                    var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
                     playerHead.Name = $"Head of {victim.Name}";
                     playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
                     corpse.TryAddToInventory(playerHead);
@@ -635,6 +636,11 @@ namespace ACE.Server.WorldObjects
             msg = msg.Substring(0, msg.Length - 2);
 
             log.Debug(msg);
+        }
+
+        public bool TrackKill(uint killerId, uint victimId)
+        {
+            return DatabaseManager.Shard.BaseDatabase.AddPkStatsKillAndUpdateCooldown(killerId, victimId);
         }
 
         /// <summary>

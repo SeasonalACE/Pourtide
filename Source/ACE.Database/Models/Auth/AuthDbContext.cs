@@ -1,4 +1,5 @@
 using System;
+using ACE.Database.Models.Shard;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -19,9 +20,7 @@ namespace ACE.Database.Models.Auth
 
         public virtual DbSet<Accesslevel> Accesslevel { get; set; }
         public virtual DbSet<Account> Account { get; set; }
-        public virtual DbSet<CharacterLogin> CharacterLogin { get; set; }
-        public virtual DbSet<XpCap> XpCap { get; set; }
-
+     
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -143,60 +142,7 @@ namespace ACE.Database.Models.Auth
                     .HasConstraintName("fk_accesslevel");
             });
 
-            modelBuilder.Entity<XpCap>(entity =>
-            {
-                entity.ToTable("xp_cap");
-
-                // Configure properties
-                entity.HasKey(e => e.Id);
-
-                entity.Property(e => e.DailyTimestamp)
-                    .HasColumnType("datetime")
-                    .IsRequired()
-                    .HasDefaultValueSql("GETDATE()"); // Set default value to current date/time
-
-                entity.Property(e => e.WeeklyTimestamp)
-                    .HasColumnType("datetime")
-                    .IsRequired()
-                    .HasDefaultValueSql("DATEADD(DAY, 6, CAST(GETDATE() AS DATE))"); // Set default value to current date + 6 days
-
-                entity.Property(e => e.Week)
-                  .IsRequired()
-                  .HasDefaultValue(1);
-            });
-
-            modelBuilder.Entity<CharacterLogin>(entity =>
-            {
-                entity.HasKey(e => e.Id)
-                    .HasName("PRIMARY");
-
-                entity.Property(e => e.Id).HasColumnName("characterLoginLogId");
-
-                entity.ToTable("character_login");
-
-                entity.Property(e => e.AccountId)
-                    .HasColumnName("accountId");
-
-                entity.Property(e => e.AccountName)
-                    .HasColumnName("accountName");
-
-                entity.Property(e => e.SessionIP)
-                    .HasColumnName("sessionIP");
-
-                entity.Property(e => e.CharacterId)
-                    .HasColumnName("characterId");
-
-                entity.Property(e => e.CharacterName)
-                    .HasColumnName("characterName");
-
-                entity.Property(e => e.LoginDateTime)
-                    .HasColumnName("loginDateTime");
-
-                entity.Property(e => e.LogoutDateTime)
-                    .HasColumnName("logoutDateTime");
-            });
-
-
+           
             OnModelCreatingPartial(modelBuilder);
         }
 

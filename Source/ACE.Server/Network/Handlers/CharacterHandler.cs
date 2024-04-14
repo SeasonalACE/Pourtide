@@ -264,7 +264,7 @@ namespace ACE.Server.Network.Handlers
 
             try
             {
-                DatabaseManager.Authentication.LogCharacterLogin(session.AccountId, session.Account, session.EndPointC2S.Address.ToString(), character.Id, character.Name);
+                DatabaseManager.Shard.BaseDatabase.LogCharacterLogin(session.AccountId, session.Account, session.EndPointC2S.Address.ToString(), character.Id, character.Name);
             }
             catch (Exception ex)
             {

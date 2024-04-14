@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using ACE.Database;
 using ACE.Entity;
 using ACE.Entity.Enum;
@@ -60,32 +62,43 @@ namespace ACE.Server.WorldObjects
             set { if (value) RemoveProperty(PropertyBool.ExistedBeforeAllegianceXpChanges); else SetProperty(PropertyBool.ExistedBeforeAllegianceXpChanges, value); }
         }
 
+        public static List<IPlayer> GetCharacters(Player player)
+        {
+            var characters = DatabaseManager.Shard.BaseDatabase
+                .GetCharactersAssociatedWithIp(player.Session.EndPointS2C.Address.ToString() ?? "")
+                .Select(PlayerManager.FindByName)
+                .ToList();
+
+            return characters;
+        }
+
+        public static bool AreSharedCharacters(Player playerOne, Player playerTwo)
+        {
+            var player1Characters = GetCharacters(playerOne).Select(p => p.Name);
+            var player2Characters = GetCharacters(playerTwo).Select(p => p.Name);
+
+            return player1Characters.Intersect(player2Characters).Any();
+        }
+
+        public static bool AreSameGuild(Player playerOne, Player playerTwo)
+        {
+            var player1Monarchs = GetCharacters(playerOne).Select(p => p.MonarchId).Where(m => m != null);
+            var player2Monarchs = GetCharacters(playerTwo).Select(p => p.MonarchId).Where(m => m != null);
+
+            return player1Monarchs.Intersect(player2Monarchs).Any();
+        }
+
         public bool IsAlly(Player potentialAlly)
         {
             try
             {
-                var ip = Session.EndPointC2S.Address.ToString() ?? "";
-                var characterNames = DatabaseManager.Authentication.GetCharactersAssociatedWithIp(ip);
-                var potentialAllyMonarch = AllegianceManager.GetMonarch(potentialAlly);
+                if (AreSharedCharacters(this, potentialAlly))
+                    return true;
 
-                foreach (var name in characterNames)
-                {
-                    var player = PlayerManager.FindByName(name);
+                if (AreSameGuild(this, potentialAlly))
+                    return true;
 
-                    if (potentialAllyMonarch.Guid.Full == player.Guid.Full)
-                        return true;
-
-                    if (player.MonarchId == null)
-                        continue;
-
-                    var playerMonarch = AllegianceManager.GetMonarch(player);
-
-                    if (potentialAllyMonarch.Guid.Full == playerMonarch.Guid.Full)
-                        return true;
-
-                }
-
-                return potentialAlly.IsAlly(this);
+                return false;
             }
             catch (Exception ex)
             {
@@ -108,7 +121,7 @@ namespace ACE.Server.WorldObjects
 
             if (!IsPledgable(patron)) return;
 
-            if (!IsAlly(patron)) return;
+            if (IsAlly(patron)) return;
 
             // perform moveto / turnto
             CreateMoveToChain(patron, (success) => SwearAllegiance(patron.Guid.Full, success), Allegiance_MaxSwearDistance);
