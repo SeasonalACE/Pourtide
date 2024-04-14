@@ -59,6 +59,16 @@
                     "stacksize":  "1"
                 },
                 {
+                    "weenieId": "2625",
+                    "name": "C note",
+                    "stacksize": "1"
+                },
+                {
+                    "weenieId": "12711",
+                    "name": "Oil of rendering",
+                    "stacksize": "2"
+                },
+                {
                     "weenieId": "20646",
                     "name": "Ust",
                     "stacksize": "1"
