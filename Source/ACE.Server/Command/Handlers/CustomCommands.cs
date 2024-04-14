@@ -244,13 +244,9 @@ namespace ACE.Server.Command.Handlers
             var pvpXpDailyCap = player.PvpXpDailyMax;
             var monsterXpDailyCap = player.MonsterXpDailyMax;
 
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)queryXp)} quest xp for the day.", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)pvpXp)} pvp xp for the day.", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)monsterXp)} monster xp for the day.", ChatMessageType.System));
-
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your max quest xp for the day is {Formatting.FormatIntWithCommas((ulong)queryXpDailyCap)}.", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your max pvp xp for the day is {Formatting.FormatIntWithCommas((ulong)monsterXpDailyCap)}.", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your max monster xp for the day is {Formatting.FormatIntWithCommas((ulong)pvpXpDailyCap)}.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)queryXp)} / {(ulong)queryXpDailyCap} quest xp for the day.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)pvpXp)} / {(ulong)pvpXpDailyCap} pvp xp for the day.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)monsterXp)} / {(ulong)monsterXpDailyCap} monster xp for the day.", ChatMessageType.System));
 
         }
         /** Xp Cap End **/
