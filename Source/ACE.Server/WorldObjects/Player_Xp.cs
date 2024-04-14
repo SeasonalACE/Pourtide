@@ -1,6 +1,6 @@
 using System;
 using System.Linq;
-
+using ACE.Common;
 using ACE.Common.Extensions;
 using ACE.DatLoader;
 using ACE.Entity.Enum;
@@ -161,9 +161,14 @@ namespace ACE.Server.WorldObjects
 
                 CheckForLevelup();
             }
+            if (xpType == XpType.Kill)
+                Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {amount:N0} experience. You have {Formatting.FormatIntWithCommas((ulong)(MonsterXpDailyMax - MonsterXp))} monster daily xp remaining", ChatMessageType.Broadcast));
+
+            if (xpType == XpType.Pvp)
+                Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {amount:N0} experience. You have {Formatting.FormatIntWithCommas((ulong)(PvpXpDailyMax - PvpXp))} pvp daily xp remaining", ChatMessageType.Broadcast));
 
             if (xpType == XpType.Quest)
-                Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {amount:N0} experience.", ChatMessageType.Broadcast));
+                Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {amount:N0} experience. You have {Formatting.FormatIntWithCommas((ulong)(QuestXpDailyMax - QuestXp))} quest daily xp remaining", ChatMessageType.Broadcast));
 
             if (HasVitae && xpType != XpType.Allegiance)
                 UpdateXpVitae(amount);
