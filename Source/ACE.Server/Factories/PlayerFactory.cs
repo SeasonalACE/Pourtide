@@ -40,20 +40,20 @@ namespace ACE.Server.Factories
 
         public static void AddStarterEssentials(Player player)
         {
-            for (uint spellLevel = 1; spellLevel <= 3; spellLevel++)
+            /*for (uint spellLevel = 1; spellLevel <= 3; spellLevel++)
             {
                 player.LearnSpellsInBulk(MagicSchool.CreatureEnchantment, spellLevel, true);
                 player.LearnSpellsInBulk(MagicSchool.ItemEnchantment, spellLevel, true);
                 player.LearnSpellsInBulk(MagicSchool.LifeMagic, spellLevel, true);
                 player.LearnSpellsInBulk(MagicSchool.VoidMagic, spellLevel, true);
                 player.LearnSpellsInBulk(MagicSchool.WarMagic, spellLevel, true);
-            }
+            }*/
 
-            foreach (var id in Foci)
+            /*foreach (var id in Foci)
             {
                 var wo = WorldObjectFactory.CreateNewWorldObject(id);
                 player.TryCreateInInventoryWithNetworking(wo);
-            }
+            }*/
 
             var dailyCap = XpManager.DailyXpCap;
             player.QuestXpDailyMax = (long)dailyCap;
