@@ -3409,6 +3409,11 @@ namespace ACE.Server.WorldObjects
                     // if stacked item, only give 1, ignoring amount indicated, unless they are AiAcceptEverything in which case, take full amount indicated
                     if (RemoveItemForGive(item, itemFoundInContainer, itemWasEquipped, itemRootOwner, acceptAll ? amount : 1, out WorldObject itemToGive))
                     {
+                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 60000212)
+                        {
+                            var xp = PvpXpDailyMax * 0.05; // give 5% of total PvpXpDailyMax
+                            EarnXP((long)xp, XpType.Pvp, ShareType.None);
+                        }
                         if (item == itemToGive)
                             Session.Network.EnqueueSend(new GameEventItemServerSaysContainId(Session, item, target));
 
