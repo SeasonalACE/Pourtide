@@ -1,4 +1,4 @@
-use ace_auth;
+use ace_shard;
 
 CREATE TABLE IF NOT EXISTS `character_login` (
   `characterLoginLogId` INT UNSIGNED NOT NULL AUTO_INCREMENT,

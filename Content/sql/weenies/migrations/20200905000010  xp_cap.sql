@@ -1,4 +1,4 @@
-USE ace_auth;
+USE ace_shard;
 
 -- Create the xp_cap table if it does not exist
 CREATE TABLE IF NOT EXISTS `xp_cap` (
