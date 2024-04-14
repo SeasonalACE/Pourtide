@@ -10,8 +10,8 @@ VALUES (33608,   1,      16384) /* ItemType - Key */
      , (33608,  19,          0) /* Value */
      , (33608,  33,          1) /* Bonded - Bonded */
      , (33608,  53,        101) /* PlacementPosition - Resting */
-     , (33608,  91,          3) /* MaxStructure */
-     , (33608,  92,          3) /* Structure */
+     , (33608,  91,          1) /* MaxStructure */
+     , (33608,  92,          1) /* Structure */
      , (33608,  93,       1044) /* PhysicsState - Ethereal, IgnoreCollisions, Gravity */
      , (33608,  94,        640) /* TargetType - LockableMagicTarget */
      , (33608, 114,          1) /* Attuned - Attuned */;
