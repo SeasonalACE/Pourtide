@@ -60,7 +60,7 @@ namespace ACE.Server.WorldObjects
             set { if (value) RemoveProperty(PropertyBool.ExistedBeforeAllegianceXpChanges); else SetProperty(PropertyBool.ExistedBeforeAllegianceXpChanges, value); }
         }
 
-        public bool ValidateAllegiancePledge(Player patron)
+        public bool ValidatePourtideAllegiance(IPlayer patron)
         {
             try
             {
@@ -104,7 +104,7 @@ namespace ACE.Server.WorldObjects
 
             if (!IsPledgable(patron)) return;
 
-            if (!ValidateAllegiancePledge(patron)) return;
+            if (!ValidatePourtideAllegiance(patron)) return;
 
             // perform moveto / turnto
             CreateMoveToChain(patron, (success) => SwearAllegiance(patron.Guid.Full, success), Allegiance_MaxSwearDistance);

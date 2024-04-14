@@ -589,6 +589,22 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
+            if (IsPKDeath(corpse.KillerId))
+            {
+                // add player head
+                var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
+                var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
+                var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
+
+                if (!ValidatePourtideAllegiance(killer))
+                {
+                    playerHead.Name = $"Head of {victim.Name}";
+                    playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
+                    corpse.TryAddToInventory(playerHead);
+                }
+            }
+
+
             // notify player of destroyed items?
             dropItems.AddRange(destroyedItems);
 
