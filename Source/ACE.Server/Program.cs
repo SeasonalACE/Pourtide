@@ -17,6 +17,7 @@ using ACE.Server.Mods;
 using ACE.Server.Network.Managers;
 using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Rifts;
+using ACE.Server.Xp;
 
 namespace ACE.Server
 {
@@ -322,6 +323,9 @@ namespace ACE.Server
 
             log.Info("Initializing EventManager...");
             EventManager.Initialize();
+
+            log.Info("Initializing XpManager...");
+            XpManager.Initialize();
 
             log.Info("Initializing DungeonManager...");
             DungeonManager.Initialize();

@@ -21,6 +21,8 @@ namespace ACE.Server.Xp
         private static uint Week { get; set; }
         public static ulong DailyXpCap { get; private set; }
 
+        private static bool Initialized = false;
+
         private static readonly Dictionary<uint, ulong> WeeklyLevelWithCapXp = new Dictionary<uint, ulong>()
         {
             { 1, 10024047 },
@@ -45,6 +47,7 @@ namespace ACE.Server.Xp
         {
             GetXpCapTimestamps();
             CalculateCurrentDailyXpCap();
+            Initialized = true;
         }
 
         private static void CalculateCurrentDailyXpCap()
@@ -62,6 +65,12 @@ namespace ACE.Server.Xp
 
             lock (xpLock)
             {
+                if (!Initialized)
+                {
+                    log.Warn("Warning, XpManager was not initialized, daily cap tick will not be processed!");
+                    return;
+                }
+
                 if (IsDailyTimestampExpired())
                 {
 
