@@ -590,21 +590,22 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
-            if (IsPKDeath(corpse.KillerId) && TrackKill(corpse.KillerId.Value, corpse.VictimId.Value))
+            var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
+            var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
+            var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
+            var isPkDeath = IsPKDeath(corpse.KillerId);
+            var isAlly = IsAlly(onlineKiller);
+
+            if (isPkDeath && TrackKill(corpse.KillerId.Value, corpse.VictimId.Value))
             {
                 // add player head
-                var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
-                var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
-
-                var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
-
-                if (onlineKiller != null && !IsAlly(onlineKiller))
+                /*if (onlineKiller != null && !isAlly)
                 {
                     var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
                     playerHead.Name = $"Head of {victim.Name}";
                     playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
                     corpse.TryAddToInventory(playerHead);
-                }
+                }*/
             }
 
 

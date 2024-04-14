@@ -3411,7 +3411,7 @@ namespace ACE.Server.WorldObjects
                     {
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 60000212)
                         {
-                            var xp = PvpXpDailyMax * 0.05; // give 5% of total PvpXpDailyMax
+                            var xp = PvpXpDailyMax * 0.01; // give 5% of total PvpXpDailyMax
                             EarnXP((long)xp, XpType.Pvp, ShareType.None);
                         }
                         if (item == itemToGive)
