@@ -1033,14 +1033,10 @@ namespace ACE.Database
 
         }
 
-        public bool AddPkStatsKillAndUpdateCooldown(uint killerId, uint victimId)
+        public bool UpdatePkTrophyCooldown(uint killerId, uint victimId)
         {
             using (var context = new ShardDbContext())
             {
-
-                // Create a new PKStatsKill entry
-                TrackPkStatsKill(killerId, victimId);
-
                 // Check if a PK trophy cooldown exists for the killerId and victimId pair
                 var trophyCooldown = context.PkTrophyCooldowns
                     .FirstOrDefault(tc => tc.KillerId == killerId && tc.VictimId == victimId);
@@ -1051,7 +1047,7 @@ namespace ACE.Database
                     if (trophyCooldown.CooldownEndTime < DateTime.Now)
                     {
                         // Cooldown has expired, update the cooldown end time
-                        trophyCooldown.CooldownEndTime = DateTime.Now.AddHours(1);
+                        trophyCooldown.CooldownEndTime = DateTime.Now.AddMinutes(20);
                         context.SaveChanges();
 
                         // Return true to indicate that the cooldown has expired
@@ -1070,7 +1066,7 @@ namespace ACE.Database
                         KillerId = killerId,
                         VictimId = victimId,
                     };
-                    trophyCooldown.CooldownEndTime = DateTime.Now.AddHours(1);
+                    trophyCooldown.CooldownEndTime = DateTime.Now.AddMinutes(20);
                     context.PkTrophyCooldowns.Add(trophyCooldown);
                     context.SaveChanges();
                     // No existing cooldown, return false

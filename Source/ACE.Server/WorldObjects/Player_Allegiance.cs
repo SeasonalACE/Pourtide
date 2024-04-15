@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Text;
 using ACE.Database;
 using ACE.Entity;
 using ACE.Entity.Enum;
@@ -61,41 +63,54 @@ namespace ACE.Server.WorldObjects
             get => GetProperty(PropertyBool.ExistedBeforeAllegianceXpChanges) ?? true;
             set { if (value) RemoveProperty(PropertyBool.ExistedBeforeAllegianceXpChanges); else SetProperty(PropertyBool.ExistedBeforeAllegianceXpChanges, value); }
         }
-
-        public static List<IPlayer> GetCharacters(Player player)
+        private static string ByteArrayToIpAddress(byte[] bytes)
         {
+            if (bytes.Length != 4) // Check if it's a valid IPv4 address byte array
+            {
+                throw new ArgumentException("Invalid byte array length for IPv4 address.");
+            }
+
+            return new IPAddress(bytes).ToString();
+        }
+
+        public static List<IPlayer> GetCharacters(IPlayer player)
+        {
+            var ip = player.Account.LastLoginIP;
+            var ipString = ByteArrayToIpAddress(ip);
             var characters = DatabaseManager.Shard.BaseDatabase
-                .GetCharactersAssociatedWithIp(player.Session.EndPointS2C.Address.ToString() ?? "")
-                .Select(PlayerManager.FindByName)
+                .GetCharactersAssociatedWithIp(ipString)
+                .Select(name => PlayerManager.FindByName(name))
                 .ToList();
 
             return characters;
         }
 
-        public static bool AreSharedCharacters(Player playerOne, Player playerTwo)
+        public static bool AreSharedCharacters(List<IPlayer> playerOne, List<IPlayer> playerTwo)
         {
-            var player1Characters = GetCharacters(playerOne).Select(p => p.Name);
-            var player2Characters = GetCharacters(playerTwo).Select(p => p.Name);
+            var player1Characters = playerOne.Select(p => p.Name);
+            var player2Characters = playerTwo.Select(p => p.Name);
 
             return player1Characters.Intersect(player2Characters).Any();
         }
 
-        public static bool AreSameGuild(Player playerOne, Player playerTwo)
+        public static bool AreSameGuild(List<IPlayer> playerOne, List<IPlayer> playerTwo)
         {
-            var player1Monarchs = GetCharacters(playerOne).Select(p => p.MonarchId).Where(m => m != null);
-            var player2Monarchs = GetCharacters(playerTwo).Select(p => p.MonarchId).Where(m => m != null);
+            var player1Monarchs = playerOne.Select(p => p.MonarchId).Where(m => m != null);
+            var player2Monarchs = playerTwo.Select(p => p.MonarchId).Where(m => m != null);
 
             return player1Monarchs.Intersect(player2Monarchs).Any();
         }
 
-        public bool IsAlly(Player potentialAlly)
+        public bool IsAlly(IPlayer potentialAlly)
         {
+            var players = GetCharacters(this);
+            var potentialAllyPlayers = GetCharacters(potentialAlly);
             try
             {
-                if (AreSharedCharacters(this, potentialAlly))
+                if (AreSharedCharacters(players, potentialAllyPlayers))
                     return true;
 
-                if (AreSameGuild(this, potentialAlly))
+                if (AreSameGuild(players, potentialAllyPlayers))
                     return true;
 
                 return false;
@@ -120,8 +135,6 @@ namespace ACE.Server.WorldObjects
             if (patron == null) return;
 
             if (!IsPledgable(patron)) return;
-
-            if (IsAlly(patron)) return;
 
             // perform moveto / turnto
             CreateMoveToChain(patron, (success) => SwearAllegiance(patron.Guid.Full, success), Allegiance_MaxSwearDistance);

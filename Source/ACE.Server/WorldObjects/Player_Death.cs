@@ -596,20 +596,22 @@ namespace ACE.Server.WorldObjects
                 var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
 
                 var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
-                var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
                 var isPkDeath = IsPKDeath(corpse.KillerId);
-                var isAlly = IsAlly(onlineKiller);
+                var isAlly = IsAlly(killer);
 
-                if (isPkDeath && TrackKill(corpse.KillerId.Value, corpse.VictimId.Value))
+                if (isPkDeath)
+                    TrackKill(corpse.KillerId.Value, corpse.VictimId.Value);
+
+                //var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
+                if (isPkDeath && !isAlly && UpdatePkTrophies(corpse.KillerId.Value, corpse.VictimId.Value))
                 {
                     // add player head
-                    /*if (onlineKiller != null && !isAlly)
                     {
                         var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
                         playerHead.Name = $"Head of {victim.Name}";
                         playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
                         corpse.TryAddToInventory(playerHead);
-                    }*/
+                    }
                 }
             } catch (Exception ex)
             {
@@ -650,9 +652,14 @@ namespace ACE.Server.WorldObjects
             log.Debug(msg);
         }
 
-        public bool TrackKill(uint killerId, uint victimId)
+        public void TrackKill(uint killerId, uint victimId)
         {
-            return DatabaseManager.Shard.BaseDatabase.AddPkStatsKillAndUpdateCooldown(killerId, victimId);
+            DatabaseManager.Shard.BaseDatabase.TrackPkStatsKill(killerId, victimId);
+        }
+
+        public bool UpdatePkTrophies(uint killerId, uint victimId)
+        {
+            return DatabaseManager.Shard.BaseDatabase.UpdatePkTrophyCooldown(killerId, victimId);
         }
 
         /// <summary>
