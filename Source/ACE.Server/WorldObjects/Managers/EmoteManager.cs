@@ -1592,6 +1592,12 @@ namespace ACE.Server.WorldObjects.Managers
         {
             //if (Debug) Console.WriteLine($"{WorldObject.Name}.EmoteManager.Enqueue({emoteSet}, {targetObject}, {emoteIdx}, {delay})");
 
+            if (emoteSet != null && emoteSet.PropertiesEmoteAction.Count == 0)
+            {
+                Nested--;
+                return;
+            }
+
             if (emoteSet == null)
             {
                 Nested--;
@@ -1599,6 +1605,7 @@ namespace ACE.Server.WorldObjects.Managers
             }
 
             IsBusy = true;
+
 
             var emote = emoteSet.PropertiesEmoteAction.ElementAt(emoteIdx);
 
