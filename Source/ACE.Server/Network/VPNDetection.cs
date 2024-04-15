@@ -62,27 +62,25 @@ namespace ACE.Server.Network
                 using (var sr = new StreamReader(stream))
                 {
                     var data = sr.ReadToEnd();
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                    };
+                    var jsonDoc = JsonDocument.Parse(data);
+                    var root = jsonDoc.RootElement;
 
-                    var d1 = JsonSerializer.Deserialize<dynamic>(data);
-                    var d = d1[ip];
+                    var d = root.GetProperty(ip);
+
                     var ispinfo = new ISPInfo()
                     {
-                        ASN = d["asn"],
-                        Provider = d["provider"],
-                        City = d["city"],
-                        Continent = d["continent"],
-                        Country = d["country"],
-                        IsoCode = d["isocode"],
-                        Latitude = d["latitude"],
-                        Longitude = d["longitude"],
-                        Proxy = d["proxy"],
-                        Region = d["region"],
-                        RegionCode = d["regioncode"],
-                        Type = d["type"]
+                        ASN = d.GetProperty("asn").GetString(),
+                        Provider = d.GetProperty("provider").GetString(),
+                        City = d.GetProperty("city").GetString(),
+                        Continent = d.GetProperty("continent").GetString(),
+                        Country = d.GetProperty("country").GetString(),
+                        IsoCode = d.GetProperty("isocode").GetString(),
+                        Latitude = (float)d.GetProperty("latitude").GetDouble(),
+                        Longitude = (float)d.GetProperty("longitude").GetDouble(),
+                        Proxy = d.GetProperty("proxy").GetString(),
+                        Region = d.GetProperty("region").GetString(),
+                        RegionCode = d.GetProperty("regioncode").GetString(),
+                        Type = d.GetProperty("type").GetString()
                     };
 
                     if (!string.IsNullOrEmpty(ispinfo.Proxy) && ispinfo.Proxy.ToLower().Equals("yes"))
