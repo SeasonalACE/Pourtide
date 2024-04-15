@@ -91,6 +91,9 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         private void UpdateXpAndLevel(long amount, XpType xpType)
         {
+            if (HasVitae && xpType != XpType.Allegiance)
+                UpdateXpVitae(amount);
+
             switch (xpType)
             {
                 case XpType.Quest:
@@ -170,8 +173,7 @@ namespace ACE.Server.WorldObjects
             if (xpType == XpType.Quest)
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {amount:N0} experience. You have {Formatting.FormatIntWithCommas((ulong)(QuestXpDailyMax - QuestXp))} quest daily xp remaining", ChatMessageType.Broadcast));
 
-            if (HasVitae && xpType != XpType.Allegiance)
-                UpdateXpVitae(amount);
+
         }
 
         /// <summary>
