@@ -119,6 +119,14 @@ namespace ACE.Server.WorldObjects
             if (target.Health.Current <= 0)
                 return null;
 
+            if (!CanDamage(target))
+            {
+                SendTransientError($"You cannot attack {target.Name}");
+                return null;
+            }
+
+
+
             var targetPlayer = target as Player;
 
             // check PK status
@@ -899,6 +907,10 @@ namespace ACE.Server.WorldObjects
                 callbackChain.AddAction(this, callback);
                 callbackChain.EnqueueChain();
             }
+        }
+        public bool CanDamageNoTeleport(Creature target)
+        {
+            return target.Attackable && !(target is CombatPet);
         }
 
         public override bool CanDamage(Creature target)
