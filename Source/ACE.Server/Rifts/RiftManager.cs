@@ -35,7 +35,9 @@ namespace ACE.Server.Rifts
                 else
                     return 1.0;
             }
-        } 
+        }
+
+        public uint AverageMonsterLevel = 1;
 
         public Rift Next = null;
 
@@ -43,11 +45,11 @@ namespace ACE.Server.Rifts
 
         public Landblock? LandblockInstance = null;
 
-        public Player Creator;
+        public List<uint> CreatureIds = new List<uint>();
 
         public uint Instance { get; set; } = 0;
 
-        public Rift(string landblock, string name, string coords, Position dropPosition, uint instance, Landblock ephemeralRealm) : base(landblock, name, coords)
+        public Rift(string landblock, string name, string coords, Position dropPosition, uint instance, Landblock ephemeralRealm, List<uint> creatureIds) : base(landblock, name, coords)
         {
             Landblock = landblock;
             Name = name;
@@ -55,6 +57,7 @@ namespace ACE.Server.Rifts
             DropPosition = dropPosition;
             Instance = instance;
             LandblockInstance = ephemeralRealm;
+            CreatureIds = creatureIds;
         }
 
         public void Close()
@@ -160,6 +163,24 @@ namespace ACE.Server.Rifts
             }
         }
 
+        public static List<WorldObject> GetDungeonObjectsFromPosition(Position position, AppliedRuleset ruleset)
+        {
+            var Id = new LandblockId(position.LandblockId.Raw);
+
+            var objects = DatabaseManager.World.GetCachedInstancesByLandblock(Id.Landblock, RealmManager.DefaultRealm.Realm.Id);
+            return objects.Select(link => WorldObjectFactory.CreateNewWorldObject(link.WeenieClassId)).ToList();
+        }
+
+        private static List<WorldObject> GetGeneratorCreaturesObjectsFromDungeon(List<WorldObject> dungeonObjects)
+        {
+            return dungeonObjects
+                .Where(wo => wo.IsGenerator)
+                .SelectMany(wo => wo.Biota.PropertiesGenerator.Select(prop => prop.WeenieClassId))
+                .Select(wcid => WorldObjectFactory.CreateNewWorldObject(wcid))
+                .Where(wo => wo is Creature creature && creature is not Player && !creature.IsGenerator && !creature.IsNPC)
+                .ToList();
+        }
+
         public static Rift CreateRiftInstance(Dungeon dungeon)
         {
             var rules = new List<Realm>()
@@ -167,6 +188,8 @@ namespace ACE.Server.Rifts
                 RealmManager.GetRealm(1016).Realm // rift ruleset
             };
             var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(dungeon.DropPosition.LandblockId, rules, true);
+
+
             var instance = ephemeralRealm.Instance;
 
             var dropPosition = new Position(dungeon.DropPosition)
@@ -174,7 +197,23 @@ namespace ACE.Server.Rifts
                 Instance = instance,
             };
 
-            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm);
+            var dungeonObjects = GetDungeonObjectsFromPosition(dropPosition, ephemeralRealm.RealmRuleset);
+
+            var generatorCreatureObjects = GetGeneratorCreaturesObjectsFromDungeon(dungeonObjects);
+
+            var spawnedCreatures = dungeonObjects
+              .Where(wo => wo is Creature creature && creature is not Player && !creature.IsGenerator && !creature.IsNPC);
+
+            var creatures = generatorCreatureObjects.Concat(spawnedCreatures).Distinct().ToList();
+
+            var averageLevel = creatures.Any() ? creatures.Average(wo => wo.Level) : 1;
+
+
+            var tier = MutationsManager.GetMonsterTierByLevel((uint)averageLevel);
+
+            var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
+
+            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureWeenieIds);
 
             log.Info($"Creating Rift instance for {rift.Name} - {instance}");
 
@@ -187,10 +226,8 @@ namespace ACE.Server.Rifts
 
             var worldObjects = lb.GetAllWorldObjectsForDiagnostics();
 
-            var portal = worldObjects.Where(wo => wo is Portal).FirstOrDefault();
-
             var filteredWorldObjects = worldObjects
-                .Where(wo => wo is Creature && !(wo is Player) && !wo.IsGenerator)
+                .Where(wo => wo is Creature creature && !(creature is Player) && !wo.IsGenerator)
                 .OrderBy(creature => creature, new DistanceComparer(rift.DropPosition))
                 .ToList(); // To prevent multiple enumeration
 

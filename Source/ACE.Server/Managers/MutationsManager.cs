@@ -108,24 +108,18 @@ namespace ACE.Server.Managers
                 return wo;
             }
 
-            /*if (ruleset.Realm.Id == 1016 && wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator)
+            if (ruleset.Realm.Id == 1016 && wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator)
             {
-                /
-                var lbRaw = wo.Location.LandblockId.Raw;
-                var lb = $"{lbRaw:X8}".Substring(0, 4);
+
+                var lb = wo.Location.LandblockHex;
 
                 if (RiftManager.TryGetActiveRift(lb, out Rift activeRift))
                 {
-                    var creator = activeRift.Creator;
-                    if (creator == null)
-                        return wo;
-
                     var randomMob = ThreadSafeRandom.Next(1, 100);
 
                     if (randomMob <= 25)
                     {
-                        var tier = GetMonsterTierByLevel((uint)creator.Level);
-                        var monsters = DatabaseManager.World.GetDungeonCreatureWeenieIds((uint)tier);
+                        var monsters = activeRift.CreatureIds;
                         var random = ThreadSafeRandom.Next(0, monsters.Count - 1);
                         var wcid = monsters[random];
                         var creature = WorldObjectFactory.CreateNewWorldObject(wcid);
@@ -137,7 +131,7 @@ namespace ACE.Server.Managers
                     }
 
                 }
-            }*/
+            }
 
             return wo;
         }
