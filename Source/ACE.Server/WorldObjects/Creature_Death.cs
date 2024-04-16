@@ -733,6 +733,7 @@ namespace ACE.Server.WorldObjects
                 }
 
 
+                // slayer
                 var creatureType = SlayersChance.GetCreatureType();
                 var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
                 slayer.Name = $"{creatureType} Slayer Skull";
@@ -740,16 +741,21 @@ namespace ACE.Server.WorldObjects
                 slayer.SlayerCreatureType = creatureType;
                 corpse.TryAddToInventory(slayer);
 
+                // salvage
                 for (var i = 0; i < tier * 3; i++)
                 {
                     var salvageWcids = SalvageChance.Roll();
                     foreach (var wcid in salvageWcids)
                     {
                         var wo = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
-                        wo.Structure = 100;
-                        wo.Workmanship = 5f;
-                        wo.Value = 50000;
-                        corpse.TryAddToInventory(wo);
+
+                        if (wo != null)
+                        {
+                            wo.Structure = 100;
+                            wo.Workmanship = 5f;
+                            wo.Value = 0;
+                            corpse.TryAddToInventory(wo);
+                        }
                     }
                 }
             }

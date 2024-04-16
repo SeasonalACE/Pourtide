@@ -15,6 +15,33 @@ namespace ACE.Server.WorldObjects
 {
     partial class Player
     {
+        public static Dictionary<int, int> MaterialSalvageUseable = new Dictionary<int, int>()
+        {
+            {13, 21037},    // Aquamarine
+            {15, 21039},    // Black Garnet
+            {16, 21040},    // Black Opal
+            {20, 21046},    // Diamond
+            {21, 21048},    // Emerald
+            {22, 21049},    // Fire Opal
+            {23, 21050},    // Green Garnet
+            {25, 21053},    // Hematite
+            {26, 21054},    // Imperial Topaz
+            {27, 21056},    // Jet
+            {35, 21069},    // Red Garnet
+            {38, 21072},    // Ruby
+            {41, 21079},    // Sunstone
+            {47, 21086},    // White Sapphire
+            {50, 21089},    // Zircon
+            {51, 21055},    // Ivory
+            {57, 21042},    // Brass
+            {61, 20986},    // Iron
+            {64, 20993},    // Steel
+            {67, 20985},    // Granite
+            {74, 20988},    // Mahogany
+            {76, 20990},    // Pine
+        };
+
+
         /// <summary>
         /// A lookup table for MaterialType => Salvage Bag WCIDs
         /// </summary>

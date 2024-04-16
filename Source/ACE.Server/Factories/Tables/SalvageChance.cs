@@ -23,15 +23,13 @@ namespace ACE.Server.Factories.Tables
         // 50% chance a random bag of salvage for each type will be returned
         public static List<int> Roll()
         {
+            var values = Player.MaterialSalvageUseable.Values.ToList();
             var wcids = new List<int>();
-            foreach (var r in MaterialRanges)
+            for (var i = 0; i < 2; i++)
             {
-                if (ThreadSafeRandom.Next(1, 100) > 50)
-                {
-                    var (min, max) = r.Value;
-                    var wcid = Player.MaterialSalvage[ThreadSafeRandom.Next(min, max)];
-                    wcids.Add(wcid);
-                }
+                var item = ThreadSafeRandom.Next(0, values.Count - 1);
+                wcids.Add(values[item]);
+
             }
 
             return wcids;
