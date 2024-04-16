@@ -212,6 +212,10 @@ namespace ACE.Server.HotDungeons.Managers
         {
             returnValue = 1.0; // Default value
 
+
+            if (!RiftManager.HasActiveRift(currentLb))
+                returnValue = 0.50;
+
             if (HotspotDungeons.TryGetValue(currentLb, out Dungeon currentDungeon))
             {
                 currentDungeon.AddTotalXp(xpOverride);
