@@ -1060,12 +1060,20 @@ namespace ACE.Server.WorldObjects
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"You are not in an instance!", ChatMessageType.System));
                 return false;
             }
+
             var loc = GetPosition(PositionType.EphemeralRealmExitTo);
             if (loc == null || !ValidatePlayerRealmPosition(loc))
             {
                 loc = GetPosition(PositionType.Sanctuary) ?? GetPosition(PositionType.Home);
                 loc.Instance = Position.InstanceIDFromVars(HomeRealm, 0, false);
             }
+
+            if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift activeRift))
+            {
+                loc = new Position(GetPosition(PositionType.Sanctuary)) ?? GetPosition(PositionType.Home);
+                loc.Instance = Position.InstanceIDFromVars(HomeRealm, 0, false);
+            }
+
             WorldManager.ThreadSafeTeleport(this, loc, true, new ActionEventDelegate(() =>
             {
                 this.SetPosition(PositionType.EphemeralRealmExitTo, null);

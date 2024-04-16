@@ -220,7 +220,6 @@ namespace ACE.Server.Rifts
 
             var averageLevel = creatures.Any() ? creatures.Average(wo => wo.Level) : 1;
 
-
             var tier = MutationsManager.GetMonsterTierByLevel((uint)averageLevel);
 
             var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
