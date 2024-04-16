@@ -12,6 +12,7 @@ using ACE.Server.WorldObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -76,6 +77,17 @@ namespace ACE.Server.Managers
                     wo = null;
                     return wo;
                 }
+            }
+
+            if (ruleset.Realm.Id == RealmManager.ServerBaseRealm.Realm.Id && wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator)
+            {
+                if (wo.Level < 50)
+                {
+                    var creature = WorldObjectFactory.CreateNewWorldObject(601001); // forgotten leech
+                    wo.Destroy();
+                    return creature;
+                }
+
             }
 
 
