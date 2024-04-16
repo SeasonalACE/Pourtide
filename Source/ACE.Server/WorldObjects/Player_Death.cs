@@ -225,6 +225,10 @@ namespace ACE.Server.WorldObjects
             else
                 Session.Network.EnqueueSend(new GameMessageSystemChat("Your augmentation prevents the tides of death from ripping away your current enchantments!", ChatMessageType.Broadcast));
 
+            var equippedArmor = GetEquippedClothingArmor((CoverageMask)CoverageMaskHelper.Outerwear);
+
+
+
             // wait for the death animation to finish
             var dieChain = new ActionChain();
             var animLength = DatManager.PortalDat.ReadFromDat<MotionTable>(MotionTableId).GetAnimationLength(MotionCommand.Dead);
@@ -602,6 +606,8 @@ namespace ACE.Server.WorldObjects
                 if (isPkDeath)
                     TrackKill(corpse.KillerId.Value, corpse.VictimId.Value);
 
+
+
                 //var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
                 if (isPkDeath && !isAlly && UpdatePkTrophies(corpse.KillerId.Value, corpse.VictimId.Value))
                 {
@@ -620,6 +626,19 @@ namespace ACE.Server.WorldObjects
                 log.Error(ex.StackTrace);
             }
 
+            var equippedArmor = GetEquippedClothingArmor((CoverageMask)CoverageMaskHelper.Outerwear);
+
+            foreach (var armor in equippedArmor)
+            {
+                if (ThreadSafeRandom.Next(1, 100) <= 2)
+                    dropItems.Add(armor);
+                    
+                if (armor.ArmorLevel > 10 && armor.Bonded == null && armor.Attuned == null)
+                {
+                    armor.ArmorLevel -= (int)(armor.ArmorLevel * 0.05);
+                }
+
+            }
 
 
             // notify player of destroyed items?
@@ -633,6 +652,9 @@ namespace ACE.Server.WorldObjects
 
                 DeathItemLog(dropItems, corpse);
             }
+
+
+
 
             return dropItems;
         }

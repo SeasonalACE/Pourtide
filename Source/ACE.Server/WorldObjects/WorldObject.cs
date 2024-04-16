@@ -257,6 +257,9 @@ namespace ACE.Server.WorldObjects
 
             if (MotionTableId != 0)
                 CurrentMotionState = new Motion(MotionStance.Invalid);
+
+            if (OriginalArmorLevel == null && ArmorLevel != null)
+                OriginalArmorLevel = ArmorLevel;
         }
 
         /// <summary>

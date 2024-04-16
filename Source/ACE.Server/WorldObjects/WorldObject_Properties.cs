@@ -2715,6 +2715,11 @@ namespace ACE.Server.WorldObjects
         }
 
         /* Ratings */
+        public int? OriginalArmorLevel
+        {
+            get => GetProperty(PropertyInt.OriginalArmorLevel);
+            set { if (!value.HasValue) RemoveProperty(PropertyInt.OriginalArmorLevel); else SetProperty(PropertyInt.OriginalArmorLevel, value.Value); }
+        }
 
         public int? DamageRating
         {

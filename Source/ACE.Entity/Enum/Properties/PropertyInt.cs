@@ -648,7 +648,13 @@ namespace ACE.Entity.Enum.Properties
         RulesetStampVendorType                  = 42004,
 
         [ServerOnly]
-        LastRebuffTimestamp                     = 42005
+        LastRebuffTimestamp                     = 42005,
+
+        [ServerOnly]
+        OriginalArmorLevel                      = 60000
+            
+
+
     }
 
     public static class PropertyIntExtensions

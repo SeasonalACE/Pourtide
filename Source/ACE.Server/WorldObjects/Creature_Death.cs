@@ -716,6 +716,8 @@ namespace ACE.Server.WorldObjects
         {
             var droppedItems = new List<WorldObject>();
 
+
+
             if (IsOreNode)
             {
                 var tier = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 2 : 3;

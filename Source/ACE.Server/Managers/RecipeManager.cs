@@ -65,8 +65,10 @@ namespace ACE.Server.Managers
             }
 
             var recipe = GetRecipe(player, source, target);
+            var isSteel = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Steel;
+            var isArmorOrShield = target.ValidLocations != null && (target.ValidLocations & (EquipMask.Extremity | EquipMask.Armor | EquipMask.Shield)) != 0 && target.ArmorLevel < target.OriginalArmorLevel;
 
-            if (recipe == null)
+            if (recipe == null || (isSteel && isArmorOrShield))
             {
                 if (TryHandleHardcodedRecipe(player, source, target))
                 {
@@ -170,6 +172,22 @@ namespace ACE.Server.Managers
 
         private static bool TryHandleHardcodedRecipe(Player player, WorldObject source, WorldObject target)
         {
+            var isSteel = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Steel;
+            var isArmorOrShield = target.ValidLocations != null && (target.ValidLocations & (EquipMask.Extremity | EquipMask.Armor | EquipMask.Shield)) != 0 && target.ArmorLevel < target.OriginalArmorLevel;
+
+            if (isSteel && isArmorOrShield)
+            {
+                var sum = target.ArmorLevel + 10;
+                if (sum > target.OriginalArmorLevel)
+                    target.ArmorLevel = target.OriginalArmorLevel;
+                else
+                    target.ArmorLevel = sum;
+
+                player.TryConsumeFromInventoryWithNetworking(source);
+                return true;
+
+            }
+
             if (source.WeenieClassId == 604001)
                 return ApplySlayerSkull(player, source, target);
             if (target.GetProperty(PropertyBool.AllowRulesetStamp) == true && source.WeenieClassName == "realm-ruleset-stamp")
@@ -1574,6 +1592,8 @@ namespace ACE.Server.Managers
 
             var result = mutationScript.TryMutate(target);
 
+            if (result)
+
             if (numTimesTinkered != target.NumTimesTinkered)
                 HandleTinkerLog(source, target);
 
@@ -1586,6 +1606,9 @@ namespace ACE.Server.Managers
         {
             if (target.TinkerLog != null)
                 target.TinkerLog += ",";
+
+            if (source.MaterialType == MaterialType.Steel)
+                target.OriginalArmorLevel = target.ArmorLevel;
 
             target.TinkerLog += (uint?)source.MaterialType ?? source.WeenieClassId;
         }
