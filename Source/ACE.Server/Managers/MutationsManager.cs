@@ -81,6 +81,15 @@ namespace ACE.Server.Managers
 
             if (ruleset.Realm.Id == RealmManager.ServerBaseRealm.Realm.Id && wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator)
             {
+                if (wo.Location == null)
+                    return wo;
+
+
+                var lb = wo.Location.LandblockId;
+
+                if (lb.Indoors)
+                    return wo;
+
                 if (wo.Level < 50)
                 {
                     var creature = WorldObjectFactory.CreateNewWorldObject(601001); // forgotten leech
