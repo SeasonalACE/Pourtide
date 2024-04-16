@@ -5,6 +5,7 @@ using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Factories;
+using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Realms;
 using ACE.Server.Rifts;
 using ACE.Server.WorldObjects;
@@ -114,26 +115,60 @@ namespace ACE.Server.Managers
                 var lb = wo.Location.LandblockHex;
 
                 if (RiftManager.TryGetActiveRift(lb, out Rift activeRift))
-                {
-                    var randomMob = ThreadSafeRandom.Next(1, 100);
-
-                    if (randomMob <= 25)
-                    {
-                        var monsters = activeRift.CreatureIds;
-                        var random = ThreadSafeRandom.Next(0, monsters.Count - 1);
-                        var wcid = monsters[random];
-                        var creature = WorldObjectFactory.CreateNewWorldObject(wcid);
-                        creature.Location = new Position(wo.Location);
-                        creature.Name = $"Rift {creature.Name}";
-                        wo.Destroy();
-                        return creature;
-
-                    }
-
-                }
+                    return ProcessRiftCreature(wo, activeRift);
             }
 
             return wo;
         }
+
+        private static WorldObject RollForOre(Position position, uint tier = 1)
+        {
+            if (ThreadSafeRandom.Next(1, 100) == 1)
+            {
+                var ore = WorldObjectFactory.CreateNewWorldObject(603001);
+
+                if (tier >= 2 && ThreadSafeRandom.Next(1, 10) == 1)
+                {
+                    ore?.Destroy();
+                    ore = WorldObjectFactory.CreateNewWorldObject((uint)603002);
+                }
+
+                if (tier >= 4 && ThreadSafeRandom.Next(1, 20) == 1)
+                {
+                    ore?.Destroy();
+                    ore = WorldObjectFactory.CreateNewWorldObject((uint)603003);
+                }
+                ore.Location = new Position(position);
+                return ore;
+            }
+
+            return null;
+        }
+
+        private static WorldObject ProcessRiftCreature(WorldObject wo, Rift rift)
+        {
+            var ore = RollForOre(wo.Location, rift.Tier);
+
+            if (ore != null)
+            {
+                wo.Destroy();
+                return ore;
+            }
+
+            if (ThreadSafeRandom.Next(1, 100) <= 25)
+            {
+
+                var riftCreatureId = rift.GetRandomCreature();
+                var creature = WorldObjectFactory.CreateNewWorldObject(riftCreatureId);
+                creature.Location = new Position(wo.Location);
+                creature.Name = $"Rift {creature.Name}";
+                wo.Destroy();
+                return creature;
+            }
+
+            return wo;
+
+        }
+        
     }
 }

@@ -1,4 +1,6 @@
+using ACE.Common;
 using ACE.Database;
+using ACE.DatLoader.FileTypes;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Models;
@@ -47,9 +49,11 @@ namespace ACE.Server.Rifts
 
         public List<uint> CreatureIds = new List<uint>();
 
+        public uint Tier = 1;
+
         public uint Instance { get; set; } = 0;
 
-        public Rift(string landblock, string name, string coords, Position dropPosition, uint instance, Landblock ephemeralRealm, List<uint> creatureIds) : base(landblock, name, coords)
+        public Rift(string landblock, string name, string coords, Position dropPosition, uint instance, Landblock ephemeralRealm, List<uint> creatureIds, uint tier) : base(landblock, name, coords)
         {
             Landblock = landblock;
             Name = name;
@@ -58,7 +62,15 @@ namespace ACE.Server.Rifts
             Instance = instance;
             LandblockInstance = ephemeralRealm;
             CreatureIds = creatureIds;
+            Tier = tier;
         }
+
+        public uint GetRandomCreature()
+        {
+            var randomIndex = ThreadSafeRandom.Next(0, CreatureIds.Count - 1);
+            return CreatureIds[randomIndex];
+        }
+
 
         public void Close()
         {
@@ -213,7 +225,7 @@ namespace ACE.Server.Rifts
 
             var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
 
-            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureWeenieIds);
+            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureWeenieIds, tier);
 
             log.Info($"Creating Rift instance for {rift.Name} - {instance}");
 

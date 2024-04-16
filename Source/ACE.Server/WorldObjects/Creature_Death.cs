@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using ACE.Common;
 using ACE.Database;
 using ACE.Database.Models.World;
 using ACE.Entity;
@@ -11,6 +11,7 @@ using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
+using ACE.Server.Factories.Tables;
 using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
@@ -705,12 +706,53 @@ namespace ACE.Server.WorldObjects
             set { if (!value) RemoveProperty(PropertyBool.CanGenerateRare); else SetProperty(PropertyBool.CanGenerateRare, value); }
         }
 
+        private List<uint> OreNodes = new List<uint>()
+        {
+            603001,
+            603002,
+            603003,
+        };
+
+        public bool IsOreNode => OreNodes.Contains(WeenieClassId);
+
+
         /// <summary>
         /// Transfers generated treasure from creature to corpse
         /// </summary>
         private List<WorldObject> GenerateTreasure(DamageHistoryInfo killer, Corpse corpse)
         {
             var droppedItems = new List<WorldObject>();
+
+            if (IsOreNode)
+            {
+                var tier = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 2 : 3;
+                var amount = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 10 : 20;
+                for (var i = 0; i < amount; ++i)
+                {
+                    corpse.TryAddToInventory(WorldObjectFactory.CreateNewWorldObject(603004));
+                }
+
+
+                var creatureType = SlayersChance.GetCreatureType();
+                var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
+                slayer.Name = $"{creatureType} Slayer Skull";
+                slayer.LongDesc = $"Use this skull on any loot-generated weapon or caster to give it a {creatureType} Slayer effect.";
+                slayer.SlayerCreatureType = creatureType;
+                corpse.TryAddToInventory(slayer);
+
+                for (var i = 0; i < tier * 3; i++)
+                {
+                    var salvageWcids = SalvageChance.Roll();
+                    foreach (var wcid in salvageWcids)
+                    {
+                        var wo = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
+                        wo.Structure = 100;
+                        wo.Workmanship = 5f;
+                        wo.Value = 50000;
+                        corpse.TryAddToInventory(wo);
+                    }
+                }
+            }
 
             // create death treasure from loot generation factory
             if (DeathTreasure != null)
