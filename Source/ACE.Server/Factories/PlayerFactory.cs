@@ -55,10 +55,17 @@ namespace ACE.Server.Factories
                 player.TryCreateInInventoryWithNetworking(wo);
             }*/
 
-            var dailyCap = XpManager.DailyXpCap;
+            /*var dailyCap = XpManager.DailyXpCap;
             player.QuestXpDailyMax = (long)dailyCap;
             player.MonsterXpDailyMax = (long)dailyCap;
-            player.PvpXpDailyMax = (long)dailyCap;
+            player.PvpXpDailyMax = (long)dailyCap;*/
+            var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
+            var diff = (long)XpManager.CurrentDailyXp.XpCap - (long)playerTotalXp;
+            var xpPerCategory = diff / 3;
+
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory);
         }
 
         public static CreateResult Create(CharacterCreateInfo characterCreateInfo, Weenie weenie, ObjectGuid guid, uint accountId, WeenieType weenieType, out Player player)
