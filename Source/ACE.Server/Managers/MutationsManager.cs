@@ -86,11 +86,49 @@ namespace ACE.Server.Managers
 
                 if (wo.Level < 50)
                 {
-                    var creature = WorldObjectFactory.CreateNewWorldObject(601001); // forgotten leech
+                    var creature = WorldObjectFactory.CreateNewWorldObject(601000); // forgotten lich
                     wo.Destroy();
                     return creature;
                 }
 
+                if (ThreadSafeRandom.Next(1, 100) <= 25)
+                {
+
+                    WorldObject creature;
+                    if (wo.Level < 80)
+                    {
+                        creature = WorldObjectFactory.CreateNewWorldObject(601001); // forgotten lich
+                        wo.Destroy();
+                        return creature;
+                    }
+
+                    if (wo.Level < 100)
+                    {
+                        creature = WorldObjectFactory.CreateNewWorldObject(601002); // forgotten leech
+                        wo.Destroy();
+                        return creature;
+                    }
+
+                    if (wo.Level < 110)
+                    {
+                        creature = WorldObjectFactory.CreateNewWorldObject(601003); // forgotten demilich
+                        wo.Destroy();
+                        return creature;
+                    }
+
+                    if (wo.Level < 165)
+                    {
+                        creature = WorldObjectFactory.CreateNewWorldObject(601004); // forgotten Olthoi Slayer
+                        wo.Destroy();
+                        return creature;
+                    }
+
+                    creature = WorldObjectFactory.CreateNewWorldObject(601005); // pyre champion lich
+                    wo.Destroy();
+                    return creature;
+                }
+
+                return wo;
             }
 
 
