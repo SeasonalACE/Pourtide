@@ -51,12 +51,6 @@ namespace ACE.Server.Managers
 
         public static WorldObject ProcessWorldObject(WorldObject wo, AppliedRuleset ruleset, bool replace = true)
         {
-            if (wo.WeenieClassId == 14)
-            {
-                wo.Destroy();
-                return null;
-            }
-
             var disableHousing = ruleset.Realm.Id != RealmManager.ServerBaseRealm.Realm.Id;
 
             if (wo is House || wo is Storage || wo is Hook || wo is Hooker || wo is HousePortal || wo is SlumLord)
