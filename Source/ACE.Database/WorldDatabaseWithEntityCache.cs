@@ -1197,7 +1197,13 @@ namespace ACE.Database
             { 6, new CreatureTierProps(5, 200, 300, 800000, 2000000, 2000, 3000, 5000) },
         };
 
-        public List<uint> GetCreatureWeenieIdsByTier(uint tier)
+        public class CreatureInfo
+        {
+            public uint Id { get; set; }
+            public int Level { get; set; }
+        }
+
+        public List<CreatureInfo> GetCreatureWeenieIdsByTier(uint tier)
         {
             var props = CreatureCacheProps[tier];
 
@@ -1205,7 +1211,7 @@ namespace ACE.Database
             using (var context = new WorldDbContext())
             {
 
-                var query = from weenieRecord in context.Weenie
+                List<CreatureInfo> query = (from weenieRecord in context.Weenie
                             join name in context.WeeniePropertiesString on weenieRecord.ClassId equals name.ObjectId
                             join xp in context.WeeniePropertiesInt on weenieRecord.ClassId equals xp.ObjectId
                             join level in context.WeeniePropertiesInt on weenieRecord.ClassId equals level.ObjectId
@@ -1228,15 +1234,15 @@ namespace ACE.Database
                             level.Type == 25 &&
                             level.Value >= props.MinLevel &&
                             level.Value <= props.MaxLevel
-                            select weenieRecord.ClassId;
+                            select new  CreatureInfo { Id = weenieRecord.ClassId,  Level = level.Value }).Distinct().ToList();
 
-                return query.Distinct().ToList();
+                return query;
             }
         }
 
-        private static Dictionary<uint, List<uint>> CachedDungeonCreatures = new Dictionary<uint, List<uint>>();
+        private static Dictionary<uint, List<CreatureInfo>> CachedDungeonCreatures = new Dictionary<uint, List<CreatureInfo>>();
 
-        public List<uint> GetDungeonCreatureWeenieIds(uint tier)
+        public List<CreatureInfo> GetDungeonCreatureWeenieIds(uint tier)
         {
             if (CachedDungeonCreatures.ContainsKey(tier)) return CachedDungeonCreatures[tier];
             else
