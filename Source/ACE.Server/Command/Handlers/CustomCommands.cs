@@ -13,6 +13,7 @@ using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace ACE.Server.Command.Handlers
@@ -264,6 +265,38 @@ namespace ACE.Server.Command.Handlers
                 var stats = players[i];
                 var player = PlayerManager.FindByGuid(stats.PlayerId);
                 session.Network.EnqueueSend(new GameMessageSystemChat($"\n{i + 1}. Name = {player.Name}, Kills = {stats.KillCount}", ChatMessageType.System));
+            }
+        }
+
+        /** Leaderboards/Stats Start **/
+        [CommandHandler("leaderboards-deaths", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 pvp deaths leaderboard.")]
+        public static void HandleLeaderboardsDeaths(Session session, params string[] paramters)
+        {
+            var players = DatabaseManager.Shard.BaseDatabase.GetPlayerWithMostDeaths();
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Top 10 Deaths Leaderboard>", ChatMessageType.System));
+            for (var i = 0; i < players.Count; i++)
+            {
+                var stats = players[i];
+                var player = PlayerManager.FindByGuid(stats.PlayerId);
+                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{i + 1}. Name = {player.Name}, Deaths = {stats.DeathCount}", ChatMessageType.System));
+            }
+        }
+
+        [CommandHandler("leaderboards-Xp", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 Levels leaderboard.")]
+        public static void HandleLeaderboardsXp(Session session, params string[] paramters)
+        {
+            var players = PlayerManager.GetAllPlayers()
+                .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player)
+                .OrderByDescending(player => player.Level)
+                .ToList();
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Top 10 Xp Leaderboard>", ChatMessageType.System));
+            for (var i = 0; i < players.Count; i++)
+            {
+                var info = players[i];
+                var player = PlayerManager.FindByGuid(info.Guid);
+                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{i + 1}. Name = {player.Name}, Level = {player.Level}", ChatMessageType.System));
             }
         }
         /** Leadearboards/Stats End **/

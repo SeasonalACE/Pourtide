@@ -18,6 +18,8 @@ using ACE.Database.Entity;
 using ACE.Database.Models.Shard;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
+using static ACE.Database.WorldDatabaseWithEntityCache;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace ACE.Database
 {
@@ -984,11 +986,19 @@ namespace ACE.Database
                 return (playerKills?.PlayerId ?? 0, playerKills?.KillCount ?? 0);
             }
         }
-        public (uint PlayerId, int DeathCount) GetPlayerWithMostDeaths()
+
+        public class PlayerInfo
+        {
+            public uint Id { get; set; }
+            public string Name { get; set; }
+            public int Level { get; set; }
+        }
+
+        public List<(uint PlayerId, int DeathCount)> GetPlayerWithMostDeaths()
         {
             using (var context = new ShardDbContext())
             {
-                var playerDeaths = context.PKStatsKills
+                var topTenPlayers = context.PKStatsKills
                     .GroupBy(kill => kill.VictimId)
                     .Select(group => new
                     {
@@ -996,9 +1006,10 @@ namespace ACE.Database
                         DeathCount = group.Count()
                     })
                     .OrderByDescending(x => x.DeathCount)
-                    .FirstOrDefault();
+                    .Take(10)
+                    .ToList();
 
-                return (playerDeaths?.PlayerId ?? 0, playerDeaths?.DeathCount ?? 0);
+                return topTenPlayers.Select(player => ((uint)player.PlayerId, player.DeathCount)).ToList();
             }
         }
 
