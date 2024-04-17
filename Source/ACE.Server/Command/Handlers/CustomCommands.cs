@@ -289,6 +289,7 @@ namespace ACE.Server.Command.Handlers
             var players = PlayerManager.GetAllPlayers()
                 .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player)
                 .OrderByDescending(player => player.Level)
+                .Take(10)
                 .ToList();
 
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Top 10 Xp Leaderboard>", ChatMessageType.System));
