@@ -606,8 +606,6 @@ namespace ACE.Server.WorldObjects
                 if (isPkDeath)
                     TrackKill(corpse.KillerId.Value, corpse.VictimId.Value);
 
-
-
                 //var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
                 if (isPkDeath && !isAlly && UpdatePkTrophies(corpse.KillerId.Value, corpse.VictimId.Value))
                 {
@@ -635,11 +633,10 @@ namespace ACE.Server.WorldObjects
                     
                 if (armor.ArmorLevel > 10 && armor.Bonded == null && armor.Attuned == null)
                 {
-                    armor.ArmorLevel -= (int)(armor.ArmorLevel * 0.05);
+                    armor.ArmorLevel -= (int)(armor.OriginalArmorLevel * 0.05);
                 }
 
             }
-
 
             // notify player of destroyed items?
             dropItems.AddRange(destroyedItems);
