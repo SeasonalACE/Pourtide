@@ -111,8 +111,6 @@ namespace ACE.Server.WorldObjects
                     break;
 
                 case XpType.Kill:
-                case XpType.Fellowship:
-                case XpType.Allegiance:
                     if (MonsterXpDailyMax <= MonsterXp)
                         return;
 
