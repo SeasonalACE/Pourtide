@@ -152,12 +152,27 @@ namespace ACE.Server.Managers
             if (ThreadSafeRandom.Next(1, 100) <= 25)
             {
 
-                var riftCreatureId = rift.GetRandomCreature();
-                var creature = WorldObjectFactory.CreateNewWorldObject(riftCreatureId);
-                creature.Location = new Position(wo.Location);
-                creature.Name = $"Rift {creature.Name}";
-                wo.Destroy();
-                return creature;
+                try
+                {
+                    var riftCreatureId = rift.GetRandomCreature();
+                    var creature = WorldObjectFactory.CreateNewWorldObject(riftCreatureId);
+                    creature.Location = new Position(wo.Location);
+                    creature.Name = $"Rift {creature.Name}";
+                    wo.Destroy();
+                    return creature;
+                } catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
+                    if (!wo.IsDestroyed)
+                        return wo;
+                    else
+                        wo.Destroy();
+
+                    return null;
+                }
+
+
             }
 
             return wo;
