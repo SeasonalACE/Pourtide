@@ -75,21 +75,11 @@ namespace ACE.Server.Features.Xp
             }
         }
 
-        private static List<double> ConcaveMods = new List<double>()
-        {
-            0.25,
-            0.15,
-            0.075,
-            0.05,
-            0.075,
-            0.15,
-            0.25,
-        };
-
         public static void CalculateCurrentDailyXpCap()
         {
             var week = Week;
             var totalWeeklyXp = week > 1 ? WeeklyLevelWithCapXp[week] - WeeklyLevelWithCapXp[week - 1] : WeeklyLevelWithCapXp[week];
+            var dailyxp = totalWeeklyXp / 7;
             var endOfWeek = WeeklyTimestamp;
 
             ulong previous = week > 1 ? WeeklyLevelWithCapXp[week - 1] : 0;
@@ -97,9 +87,9 @@ namespace ACE.Server.Features.Xp
             {
                 var day = endOfWeek.AddDays(-i);
                 day = day.AddDays(1);
-                var newDaily = totalWeeklyXp * ConcaveMods[i - 1] + previous;
-                previous = (ulong)newDaily;
-                var dailyXp = new DailyXp(day, (ulong)newDaily);
+                var newDaily = dailyxp + previous;
+                previous = newDaily;
+                var dailyXp = new DailyXp(day, newDaily);
                 DailyXpCache.Add(dailyXp);
             }
 
