@@ -95,48 +95,57 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         protected virtual void Die(DamageHistoryInfo lastDamager, DamageHistoryInfo topDamager)
         {
-            if (dieEntered) return;
-
-            dieEntered = true;
-
-            UpdateVital(Health, 0);
-
-            if (topDamager != null)
+            try
             {
-                KillerId = topDamager.Guid.Full;
+                if (dieEntered) return;
 
-                if (topDamager.IsPlayer)
+                dieEntered = true;
+
+                UpdateVital(Health, 0);
+
+                if (topDamager != null)
                 {
-                    var topDamagerPlayer = topDamager.TryGetAttacker();
-                    if (topDamagerPlayer != null)
-                        topDamagerPlayer.CreatureKills = (topDamagerPlayer.CreatureKills ?? 0) + 1;
+                    KillerId = topDamager.Guid.Full;
+
+                    if (topDamager.IsPlayer)
+                    {
+                        var topDamagerPlayer = topDamager.TryGetAttacker();
+                        if (topDamagerPlayer != null)
+                            topDamagerPlayer.CreatureKills = (topDamagerPlayer.CreatureKills ?? 0) + 1;
+                    }
                 }
+
+                CurrentMotionState = new Motion(MotionStance.NonCombat, MotionCommand.Ready);
+                //IsMonster = false;
+
+                PhysicsObj.StopCompletely(true);
+
+                // broadcast death animation
+                var motionDeath = new Motion(MotionStance.NonCombat, MotionCommand.Dead);
+                var deathAnimLength = ExecuteMotion(motionDeath);
+
+                EmoteManager.OnDeath(lastDamager);
+
+                var dieChain = new ActionChain();
+
+                // wait for death animation to finish
+                //var deathAnimLength = DatManager.PortalDat.ReadFromDat<MotionTable>(MotionTableId).GetAnimationLength(MotionCommand.Dead);
+                dieChain.AddDelaySeconds(deathAnimLength);
+
+                dieChain.AddAction(this, () =>
+                {
+                    CreateCorpse(topDamager);
+                    Destroy();
+                });
+
+                dieChain.EnqueueChain();
+
+            } catch(Exception ex)
+            {
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
             }
 
-            CurrentMotionState = new Motion(MotionStance.NonCombat, MotionCommand.Ready);
-            //IsMonster = false;
-
-            PhysicsObj.StopCompletely(true);
-
-            // broadcast death animation
-            var motionDeath = new Motion(MotionStance.NonCombat, MotionCommand.Dead);
-            var deathAnimLength = ExecuteMotion(motionDeath);
-
-            EmoteManager.OnDeath(lastDamager);
-
-            var dieChain = new ActionChain();
-
-            // wait for death animation to finish
-            //var deathAnimLength = DatManager.PortalDat.ReadFromDat<MotionTable>(MotionTableId).GetAnimationLength(MotionCommand.Dead);
-            dieChain.AddDelaySeconds(deathAnimLength);
-
-            dieChain.AddAction(this, () =>
-            {
-                CreateCorpse(topDamager);
-                Destroy();
-            });
-
-            dieChain.EnqueueChain();
         }
 
         /// <summary>
