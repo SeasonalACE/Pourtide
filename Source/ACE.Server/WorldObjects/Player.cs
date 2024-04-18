@@ -61,6 +61,10 @@ namespace ACE.Server.WorldObjects
             }
         }
 
+        public  DateTime PrevLeaderboardXPCommandRequestTimestamp;
+        public  DateTime PrevLeaderboardPvPKillsCommandRequestTimestamp;
+        public  DateTime PrevLeaderboardPvPDeathsCommandRequestTimestamp;
+
         public DateTime LastJumpTime;
 
         public ACE.Entity.Position LastGroundPos;

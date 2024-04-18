@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ACE.Server.HotDungeons
+namespace ACE.Server.Features.HotDungeons
 {
     internal static class DungeonRepository
     {
@@ -31,7 +31,7 @@ namespace ACE.Server.HotDungeons
 
         private static void ImportDungeonsFromCsv()
         {
-            string csvFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "HotDungeons", "dungeon_ids.csv");
+            string csvFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Features", "Dungeons", "dungeon_ids.csv");
 
             if (!File.Exists(csvFilePath))
             {
@@ -63,7 +63,7 @@ namespace ACE.Server.HotDungeons
             }
         }
 
-        public static DungeonLandblock? GetDungeon(string lb)
+        public static DungeonLandblock GetDungeon(string lb)
         {
             Landblocks.TryGetValue(lb, out DungeonLandblock dungeon);
             return dungeon;

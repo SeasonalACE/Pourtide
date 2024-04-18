@@ -22,6 +22,7 @@ using ACE.Server.WorldObjects;
 
 using Biota = ACE.Entity.Models.Biota;
 using ACE.Server.Realms;
+using ACE.Server.Features.Discord;
 
 namespace ACE.Server.Managers
 {
@@ -727,6 +728,13 @@ namespace ACE.Server.Managers
                 default:
                     return;
             }
+
+            // narrow channels for webhook here
+            if (channel == Channel.Audit && PropertyManager.GetString("turbine_chat_webhook_audit").Item.Length > 0)
+                _ = WebhookRepository.SendAuditChat(
+                    $"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{message}\""
+                    );
+
 
             if (channel != Channel.AllBroadcast)
                 log.Info($"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{message}\"");

@@ -7,7 +7,7 @@ using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
-using ACE.Server.HotDungeons.Managers;
+using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameMessages.Messages;
@@ -22,7 +22,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ACE.Server.Rifts
+namespace ACE.Server.Features.Rifts
 {
     internal class Rift : DungeonBase
     {
@@ -45,7 +45,7 @@ namespace ACE.Server.Rifts
 
         public Rift Previous = null;
 
-        public Landblock? LandblockInstance = null;
+        public Landblock LandblockInstance = null;
 
         public List<uint> CreatureIds = new List<uint>();
 
@@ -284,8 +284,8 @@ namespace ACE.Server.Rifts
                 rift.Previous = last;
                 last.Next = rift;
 
-                 SpawnNextAsync(last);
-                 SpawnPreviousAsync(rift);
+                SpawnNextAsync(last);
+                SpawnPreviousAsync(rift);
             }
 
             ActiveRifts[currentLb] = rift;

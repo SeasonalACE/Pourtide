@@ -4,6 +4,7 @@ using System.Text;
 
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
+using ACE.Server.Features.Discord;
 using ACE.Server.Managers;
 using ACE.Server.Network.Enum;
 using ACE.Server.Network.GameEvent.Events;
@@ -318,6 +319,14 @@ namespace ACE.Server.Network.Handlers
                     }
 
                     session.Network.EnqueueSend(new GameMessageTurbineChat(ChatNetworkBlobType.NETBLOB_RESPONSE_BINARY, ChatNetworkBlobDispatchType.ASYNCMETHOD_SENDTOROOMBYNAME, contextId, null, null, 0, adjustedchatType));
+                }
+
+                if (adjustedchatType == ChatType.General)
+                {
+                    var channel = ChatType.General;
+                    var sender = session.Player;
+                    var formattedMessage = $"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{message}\"";
+                    _ = WebhookRepository.SendGeneralChat(formattedMessage);
                 }
 
                 LogTurbineChat(adjustedChannelID, session.Player.Name, message, senderID, adjustedchatType);

@@ -18,8 +18,7 @@ using ACE.Server.Factories;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Network.Structure;
 using ACE.Server.WorldObjects;
-using ACE.Server.Rifts;
-using ACE.Server.Xp;
+using ACE.Server.Features.Xp;
 
 namespace ACE.Server.Managers
 {

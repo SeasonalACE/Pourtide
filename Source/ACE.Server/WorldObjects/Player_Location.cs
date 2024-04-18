@@ -17,9 +17,7 @@ using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Managers;
 using ACE.Server.Realms;
-using ACE.Server.Rifts;
-using ACE.Server.HotDungeons;
-using ACE.Server.HotDungeons.Managers;
+using ACE.Server.Features.Rifts;
 
 namespace ACE.Server.WorldObjects
 {

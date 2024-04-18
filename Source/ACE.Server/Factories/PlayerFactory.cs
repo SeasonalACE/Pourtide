@@ -13,7 +13,7 @@ using ACE.Entity.Enum.Properties;
 using ACE.Entity.Models;
 using ACE.Server.WorldObjects;
 using ACE.Server.Managers;
-using ACE.Server.Xp;
+using ACE.Server.Features.Xp;
 
 namespace ACE.Server.Factories
 {

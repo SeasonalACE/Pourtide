@@ -16,6 +16,7 @@ using ACE.Server.Network.Structure;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Database;
+using ACE.Server.Features.Discord;
 
 namespace ACE.Server.WorldObjects
 {
@@ -118,6 +119,11 @@ namespace ACE.Server.WorldObjects
                 }
 
                 globalPKDe += "\n[PKDe]";
+
+                var channel = ChatType.General;
+                Player? sender = null;
+                var formattedMessage = $"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{globalPKDe}\"";
+                _ = WebhookRepository.SendGeneralChat(formattedMessage);
 
                 PlayerManager.BroadcastToAll(new GameMessageSystemChat(globalPKDe, ChatMessageType.Broadcast));
             }

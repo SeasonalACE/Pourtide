@@ -28,10 +28,9 @@ using ACE.Server.WorldObjects;
 
 using Position = ACE.Entity.Position;
 using ACE.Server.Realms;
-using ACE.Server.HotDungeons.Managers;
-using ACE.Server.HotDungeons;
 using ACE.Server.Mods;
-using ACE.Server.Rifts;
+using ACE.Server.Features.HotDungeons.Managers;
+using ACE.Server.Features.Rifts;
 
 namespace ACE.Server.Entity
 {

@@ -289,6 +289,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Discord.Net" Version="3.14.1" />
     <PackageReference Include="Lib.Harmony" Version="2.3.0-prerelease.4" />
     <PackageReference Include="log4net" Version="2.0.15" />
     <PackageReference Include="Log4Net.Async.Standard" Version="3.1.0" />
@@ -323,7 +324,7 @@
     <None Update="Config.js.docker">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="HotDungeons\dungeon_ids.csv">
+    <None Update="Features\Dungeons\dungeon_ids.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="images\ace-retro-icon2.png">

@@ -8,7 +8,6 @@ using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameMessages.Messages;
-using ACE.Server.Xp;
 
 namespace ACE.Server.WorldObjects
 {

@@ -4,14 +4,15 @@ using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity.Actions;
-using ACE.Server.HotDungeons.Managers;
+using ACE.Server.Features.Discord;
+using ACE.Server.Features.HotDungeons.Managers;
+using ACE.Server.Features.Xp;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
-using ACE.Server.Xp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -172,14 +173,21 @@ namespace ACE.Server.Command.Handlers
         /** HotDungeons Start **/
 
         [CommandHandler("dungeons", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
-        public static void HandleCheckDungeonsNew(Session session, params string[] paramters)
+        public static void HandleCheckDungeons(Session session, params string[] parameters)
         {
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Active Dungeon List>", ChatMessageType.System));
+            ulong discordChannel = 0;
+            if (parameters.Length > 1 && parameters[0] == "discord")
+                ulong.TryParse(parameters[1], out discordChannel);
+
+            StringBuilder message = new StringBuilder();
+
+            message.Append("<Active Dungeon List>\n");
+            message.Append("-----------------------\n");
+
             foreach (var dungeon in DungeonManager.GetDungeons())
             {
                 var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
-                var message = $"Dungeon {dungeon.Name} is active {at}, and has a an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x";
-                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{message}", ChatMessageType.System));
+                message.Append($"Dungeon {dungeon.Name} is active {at}, and has a an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x\n");
 
                 if (DungeonManager.DungeonsTimeRemaining.TotalMilliseconds <= 0)
                 {
@@ -188,7 +196,13 @@ namespace ACE.Server.Command.Handlers
 
             }
 
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\nTime Remaining before reset: {DungeonManager.FormatTimeRemaining(DungeonManager.DungeonsTimeRemaining)}", ChatMessageType.System));
+            message.Append("-----------------------\n");
+            message.Append($"<Time Remaining before reset: {DungeonManager.FormatTimeRemaining(DungeonManager.DungeonsTimeRemaining)}>\n");
+
+            if (discordChannel == 0)
+                CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
+            else
+                DiscordChatBridge.SendMessage(discordChannel, $"`{message.ToString()}`");
         }
 
         [CommandHandler("reset-dungeons", AccessLevel.Admin, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
@@ -258,50 +272,130 @@ namespace ACE.Server.Command.Handlers
 
         /** Leaderboards/Stats Start **/
         [CommandHandler("leaderboards-kills", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 kills leaderboard.")]
-        public static void HandleLeaderboardsKills(Session session, params string[] paramters)
+        public static void HandleLeaderboardsKills(Session session, params string[] parameters)
         {
+            if (session != null)
+            {
+                if (session.AccessLevel == AccessLevel.Player && DateTime.UtcNow - session.Player.PrevLeaderboardPvPKillsCommandRequestTimestamp < TimeSpan.FromMinutes(1))
+                {
+                    session.Network.EnqueueSend(new GameMessageSystemChat("You have used this command too recently!", ChatMessageType.Broadcast));
+                    return;
+                }
+                session.Player.PrevLeaderboardPvPKillsCommandRequestTimestamp = DateTime.UtcNow;
+            }
+
+            ulong discordChannel = 0;
+            if (parameters.Length > 1 && parameters[0] == "discord")
+                ulong.TryParse(parameters[1], out discordChannel);
+
+            StringBuilder message = new StringBuilder();
+
+            message.Append("<Showing Top 10 Kills Leaderboard>\n");
+            message.Append("-----------------------\n");
+
             var players = DatabaseManager.Shard.BaseDatabase.GetTopTenPlayersWithMostKills();
 
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Top 10 Kills Leaderboard>", ChatMessageType.System));
             for (var i = 0; i < players.Count; i++)
             {
                 var stats = players[i];
                 var player = PlayerManager.FindByGuid(stats.PlayerId);
-                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{i + 1}. Name = {player.Name}, Kills = {stats.KillCount}", ChatMessageType.System));
+                message.Append($"{i + 1}. Name = {player.Name}, Kills = {stats.KillCount}\n");
             }
+
+            message.Append("-----------------------\n");
+
+            if (discordChannel == 0)
+                CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
+            else
+                DiscordChatBridge.SendMessage(discordChannel, $"`{message.ToString()}`");
         }
 
         /** Leaderboards/Stats Start **/
         [CommandHandler("leaderboards-deaths", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 pvp deaths leaderboard.")]
-        public static void HandleLeaderboardsDeaths(Session session, params string[] paramters)
+        public static void HandleLeaderboardsDeaths(Session session, params string[] parameters)
         {
+            if (session != null)
+            {
+                if (session.AccessLevel == AccessLevel.Player && DateTime.UtcNow - session.Player.PrevLeaderboardPvPDeathsCommandRequestTimestamp < TimeSpan.FromMinutes(1))
+                {
+                    session.Network.EnqueueSend(new GameMessageSystemChat("You have used this command too recently!", ChatMessageType.Broadcast));
+                    return;
+                }
+                session.Player.PrevLeaderboardPvPDeathsCommandRequestTimestamp = DateTime.UtcNow;
+            }
+
+            ulong discordChannel = 0;
+            if (parameters.Length > 1 && parameters[0] == "discord")
+                ulong.TryParse(parameters[1], out discordChannel);
+
+            StringBuilder message = new StringBuilder();
+
+            message.Append("<Showing Top 10 Deaths Leaderboard>\n");
+            message.Append("-----------------------\n");
+
+
             var players = DatabaseManager.Shard.BaseDatabase.GetPlayerWithMostDeaths();
 
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Top 10 Deaths Leaderboard>", ChatMessageType.System));
             for (var i = 0; i < players.Count; i++)
             {
                 var stats = players[i];
                 var player = PlayerManager.FindByGuid(stats.PlayerId);
-                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{i + 1}. Name = {player.Name}, Deaths = {stats.DeathCount}", ChatMessageType.System));
+                message.Append($"{i + 1}. Name = {player.Name}, Deaths = {stats.DeathCount}\n");
             }
+
+            message.Append("-----------------------\n");
+
+            if (discordChannel == 0)
+                CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
+            else
+                DiscordChatBridge.SendMessage(discordChannel, $"`{message.ToString()}`");
+
         }
 
         [CommandHandler("leaderboards-Xp", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 Levels leaderboard.")]
-        public static void HandleLeaderboardsXp(Session session, params string[] paramters)
+        public static void HandleLeaderboardsXp(Session session, params string[] parameters)
         {
+            if (session != null)
+            {
+                if (session.AccessLevel == AccessLevel.Player && DateTime.UtcNow - session.Player.PrevLeaderboardXPCommandRequestTimestamp < TimeSpan.FromMinutes(1))
+                {
+                    session.Network.EnqueueSend(new GameMessageSystemChat("You have used this command too recently!", ChatMessageType.Broadcast));
+                    return;
+                }
+                session.Player.PrevLeaderboardXPCommandRequestTimestamp = DateTime.UtcNow;
+            }
+
+            ulong discordChannel = 0;
+            if (parameters.Length > 1 && parameters[0] == "discord")
+                ulong.TryParse(parameters[1], out discordChannel);
+
+            StringBuilder message = new StringBuilder();
+
+            message.Append("<Showing Top 10 Xp Leaderboard>\n");
+            message.Append("-----------------------\n");
+
             var players = PlayerManager.GetAllPlayers()
                 .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player)
                 .OrderByDescending(player => player.Level)
                 .Take(10)
                 .ToList();
 
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Top 10 Xp Leaderboard>", ChatMessageType.System));
             for (var i = 0; i < players.Count; i++)
             {
                 var info = players[i];
                 var player = PlayerManager.FindByGuid(info.Guid);
-                session.Network.EnqueueSend(new GameMessageSystemChat($"\n{i + 1}. Name = {player.Name}, Level = {player.Level}", ChatMessageType.System));
+                message.Append($"{i + 1}. Name = {player.Name}, Level = {player.Level}\n");
             }
+
+            message.Append("-----------------------\n");
+
+            if (discordChannel == 0)
+                CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
+            else
+                DiscordChatBridge.SendMessage(discordChannel, $"`{message.ToString()}`");
+
+
+
         }
         /** Leadearboards/Stats End **/
 

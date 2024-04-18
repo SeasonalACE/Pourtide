@@ -32,6 +32,7 @@ using ACE.Server.WorldObjects.Entity;
 
 using Position = ACE.Entity.Position;
 using ACE.Server.Network.Handlers;
+using ACE.Server.Features.Discord;
 
 namespace ACE.Server.Command.Handlers
 {
@@ -81,6 +82,20 @@ namespace ACE.Server.Command.Handlers
         public static void HandleClearVpnBlockList(Session session, params string[] parameters)
         {
             AuthenticationHandler.ClearVpnBlockedIPs();
+        }
+
+        [CommandHandler("DiscordChatStop", AccessLevel.Admin, CommandHandlerFlag.None, "")]
+        public static void HandleDiscordChatStop(Session session, params string[] parameters)
+        {
+            CommandHandlerHelper.WriteOutputInfo(session, "Stopping Discord chat bridge...", ChatMessageType.WorldBroadcast);
+            DiscordChatBridge.Stop();
+        }
+
+        [CommandHandler("DiscordChatStart", AccessLevel.Admin, CommandHandlerFlag.None, "")]
+        public static void HandleDiscordChatStart(Session session, params string[] parameters)
+        {
+            CommandHandlerHelper.WriteOutputInfo(session, "Starting Discord chat bridge...", ChatMessageType.WorldBroadcast);
+            DiscordChatBridge.Start();
         }
 
         [CommandHandler("removeipfromvpnblocklist", AccessLevel.Sentinel, CommandHandlerFlag.None, 1,

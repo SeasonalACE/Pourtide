@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ACE.Server.Xp
+namespace ACE.Server.Features.Xp
 {
     internal class XpManager
     {
@@ -33,7 +33,7 @@ namespace ACE.Server.Xp
 
                 throw new Exception("DailyXpCache has exceeded");
             }
-        } 
+        }
 
         private static bool Initialized = false;
 
@@ -95,9 +95,9 @@ namespace ACE.Server.Xp
             ulong previous = week > 1 ? WeeklyLevelWithCapXp[week - 1] : 0;
             for (var i = 7; i >= 1; i--)
             {
-                var day = endOfWeek.AddDays(-(i));
+                var day = endOfWeek.AddDays(-i);
                 day = day.AddDays(1);
-                var newDaily = (totalWeeklyXp * ConcaveMods[i - 1]) + previous;
+                var newDaily = totalWeeklyXp * ConcaveMods[i - 1] + previous;
                 previous = (ulong)newDaily;
                 var dailyXp = new DailyXp(day, (ulong)newDaily);
                 DailyXpCache.Add(dailyXp);

@@ -4,10 +4,12 @@ using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
+using ACE.Server.Features.Discord;
+using ACE.Server.Features.HotDungeons;
+using ACE.Server.Features.Rifts;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Physics.Common;
-using ACE.Server.Rifts;
 using ACE.Server.WorldObjects;
 using log4net;
 using System;
@@ -18,7 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ACE.Server.HotDungeons.Managers
+namespace ACE.Server.Features.HotDungeons.Managers
 {
     public class Dungeon : DungeonBase
     {
@@ -126,6 +128,8 @@ namespace ACE.Server.HotDungeons.Managers
                 {
                     dungeon.Close();
                     var message = $"{dungeon.Name} is no longer boosted xp!";
+                    _ = WebhookRepository.SendGeneralChat(message);
+                    
                     log.Info(message);
                     PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
                 }
@@ -158,8 +162,10 @@ namespace ACE.Server.HotDungeons.Managers
 
                     dungeon.BonuxXp = activeRift.BonuxXp;
                     HotspotDungeons.Add(dungeon.Landblock, dungeon);
+
                     var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
                     var message = $"{dungeon.Name} {at} has been very active, this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
+                    _ = WebhookRepository.SendGeneralChat(message);
                     log.Info(message);
                     PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
 
