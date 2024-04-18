@@ -225,12 +225,14 @@ namespace ACE.Server.Rifts
 
             var tier = MutationsManager.GetMonsterTierByLevel((uint)averageLevel);
 
-            var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier)
+            var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
+
+            var creatureIds = creatureWeenieIds
                 .Where(c => c.Level <= averageLevel)
                 .Select(c => c.Id)
                 .ToList();
 
-            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureWeenieIds, tier);
+            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureIds, tier);
 
             log.Info($"Creating Rift instance for {rift.Name} - {instance}");
 

@@ -1189,7 +1189,7 @@ namespace ACE.Database
         {
 
             { 0, new CreatureTierProps(1, 5, 20, 100, 10000, 0, 1000, 1000) },
-            { 1, new CreatureTierProps(1, 20, 50, 5000, 30000, 0, 1000, 1000) },
+            { 1, new CreatureTierProps(1, 20, 50, 100, 30000, 0, 1000, 1000) },
             { 2, new CreatureTierProps(1, 50, 100, 10000, 50000, 0, 1000, 1000) },
             { 3, new CreatureTierProps(1, 100, 115, 80000, 100000, 0, 1000, 1000) },
             { 4, new CreatureTierProps(3, 130, 150, 200000, 500000, 0, 1000, 1000) },
