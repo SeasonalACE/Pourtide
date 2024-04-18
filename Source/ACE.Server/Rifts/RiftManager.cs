@@ -67,6 +67,9 @@ namespace ACE.Server.Rifts
 
         public uint GetRandomCreature()
         {
+            if (CreatureIds.Count == 0)
+                throw new Exception($"Errror: rift {Name} does not have any creatureIds assigned to it");
+
             var randomIndex = ThreadSafeRandom.Next(0, CreatureIds.Count - 1);
             return CreatureIds[randomIndex];
         }

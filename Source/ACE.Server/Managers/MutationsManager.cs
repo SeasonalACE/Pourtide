@@ -9,6 +9,7 @@ using ACE.Server.HotDungeons.Managers;
 using ACE.Server.Realms;
 using ACE.Server.Rifts;
 using ACE.Server.WorldObjects;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +21,9 @@ namespace ACE.Server.Managers
 {
     internal static class MutationsManager
     {
+
+        private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         public static uint GetMonsterTierByLevel(uint level)
         {
             uint tier = 0;
@@ -155,15 +159,15 @@ namespace ACE.Server.Managers
                 try
                 {
                     var riftCreatureId = rift.GetRandomCreature();
-                    var creature = WorldObjectFactory.CreateNewWorldObject(riftCreatureId);
+                    var creature = WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
                     creature.Location = new Position(wo.Location);
                     creature.Name = $"Rift {creature.Name}";
                     wo.Destroy();
                     return creature;
                 } catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex.StackTrace);
+                    log.Error(ex.Message);
+                    log.Error(ex.StackTrace);
                     if (!wo.IsDestroyed)
                         return wo;
                     else
