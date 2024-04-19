@@ -600,47 +600,23 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
-            try
+            var isPkDeath = IsPKDeath(corpse.KillerId);
+
+            if (isPkDeath)
+                HandlePKDeath(corpse);
+
+            var equippedItems = EquippedObjects.Values.ToList();
+
+            foreach (var item in equippedItems)
             {
+                if (item.Bonded != null || item.Attuned != null)
+                    continue;
 
-                var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
-
-                var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
-                var isPkDeath = IsPKDeath(corpse.KillerId);
-                var isAlly = IsAlly(killer);
-
-                if (isPkDeath)
-                    TrackKill(corpse.KillerId.Value, corpse.VictimId.Value);
-
-                //var onlineKiller = PlayerManager.GetAllOnline().Where(p => p.Name == killer.Name).FirstOrDefault(); 
-                if (isPkDeath && !isAlly && UpdatePkTrophies(corpse.KillerId.Value, corpse.VictimId.Value))
-                {
-                    // add player head
-                    {
-                        var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
-                        playerHead.Name = $"Head of {victim.Name}";
-                        playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
-                        corpse.TryAddToInventory(playerHead);
-                    }
-                }
-            } catch (Exception ex)
-            {
-                log.Error("Error: during pk death check");
-                log.Error(ex.Message);
-                log.Error(ex.StackTrace);
-            }
-
-            var equippedArmor = GetEquippedClothingArmor((CoverageMask)CoverageMaskHelper.Outerwear);
-
-            foreach (var armor in equippedArmor)
-            {
-                if (ThreadSafeRandom.Next(1, 100) <= 2)
-                    dropItems.Add(armor);
+                if (isPkDeath && ThreadSafeRandom.Next(1, 100) <= 2)
+                    dropItems.Add(item);
                     
-                if (armor.ArmorLevel > 10 && armor.Bonded == null && armor.Attuned == null)
-                {
-                    armor.ArmorLevel -= (int)(armor.OriginalArmorLevel * 0.05);
-                }
+                if (item.ArmorLevel != null && item.ArmorLevel > 10)
+                    item.ArmorLevel -= (int)(item.OriginalArmorLevel * 0.05);
 
             }
 
@@ -660,6 +636,35 @@ namespace ACE.Server.WorldObjects
 
 
             return dropItems;
+        }
+
+        private void HandlePKDeath(Corpse corpse)
+        {
+            try
+            {
+                var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
+                var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
+                var isAlly = IsAlly(killer);
+
+                if (!isAlly)
+                    TrackKill(corpse.KillerId.Value, corpse.VictimId.Value);
+
+                if (!isAlly && UpdatePkTrophies(corpse.KillerId.Value, corpse.VictimId.Value))
+                {
+                    // add player head
+                    {
+                        var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
+                        playerHead.Name = $"Head of {victim.Name}";
+                        playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
+                        corpse.TryAddToInventory(playerHead);
+                    }
+                }
+            } catch (Exception ex)
+            {
+                log.Error("Error: during pk death check");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
+            }
         }
 
         public void DeathItemLog(List<WorldObject> dropItems, Corpse corpse)
