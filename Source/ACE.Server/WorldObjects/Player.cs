@@ -29,6 +29,7 @@ using ACE.Server.WorldObjects.Managers;
 using Character = ACE.Database.Models.Shard.Character;
 using MotionTable = ACE.DatLoader.FileTypes.MotionTable;
 using ACE.Server.Realms;
+using System.Linq;
 
 namespace ACE.Server.WorldObjects
 {
@@ -577,10 +578,12 @@ namespace ACE.Server.WorldObjects
             if (ForceMaterialization)
                 OnTeleportComplete();
 
-            Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
-            Session.Network.EnqueueSend(new GameMessageSystemChat("Logging out in 20s...", ChatMessageType.Magic));
+            var seconds = PropertyManager.GetLong("pk_timer").Item;
+            LogoffTimestamp = Time.GetFutureUnixTime(seconds);
 
-            LogoffTimestamp = Time.GetFutureUnixTime(PropertyManager.GetLong("pk_timer").Item);
+            //Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
+            Session.Network.EnqueueSend(new GameMessageSystemChat($"Logging out in {seconds} seconds ...", ChatMessageType.Magic));
+
 
             PlayerManager.AddPlayerToLogoffQueue(this);
         }
@@ -621,6 +624,8 @@ namespace ACE.Server.WorldObjects
 
         public void LogOut_Inner(bool clientSessionTerminatedAbruptly = false)
         {
+
+
             IsBusy = true;
             IsLoggingOut = true;
 
@@ -668,11 +673,29 @@ namespace ACE.Server.WorldObjects
             if (IsInDeathProcess)
                 return;
 
-            LogOut_Final();
+            var objects = CurrentLandblock.GetAllWorldObjectsForDiagnostics();
+            var enemies = objects.Where(o => o is Player player && !player.IsAlly(this)).ToList();
+
+            if (enemies.Count > 0)
+            {
+                var delayLogoutChain = new ActionChain();
+                delayLogoutChain.AddDelaySeconds(PropertyManager.GetLong("pk_timer").Item);
+                delayLogoutChain.AddAction(WorldManager.ActionQueue, () =>
+                {
+                    LogOut_Final();
+                });
+                delayLogoutChain.EnqueueChain();
+            } else
+                LogOut_Final();
+
         }
 
         private void LogOut_Final(bool skipAnimations = false)
         {
+
+
+
+
             if (CurrentLandblock != null)
             {
                 if (skipAnimations)
