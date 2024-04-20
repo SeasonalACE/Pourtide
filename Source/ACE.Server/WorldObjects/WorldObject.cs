@@ -132,9 +132,51 @@ namespace ACE.Server.WorldObjects
             SetEphemeralValues();
             InitializeGenerator();
             InitializeHeartbeats();
+            UpdateDurability(this, null);
         }
 
+
+
         public bool BumpVelocity { get; set; }
+
+        public static void UpdateDurability(WorldObject item, int? armorLevel) 
+        {
+            if (item.ArmorLevel == null)
+                return;
+
+            if (item.OriginalArmorLevel == null)
+            {
+                item.OriginalArmorLevel = item.ArmorLevel;
+                armorLevel = (int)item.ArmorLevel;
+            }
+
+            if (item.ArmorLevel != null && item.ArmorLevel > 0)
+            {
+                var description = $"{item.LongDesc}\n";
+                StringBuilder message = new StringBuilder(description);
+                int originalAlIndex = message.ToString().IndexOf("Original Armor Level:");
+
+
+                if (originalAlIndex != -1)
+                {
+                    int endIndex = message.ToString().IndexOf('\n', originalAlIndex);
+
+                    if (endIndex == -1)
+                        endIndex = message.Length - 1;
+
+                    var originalAl = $"Original Armor Level: {armorLevel ?? item.OriginalArmorLevel}";
+                    message.Replace(message.ToString().Substring(originalAlIndex, endIndex - originalAlIndex + 1), originalAl);
+                    item.LongDesc = message.ToString();
+
+                }
+                else
+                {
+                    var originalAl = $"Original Armor Level: {armorLevel ?? item.OriginalArmorLevel}\n";
+                    message.Append(originalAl);
+                    item.LongDesc = message.ToString();
+                }
+            }
+        }
 
         /// <summary>
         /// Initializes a new default physics object
@@ -246,7 +288,7 @@ namespace ACE.Server.WorldObjects
         }
 
         private void SetEphemeralValues()
-        { 
+        {
             ObjectDescriptionFlags = ObjectDescriptionFlag.Attackable;
 
             EmoteManager = new EmoteManager(this);
@@ -258,8 +300,6 @@ namespace ACE.Server.WorldObjects
             if (MotionTableId != 0)
                 CurrentMotionState = new Motion(MotionStance.Invalid);
 
-            if (OriginalArmorLevel == null && ArmorLevel != null)
-                OriginalArmorLevel = ArmorLevel;
         }
 
         /// <summary>
@@ -275,7 +315,7 @@ namespace ACE.Server.WorldObjects
             {
                 emote = refuseItem;
                 return true;
-            }            
+            }
 
             // NPC accepts this item
             var giveItem = EmoteManager.GetEmoteSet(EmoteCategory.Give, null, null, item.WeenieClassId);
@@ -574,7 +614,7 @@ namespace ACE.Server.WorldObjects
                         break;
                     case "linkedlifestone":
                         sb.AppendLine($"{prop.Name} = {obj.LinkedLifestone.ToLOCString()}");
-                        break;                    
+                        break;
                     case "channelsactive":
                         sb.AppendLine($"{prop.Name} = {(Channel)obj.GetProperty(PropertyInt.ChannelsActive)}" + " (" + (uint)obj.GetProperty(PropertyInt.ChannelsActive) + ")");
                         break;
@@ -728,6 +768,8 @@ namespace ACE.Server.WorldObjects
             if (Generator != null)
                 Location.Instance = Generator.Location.Instance;
 
+            UpdateDurability(this, null);
+
             if (!LandblockManager.AddObject(this))
                 return false;
 
@@ -748,7 +790,7 @@ namespace ACE.Server.WorldObjects
             var iid = instance.GetValueOrDefault(pos.Instance);
             if (iid == 0)
                 log.Error("AdjustDungeon: Instance ID is 0! Instance ID needs to be passed to this method if the position lacks an instance id.");
-            
+
             AdjustDungeonPos(pos, iid);
             AdjustDungeonCells(pos, iid);
         }

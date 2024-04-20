@@ -22,6 +22,8 @@ using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
 using ACE.Server.Realms;
+using System.Text;
+using Discord;
 
 namespace ACE.Server.Managers
 {
@@ -183,6 +185,7 @@ namespace ACE.Server.Managers
                 else
                     target.ArmorLevel = sum;
 
+                WorldObject.UpdateDurability(target, target.OriginalArmorLevel);
                 player.TryConsumeFromInventoryWithNetworking(source);
                 return true;
 
@@ -1609,6 +1612,8 @@ namespace ACE.Server.Managers
 
             if (source.MaterialType == MaterialType.Steel)
                 target.OriginalArmorLevel = target.ArmorLevel;
+
+            WorldObject.UpdateDurability(target, target.ArmorLevel);
 
             target.TinkerLog += (uint?)source.MaterialType ?? source.WeenieClassId;
         }

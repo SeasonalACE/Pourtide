@@ -569,6 +569,8 @@ namespace ACE.Server.WorldObjects
             else
                 containerItems.Where(i => i.UseBackpackSlot && i.PlacementPosition >= placementPosition).ToList().ForEach(i => i.PlacementPosition++);
 
+            UpdateDurability(worldObject, null);
+
             Inventory.Add(worldObject.Guid, worldObject);
 
             EncumbranceVal += (worldObject.EncumbranceVal ?? 0);

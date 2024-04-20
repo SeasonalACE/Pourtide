@@ -17,6 +17,7 @@ using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Database;
 using ACE.Server.Features.Discord;
+using System.Text;
 
 namespace ACE.Server.WorldObjects
 {
@@ -617,7 +618,6 @@ namespace ACE.Server.WorldObjects
                     
                 if (item.ArmorLevel != null && item.ArmorLevel > 10)
                     item.ArmorLevel -= (int)(item.OriginalArmorLevel * 0.05);
-
             }
 
             // notify player of destroyed items?
