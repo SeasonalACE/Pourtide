@@ -534,19 +534,29 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         public bool LogOut(bool clientSessionTerminatedAbruptly = false, bool forceImmediate = false)
         {
-            if (PKLogoutActive && !forceImmediate || PkLogoutState != LogoutState.Pending)
+            try
             {
-                return HandlePKLogout();
+                if (PKLogoutActive && !forceImmediate || PkLogoutState != LogoutState.Pending)
+                {
+                    return HandlePKLogout();
+                }
+
+                if (ForceMaterialization || MaterializedLogoutState != LogoutState.Pending)
+                {
+                    return HandleMaterializeLogout();
+                }
+
+                LogOut_Inner(clientSessionTerminatedAbruptly);
+
+                return true;
+            } catch (Exception ex)
+            {
+                log.Error($"Error: Failed to logout player {Name}");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
+                return false;
             }
 
-            if (ForceMaterialization || MaterializedLogoutState != LogoutState.Pending)
-            {
-                return HandleMaterializeLogout();
-            }
-
-            LogOut_Inner(clientSessionTerminatedAbruptly);
-
-            return true;
         }
 
         private bool HandlePKLogout()
@@ -692,9 +702,6 @@ namespace ACE.Server.WorldObjects
 
         private void LogOut_Final(bool skipAnimations = false)
         {
-
-
-
 
             if (CurrentLandblock != null)
             {
