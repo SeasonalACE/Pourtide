@@ -43,6 +43,8 @@ namespace ACE.Server.WorldObjects
             }
         }
 
+        public Dictionary<uint, uint> PlayerBountyMap = new Dictionary<uint, uint>();
+
         /// <summary>
         /// A table of players who currently have their targeting reticule on this creature
         /// </summary>
