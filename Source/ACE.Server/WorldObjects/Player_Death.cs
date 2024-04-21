@@ -610,14 +610,16 @@ namespace ACE.Server.WorldObjects
 
             foreach (var item in equippedItems)
             {
-                if (item.Bonded != null || item.Attuned != null)
+                if (item.Bonded != null || item.Attuned != null || item.ItemWorkmanship == null)
                     continue;
 
                 if (isPkDeath && ThreadSafeRandom.Next(1, 100) <= 2)
                     dropItems.Add(item);
-                    
+
                 if (item.ArmorLevel != null && item.ArmorLevel > 10)
+                {
                     item.ArmorLevel -= (int)(item.OriginalArmorLevel * 0.05);
+                }
             }
 
             // notify player of destroyed items?
