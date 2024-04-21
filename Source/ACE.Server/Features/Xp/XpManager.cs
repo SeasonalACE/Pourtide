@@ -27,11 +27,12 @@ namespace ACE.Server.Features.Xp
         {
             get
             {
+                DailyXp firstDay = DailyXpCache[0];
                 for (var i = 0; i < DailyXpCache.Count; i++)
                     if (DailyXpCache[i].DailyExpiration > DateTime.UtcNow)
                         return DailyXpCache[i];
 
-                throw new Exception("DailyXpCache has exceeded");
+                return firstDay;
             }
         }
 
@@ -77,6 +78,7 @@ namespace ACE.Server.Features.Xp
 
         public static void CalculateCurrentDailyXpCap()
         {
+            DailyXpCache.Clear();
             var week = Week;
             var totalWeeklyXp = week > 1 ? WeeklyLevelWithCapXp[week] - WeeklyLevelWithCapXp[week - 1] : WeeklyLevelWithCapXp[week];
             var dailyxp = totalWeeklyXp / 7;
@@ -109,7 +111,7 @@ namespace ACE.Server.Features.Xp
 
                 if (IsDailyTimestampExpired())
                 {
-                    GetXpCapTimestamps();
+                    GetUpdatedXpCapTimestamps();
 
                     // season ends at week 15
                     if (Week > 15)
@@ -126,10 +128,11 @@ namespace ACE.Server.Features.Xp
                         var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
                         var diff = (long)CurrentDailyXp.XpCap - (long)playerTotalXp;
                         var xpPerCategory = diff / 3;
+                        var xpCategoryHalf = xpPerCategory / 2;
 
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory);
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory);
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory);
+                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory - xpCategoryHalf);
+                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory + xpPerCategory);
+                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
                     }
                 }
             }
@@ -138,10 +141,18 @@ namespace ACE.Server.Features.Xp
 
         public static void GetXpCapTimestamps()
         {
-            var (daily, weekly, week) = DatabaseManager.Shard.BaseDatabase.GetXpCapTimestamps();
+            var (_, weekly, week) = DatabaseManager.Shard.BaseDatabase.GetXpCapTimestamps();
             WeeklyTimestamp = weekly;
             Week = week;
         }
+
+        public static void GetUpdatedXpCapTimestamps()
+        {
+            var (_, weekly, week) = DatabaseManager.Shard.BaseDatabase.UpdateXpCap();
+            WeeklyTimestamp = weekly;
+            Week = week;
+        }
+
 
         public static bool IsDailyTimestampExpired()
         {

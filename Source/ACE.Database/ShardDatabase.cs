@@ -860,6 +860,33 @@ namespace ACE.Database
                 rwLock.ExitReadLock();
             }
         }
+
+        public (DateTime Daily, DateTime Weekly, uint Week) UpdateXpCap()
+        {
+            using (var context = new ShardDbContext())
+            {
+                var timestamps = context.XpCap.FirstOrDefault();
+
+                DateTime currentDateTime = DateTime.UtcNow;
+
+                if (currentDateTime > timestamps.DailyTimestamp)
+                {
+                    timestamps.DailyTimestamp = currentDateTime.AddDays(1);
+                }
+
+                if (currentDateTime > timestamps.WeeklyTimestamp)
+                {
+                    timestamps.WeeklyTimestamp = currentDateTime.AddDays(7);
+
+                    timestamps.Week++;
+                }
+
+                context.SaveChanges();
+
+                return (timestamps.DailyTimestamp, timestamps.WeeklyTimestamp, timestamps.Week);
+            }
+        }
+
         public (DateTime Daily, DateTime Weekly, uint Week) GetXpCapTimestamps()
         {
             using (var context = new ShardDbContext())
@@ -877,26 +904,6 @@ namespace ACE.Database
 
                     context.XpCap.Add(timestamps);
                 }
-                else
-                {
-                    DateTime currentDateTime = DateTime.UtcNow;
-
-
-                    if (currentDateTime > timestamps.DailyTimestamp)
-                    {
-                        timestamps.DailyTimestamp = currentDateTime.AddDays(1);
-                    }
-
-                    if (currentDateTime > timestamps.WeeklyTimestamp)
-                    {
-                        timestamps.WeeklyTimestamp = currentDateTime.AddDays(7);
-
-                        timestamps.Week++;
-
-                    }
-                }
-
-                context.SaveChanges();
 
                 return (timestamps.DailyTimestamp, timestamps.WeeklyTimestamp, timestamps.Week);
             }
