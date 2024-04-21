@@ -366,6 +366,13 @@ namespace ACE.Server.Managers
             return results;
         }
 
+        public static List<Player> GetEnemyOnlinePlayers(Player player)
+        {
+            var players = GetAllOnline();
+            var enemies = players.Where(p => !p.IsAlly(player)).ToList();
+            return enemies;
+        }
+
 
         /// <summary>
         /// This will return true if the player was successfully added.

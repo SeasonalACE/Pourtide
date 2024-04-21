@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Security.Policy;
 using System.Threading;
-
+using ACE.Common;
 using ACE.Database;
 using ACE.DatLoader;
 using ACE.DatLoader.FileTypes;
@@ -14,6 +15,7 @@ using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
+using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
@@ -3414,6 +3416,29 @@ namespace ACE.Server.WorldObjects
                             var xp = PvpXpDailyMax * 0.02; // give 5% of total PvpXpDailyMax
                             EarnXP((long)xp, XpType.Pvp, ShareType.None);
                         }
+
+                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2623)
+                        {
+                            var players = PlayerManager.GetEnemyOnlinePlayers(this);
+                            if (players.Count <= 0)
+                            {
+                                Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"I cannot give you information at this time.\"", ChatMessageType.Broadcast));
+                                return;
+                            };
+
+                            var roll = ThreadSafeRandom.Next(0, players.Count - 1);
+
+                            var player = players[roll];
+
+                            if (DungeonManager.TryGetDungeonLandblock(player.Location.LandblockHex, out DungeonLandblock landblock))
+                            {
+                                Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Player {player.Name} was last seen at {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Broadcast));
+                            } else
+                            {
+                                Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Player {player.Name} was last seen at {player.Location.GetMapCoordStr()}.\"", ChatMessageType.Broadcast));
+                            }
+                        }
+
                         if (item == itemToGive)
                             Session.Network.EnqueueSend(new GameEventItemServerSaysContainId(Session, item, target));
 
