@@ -31,5 +31,14 @@ namespace ACE.Common
             }
         }
 
+        public static string FormatUtcToPst(DateTime utcTime)
+        {
+            TimeZoneInfo pstZone = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
+
+            DateTime pstTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, pstZone);
+
+            return $"{pstTime} PST";
+        }
+
     }
 }
