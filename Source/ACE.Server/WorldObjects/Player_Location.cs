@@ -906,11 +906,11 @@ namespace ACE.Server.WorldObjects
             if (newLocation.IsEphemeralRealm)
             {
                 var lb = LandblockManager.GetLandblockUnsafe(newLocation.LandblockId, newLocation.Instance);
-                if (lb.RealmHelpers.IsDuel || lb.RealmHelpers.IsPkOnly)
+                if ((lb.RealmHelpers.IsDuel || lb.RealmHelpers.IsPkOnly) && MinimumTimeSincePk == null)
                     pk = true;
             }
 
-            if (newRealm.StandardRules.GetProperty(RealmPropertyBool.IsPKOnly))
+            if (newRealm.StandardRules.GetProperty(RealmPropertyBool.IsPKOnly) && MinimumTimeSincePk == null)
                 pk = true;
 
             PlayerKillerStatus = pk ? PlayerKillerStatus.PK : PlayerKillerStatus.NPK;
