@@ -536,6 +536,15 @@ namespace ACE.Server.WorldObjects
         {
             try
             {
+                Trace(new PlayerLogoutEntry()
+                {
+                    PlayerName = Name,
+                    Instance = Location.Instance,
+                    LandblockFrom = Location.LandblockId.Landblock.ToString("X2"),
+                    PkLogoutState = PkLogoutState,
+                    MaterializeLogoutState = MaterializedLogoutState
+                });
+
                 if (PKLogoutActive && !forceImmediate || PkLogoutState != LogoutState.Pending)
                 {
                     return HandlePKLogout();

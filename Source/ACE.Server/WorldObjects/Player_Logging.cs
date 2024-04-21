@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using ACE.Server.Network;
 using log4net;
+using static ACE.Server.WorldObjects.Player;
 
 namespace ACE.Server.WorldObjects
 {
@@ -86,6 +87,17 @@ namespace ACE.Server.WorldObjects
 
         public override string ToString() =>
             $"{W("CHAR", PlayerName)} Type: {TeleportType} {W("LBPORTFROM", LandblockFrom)} {W("INSTFROM", InstanceFrom)} {W("LBPORTTO", LandblockTo)} {W("INSTO", InstanceTo)} {FullDestination}";
+    }
+    public class PlayerLogoutEntry : TracedEntry
+    {
+        public string PlayerName { get; set; }
+        public string LandblockFrom { get; set; }
+        public uint Instance { get; set; }
+        public LogoutState MaterializeLogoutState { get; set; }
+        public LogoutState PkLogoutState { get; set; }
+
+        public override string ToString() =>
+            $"{W("CHAR", PlayerName)}  {W("LBPORTFROM", LandblockFrom)} {W("INST", Instance)} {W("MATSTATE", MaterializeLogoutState)} {W("PKSTATE", PkLogoutState)}";
     }
 
 
