@@ -2683,6 +2683,11 @@ namespace ACE.Server.WorldObjects
             get => (MotionCommand)(GetProperty(PropertyDataId.UseUserAnimation) ?? 0);
             set { if (value == 0) RemoveProperty(PropertyDataId.UseUserAnimation); else SetProperty(PropertyDataId.UseUserAnimation, (uint)value); }
         }
+        public int? BountyGuid
+        {
+            get => GetProperty(PropertyInt.BountyGuid);
+            set { if (value == null) RemoveProperty(PropertyInt.BountyGuid); else SetProperty(PropertyInt.BountyGuid, value.Value); }
+        }
 
         public uint? UseCreateItem
         {
