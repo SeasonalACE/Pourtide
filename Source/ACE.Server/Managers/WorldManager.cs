@@ -48,6 +48,7 @@ namespace ACE.Server.Managers
 
         public static readonly ActionQueue ActionQueue = new ActionQueue();
         public static readonly DelayManager DelayManager = new DelayManager();
+        public static bool IsTestServer => PropertyManager.GetBool("test_server", false).Item;
 
         static WorldManager()
         {
