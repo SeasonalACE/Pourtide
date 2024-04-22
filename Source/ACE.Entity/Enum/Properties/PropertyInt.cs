@@ -651,10 +651,7 @@ namespace ACE.Entity.Enum.Properties
         LastRebuffTimestamp                     = 42005,
 
         [ServerOnly]
-        OriginalArmorLevel                      = 60000,
-
-        [ServerOnly]
-        BountyGuid                              = 60001
+        OriginalArmorLevel                      = 60000
             
 
 

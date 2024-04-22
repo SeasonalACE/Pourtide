@@ -3414,32 +3414,15 @@ namespace ACE.Server.WorldObjects
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 60000212)
                         {
                             var xp = PvpXpDailyMax * 0.02; // give 5% of total PvpXpDailyMax
-
-                            var bountyExists = PlayerBountyMap.ContainsKey(Guid.Full);
-
-                            if (bountyExists)
-                            {
-                                var bounty = PlayerBountyMap[Guid.Full];
-                                if (bounty == item.BountyGuid)
-                                {
-                                    xp = PvpXpDailyMax * 0.25;
-                                    var ore = WorldObjectFactory.CreateNewWorldObject(603004);
-                                    TryAddToInventory(ore);
-                                    PlayerBountyMap.Remove(Guid.Full);
-                                }
-                            }
-
                             EarnXP((long)xp, XpType.Pvp, ShareType.None);
                         }
 
-                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2626)
+                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2623)
                         {
-                            var players = PlayerManager.GetEnemyOnlinePlayers(this).Where(p => p.Guid.Full != Guid.Full && !(p is Admin) && !p.IsLoggingOut).ToList();
+                            var players = PlayerManager.GetEnemyOnlinePlayers(this);
                             if (players.Count <= 0)
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"I cannot give you information at this time.\"", ChatMessageType.Broadcast));
-                                var tradeNote = WorldObjectFactory.CreateNewWorldObject(2626);
-                                TryAddToInventory(tradeNote);
                                 return;
                             };
 
@@ -3450,18 +3433,10 @@ namespace ACE.Server.WorldObjects
                             if (DungeonManager.TryGetDungeonLandblock(player.Location.LandblockHex, out DungeonLandblock landblock))
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Player {player.Name} was last seen at {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Broadcast));
-                                PlayerBountyMap[Guid.Full] =  player.Guid.Full;
-                            } else if (player.Location.GetMapCoordStr().Length > 0)
-                            {
-                                Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Player {player.Name} was last seen at {player.Location.GetMapCoordStr()}.\"", ChatMessageType.Broadcast));
-                                PlayerBountyMap[Guid.Full] =  player.Guid.Full;
                             } else
                             {
-                                Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Could not find a player... Try again later.\"", ChatMessageType.Broadcast));
-                                var tradeNote = WorldObjectFactory.CreateNewWorldObject(2626);
-                                TryAddToInventory(tradeNote);
+                                Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Player {player.Name} was last seen at {player.Location.GetMapCoordStr()}.\"", ChatMessageType.Broadcast));
                             }
-
                         }
 
                         if (item == itemToGive)
