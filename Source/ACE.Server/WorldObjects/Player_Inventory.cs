@@ -3424,7 +3424,7 @@ namespace ACE.Server.WorldObjects
                                 {
                                     xp = PvpXpDailyMax * 0.25;
                                     var ore = WorldObjectFactory.CreateNewWorldObject(603004);
-                                    TryCreateInInventoryWithNetworking(ore);
+                                    TryAddToInventory(ore);
                                     PlayerBountyMap.Remove(Guid.Full);
                                 }
                             }
@@ -3439,7 +3439,7 @@ namespace ACE.Server.WorldObjects
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"I cannot give you information at this time.\"", ChatMessageType.Broadcast));
                                 var tradeNote = WorldObjectFactory.CreateNewWorldObject(2626);
-                                TryCreateInInventoryWithNetworking(tradeNote);
+                                TryAddToInventory(tradeNote);
                                 return;
                             };
 
@@ -3459,7 +3459,7 @@ namespace ACE.Server.WorldObjects
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Could not find a player... Try again later.\"", ChatMessageType.Broadcast));
                                 var tradeNote = WorldObjectFactory.CreateNewWorldObject(2626);
-                                TryCreateInInventoryWithNetworking(tradeNote);
+                                TryAddToInventory(tradeNote);
                             }
 
                         }
