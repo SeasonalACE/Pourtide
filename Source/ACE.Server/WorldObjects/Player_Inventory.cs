@@ -3210,7 +3210,18 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            CreateMoveToChain(target, (success) =>
+
+            if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2626)
+            {
+                if (DateTime.UtcNow - PrevBountyTurnInTimeStamp < TimeSpan.FromMinutes(30))
+                {
+                    Session.Network.EnqueueSend(new GameEventCommunicationTransientString(Session, "You have used the bounty feature too many times today, try again in 30 minutes!")); // Custom error message
+                    Session.Network.EnqueueSend(new GameEventInventoryServerSaveFailed(Session, itemGuid));
+                    return;
+                }
+            }
+
+                CreateMoveToChain(target, (success) =>
             {
                 if (CurrentLandblock == null) // Maybe we were teleported as we were motioning to pick up the item
                 {
@@ -3243,6 +3254,8 @@ namespace ACE.Server.WorldObjects
 
             });    // if player is within UseRadius of moveToTarget, perform rotation?
         }
+
+        public DateTime PrevBountyTurnInTimeStamp;
 
         private void GiveObjectToPlayer(Player target, WorldObject item, Container itemFoundInContainer, Container itemRootOwner, bool itemWasEquipped, int amount)
         {
@@ -3424,7 +3437,7 @@ namespace ACE.Server.WorldObjects
                                 {
                                     xp = PvpXpDailyMax * 0.25;
                                     var ore = WorldObjectFactory.CreateNewWorldObject(603004);
-                                    TryAddToInventory(ore);
+                                    TryCreateInInventoryWithNetworking(ore);
                                     PlayerBountyMap.Remove(Guid.Full);
                                 }
                             }
@@ -3434,12 +3447,15 @@ namespace ACE.Server.WorldObjects
 
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2626)
                         {
+                            PrevBountyTurnInTimeStamp = DateTime.UtcNow;
+
                             var players = PlayerManager.GetEnemyOnlinePlayers(this).Where(p => p.Guid.Full != Guid.Full && !(p is Admin) && !p.IsLoggingOut).ToList();
+
                             if (players.Count <= 0)
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"I cannot give you information at this time.\"", ChatMessageType.Broadcast));
                                 var tradeNote = WorldObjectFactory.CreateNewWorldObject(2626);
-                                TryAddToInventory(tradeNote);
+                                TryCreateInInventoryWithNetworking(tradeNote);
                                 return;
                             };
 
@@ -3447,11 +3463,13 @@ namespace ACE.Server.WorldObjects
 
                             var player = players[roll];
 
+                            var coords = player.Location.GetMapCoordStr();
+
                             if (DungeonManager.TryGetDungeonLandblock(player.Location.LandblockHex, out DungeonLandblock landblock))
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Player {player.Name} was last seen at {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Broadcast));
                                 PlayerBountyMap[Guid.Full] =  player.Guid.Full;
-                            } else if (player.Location.GetMapCoordStr().Length > 0)
+                            } else if (coords != null && coords.Length > 0)
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Player {player.Name} was last seen at {player.Location.GetMapCoordStr()}.\"", ChatMessageType.Broadcast));
                                 PlayerBountyMap[Guid.Full] =  player.Guid.Full;
@@ -3459,7 +3477,7 @@ namespace ACE.Server.WorldObjects
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"Could not find a player... Try again later.\"", ChatMessageType.Broadcast));
                                 var tradeNote = WorldObjectFactory.CreateNewWorldObject(2626);
-                                TryAddToInventory(tradeNote);
+                                TryCreateInInventoryWithNetworking(tradeNote);
                             }
 
                         }
