@@ -103,6 +103,13 @@ namespace ACE.Server.WorldObjects
 
         public bool IsAlly(IPlayer potentialAlly)
         {
+            if (potentialAlly == this)
+                return true;
+            if (potentialAlly.IsAllyForTesting || ((IPlayer)this).IsAllyForTesting)
+                return true;
+            if (potentialAlly.IsEnemyForTesting || ((IPlayer)this).IsEnemyForTesting)
+                return false;
+
             var players = GetCharacters(this);
             var potentialAllyPlayers = GetCharacters(potentialAlly);
             try

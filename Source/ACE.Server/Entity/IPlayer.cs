@@ -3,6 +3,7 @@ using System;
 using ACE.Database.Models.Auth;
 using ACE.Entity;
 using ACE.Entity.Enum.Properties;
+using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
 
 namespace ACE.Server.Entity
@@ -95,5 +96,8 @@ namespace ACE.Server.Entity
         void SaveBiotaToDatabase(bool enqueueSave = true);
 
         void UpdateProperty(PropertyInstanceId prop, uint? value, bool broadcast = false);
+
+        bool IsAllyForTesting => WorldManager.IsTestServer && Name.StartsWith("Ally ");
+        bool IsEnemyForTesting => WorldManager.IsTestServer && Name.StartsWith("Enemy ");
     }
 }
