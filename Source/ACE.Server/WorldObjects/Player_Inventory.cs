@@ -3417,9 +3417,9 @@ namespace ACE.Server.WorldObjects
                             EarnXP((long)xp, XpType.Pvp, ShareType.None);
                         }
 
-                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2623)
+                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2626)
                         {
-                            var players = PlayerManager.GetEnemyOnlinePlayers(this);
+                            var players = PlayerManager.GetEnemyOnlinePlayers(this).Where(p => !p.IsAdmin).ToList();
                             if (players.Count <= 0)
                             {
                                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{target.Name} tells you, \"I cannot give you information at this time.\"", ChatMessageType.Broadcast));
