@@ -3215,7 +3215,7 @@ namespace ACE.Server.WorldObjects
             {
                 if (DateTime.UtcNow - PrevBountyTurnInTimeStamp < TimeSpan.FromMinutes(30))
                 {
-                    Session.Network.EnqueueSend(new GameEventCommunicationTransientString(Session, "You have used the bounty feature too many times today, try again in 30 minutes!")); // Custom error message
+                    Session.Network.EnqueueSend(new GameEventCommunicationTransientString(Session, "You have used the bounty feature too recently, try again in 30 minutes!")); // Custom error message
                     Session.Network.EnqueueSend(new GameEventInventoryServerSaveFailed(Session, itemGuid));
                     return;
                 }
@@ -3449,7 +3449,7 @@ namespace ACE.Server.WorldObjects
                         {
                             PrevBountyTurnInTimeStamp = DateTime.UtcNow;
 
-                            var players = PlayerManager.GetEnemyOnlinePlayers(this).Where(p => p.Guid.Full != Guid.Full && !(p is Admin) && !p.IsLoggingOut).ToList();
+                            var players = PlayerManager.GetEnemyOnlinePlayers(this).Where(p => p.Guid.Full != Guid.Full && !(p is Admin) && !p.IsLoggingOut && p.IsPK).ToList();
 
                             if (players.Count <= 0)
                             {
