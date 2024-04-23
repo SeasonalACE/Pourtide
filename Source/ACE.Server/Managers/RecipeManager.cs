@@ -159,6 +159,9 @@ namespace ACE.Server.Managers
 
         private static bool ApplySlayerSkull(Player player, WorldObject source, WorldObject target)
         {
+            if (target.ItemWorkmanship == null)
+                return false;
+
             var isWeaponOrCaster = (target.ItemType & ItemType.WeaponOrCaster) != 0;
             if (isWeaponOrCaster && target.SlayerCreatureType == null && source.SlayerCreatureType != null)
             {
@@ -177,25 +180,26 @@ namespace ACE.Server.Managers
             var isSteel = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Steel;
             var isArmorOrShield = target.ValidLocations != null && (target.ValidLocations & (EquipMask.Extremity | EquipMask.Armor | EquipMask.Shield)) != 0 && target.ArmorLevel < target.OriginalArmorLevel;
 
-            if (isSteel && isArmorOrShield)
-            {
-                var sum = target.ArmorLevel + 10;
-                if (sum > target.OriginalArmorLevel)
-                    target.ArmorLevel = target.OriginalArmorLevel;
-                else
-                    target.ArmorLevel = sum;
-
-                WorldObject.UpdateDurability(target, target.OriginalArmorLevel);
-                player.TryConsumeFromInventoryWithNetworking(source);
-                return true;
-
-            }
-
+            if (isSteel && isArmorOrShield && target.ItemWorkmanship.HasValue && target.ItemWorkmanship.Value > 0)
+                return ApplyDurability(player, source, target);
             if (source.WeenieClassId == 604001)
                 return ApplySlayerSkull(player, source, target);
             if (target.GetProperty(PropertyBool.AllowRulesetStamp) == true && source.WeenieClassName == "realm-ruleset-stamp")
                 return ApplyRulesetStamp(player, source, target);
             return false;
+        }
+
+        private static bool ApplyDurability(Player player, WorldObject source, WorldObject target)
+        {
+            var sum = target.ArmorLevel + 10;
+            if (sum > target.OriginalArmorLevel)
+                target.ArmorLevel = target.OriginalArmorLevel;
+            else
+                target.ArmorLevel = sum;
+
+            WorldObject.UpdateDurability(target, target.OriginalArmorLevel);
+            player.TryConsumeFromInventoryWithNetworking(source);
+            return true;
         }
 
         private static bool ApplyRulesetStamp(Player player, WorldObject source, WorldObject target)
