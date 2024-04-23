@@ -67,7 +67,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         private static float MaxBonuxXp = 4.0f;
 
-        private static uint MaxHotspots { get; set; }
+        private static uint MaxHotspots => (uint)GetMaxHotSpots();
 
         private static TimeSpan DungeonsInterval { get; set; }
 
@@ -75,15 +75,20 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint interval = 60, uint intialDelay = 10, float maxBonuxXp = 4.0f, uint maxHotspots = 2)
+        public static void Initialize(uint interval = 180, uint intialDelay = 30, float maxBonuxXp = 4.0f)
         {
             log.Info("Initializing DungeonManager");
             DungeonRepository.Initialize();
-            DungeonsInterval = TimeSpan.FromMinutes(60);
+            DungeonsInterval = TimeSpan.FromMinutes(interval);
             MaxBonuxXp = maxBonuxXp;
-            MaxHotspots = maxHotspots;
             DungeonsLastCheck = DateTime.UtcNow - DungeonsInterval + TimeSpan.FromMinutes(intialDelay);
             log.Info($"Dungeons will be reset in {FormatTimeRemaining(DungeonsTimeRemaining)}");
+        }
+
+        public static int GetMaxHotSpots()
+        {
+            var count = (uint)PlayerManager.GetOnlineCount();
+            return count <= 25 ? 1 : count <= 40 ? 2 : 3;
         }
 
         public static bool HasHotspotDungeon(string id)
