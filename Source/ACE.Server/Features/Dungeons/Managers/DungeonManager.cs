@@ -223,6 +223,8 @@ namespace ACE.Server.Features.HotDungeons.Managers
         {
             returnValue = 1.0; // Default value
 
+            if (!HasDungeonLandblock(currentLb))
+                returnValue = 0.25;
 
             if (HotspotDungeons.TryGetValue(currentLb, out Dungeon currentDungeon))
             {
