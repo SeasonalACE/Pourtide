@@ -218,14 +218,7 @@ namespace ACE.Server.WorldObjects
 
                     var totalXP = (xp) * damagePercent;
 
-                    if (this is Player player && !player.IsAlly(playerDamager))
-                    {
-                        var mod = (double)player.Level / (double)playerDamager.Level;
-                        var playerXp = player.TotalExperience * 0.10;
-                        var earnedPvpXp = playerXp * mod;
-                        playerDamager.EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Pvp, ShareType.None);
-                    } else 
-                        playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);
+                    playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);
 
                     // handle luminance
                     if (LuminanceAward != null)

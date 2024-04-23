@@ -181,6 +181,17 @@ namespace ACE.Server.WorldObjects
             $"{W("CHAR", PlayerName)} {W("CLIENT", PlayerClient)} Item:{W("WEENIE", WeenieID)} {W("GUID", ItemGuid.ToString())} GivenTo:{W("CLIENT", GivenToClient)}{W("CHAR", GivenTo)} -->> {PlayerName} gives {ItemName} to {GivenTo}";
     }
 
+    public class PlayerKillEntry : TracedEntry
+    {
+        public string KillerName { get; set; }
+        public string VictimName { get; set; }
+
+        public bool AreAllies { get; set; }
+
+        public override string ToString() =>
+            $"{W("KILLER", KillerName)} {W("VICTIM", VictimName)} {W("ALLIES", AreAllies)}";
+    }
+
     public class PlayerItemUseEntry : TracedEntry
     {
         public string PlayerName { get; set; }

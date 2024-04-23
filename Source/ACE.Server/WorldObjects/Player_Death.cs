@@ -648,8 +648,21 @@ namespace ACE.Server.WorldObjects
                 var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
                 var isAlly = IsAlly(killer);
 
+                Trace(new PlayerKillEntry(){
+                    KillerName = killer.Name,
+                    VictimName = victim.Name,
+                    AreAllies = isAlly
+                });
+
                 if (!isAlly)
+                {
                     TrackKill(corpse.KillerId.Value, corpse.VictimId.Value);
+                    var mod = (double)victim.Level / (double)killer.Level;
+                    var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.10;
+                    var earnedPvpXp = playerXp * mod;
+                    var killerPlayer = PlayerManager.GetOnlinePlayer(killer.Guid);
+                    killerPlayer?.EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Pvp, ShareType.None);
+                }
 
                 if (!isAlly && UpdatePkTrophies(corpse.KillerId.Value, corpse.VictimId.Value))
                 {
@@ -692,6 +705,7 @@ namespace ACE.Server.WorldObjects
 
         public bool UpdatePkTrophies(uint killerId, uint victimId)
         {
+
             return DatabaseManager.Shard.BaseDatabase.UpdatePkTrophyCooldown(killerId, victimId);
         }
 
