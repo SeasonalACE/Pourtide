@@ -3536,6 +3536,15 @@ namespace ACE.Server.WorldObjects
                             }
                         }
 
+                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2624)
+                        {
+                            var wcid = (uint)Player.MaterialSalvage[52];
+                            var leatherBag = WorldObjectFactory.CreateNewWorldObject(wcid);
+                            leatherBag.Structure = 100;
+                            TryCreateInInventoryWithNetworking(leatherBag);
+                            return;
+                        }
+
                         if (item == itemToGive)
                             Session.Network.EnqueueSend(new GameEventItemServerSaysContainId(Session, item, target));
 

@@ -1,7 +1,7 @@
 DELETE FROM `weenie` WHERE `class_Id` = 3000381;
 
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
-VALUES (3000381, 'ace3000381-pourcollector', 10, '2024-04-21 21:45:33') /* Creature */;
+VALUES (3000381, 'ace3000381-pourcollector', 10, '2024-04-24 11:08:01') /* Creature */;
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES (3000381,   1,         16) /* ItemType - Creature */
@@ -132,6 +132,14 @@ INSERT INTO `weenie_properties_emote` (`object_Id`, `category`, `probability`, `
 VALUES (3000381,  6 /* Give */,      1, 2626 /* Trade Note (50,000) */, NULL, NULL, NULL, NULL, NULL, NULL);
 
 INSERT INTO `weenie_properties_emote` (`object_Id`, `category`, `probability`, `weenie_Class_Id`, `style`, `substyle`, `quest`, `vendor_Type`, `min_Health`, `max_Health`)
+VALUES (3000381,  6 /* Give */,      1, 2624 /* Trade Note (5,000) */, NULL, NULL, NULL, NULL, NULL, NULL);
+
+SET @parent_id = LAST_INSERT_ID();
+
+INSERT INTO `weenie_properties_emote_action` (`emote_Id`, `order`, `type`, `delay`, `extent`, `motion`, `message`, `test_String`, `min`, `max`, `min_64`, `max_64`, `min_Dbl`, `max_Dbl`, `stat`, `display`, `amount`, `amount_64`, `hero_X_P_64`, `percent`, `spell_Id`, `wealth_Rating`, `treasure_Class`, `treasure_Type`, `p_Script`, `sound`, `destination_Type`, `weenie_Class_Id`, `stack_Size`, `palette`, `shade`, `try_To_Bond`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`)
+VALUES (@parent_id,  0,  10 /* Tell */, 0, 1, NULL, 'Looks like you have been taking a beating, here use this to repair your armor!', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+INSERT INTO `weenie_properties_emote` (`object_Id`, `category`, `probability`, `weenie_Class_Id`, `style`, `substyle`, `quest`, `vendor_Type`, `min_Health`, `max_Health`)
 VALUES (3000381,  7 /* Use */,      1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 SET @parent_id = LAST_INSERT_ID();
@@ -149,7 +157,7 @@ VALUES (3000381, 2,   134,  0, 9, 1, False) /* Create Tunic (134) for Wield */
 
 /* Lifestoned Changelog:
 {
-  "LastModified": "2024-04-21T14:45:49.6422962-07:00",
+  "LastModified": "2024-04-24T04:07:31.287788-07:00",
   "ModifiedBy": "pourman",
   "Changelog": [],
   "UserChangeSummary": "player head",

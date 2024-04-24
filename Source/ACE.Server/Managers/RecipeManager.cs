@@ -67,10 +67,10 @@ namespace ACE.Server.Managers
             }
 
             var recipe = GetRecipe(player, source, target);
-            var isSteel = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Steel;
+            var isLeather = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Leather;
             var isArmorOrShield = target.ValidLocations != null && (target.ValidLocations & (EquipMask.Extremity | EquipMask.Armor | EquipMask.Shield)) != 0 && target.ArmorLevel < target.OriginalArmorLevel;
 
-            if (recipe == null || (isSteel && isArmorOrShield))
+            if (recipe == null || (isLeather && isArmorOrShield))
             {
                 if (TryHandleHardcodedRecipe(player, source, target))
                 {
@@ -177,10 +177,10 @@ namespace ACE.Server.Managers
 
         private static bool TryHandleHardcodedRecipe(Player player, WorldObject source, WorldObject target)
         {
-            var isSteel = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Steel;
+            var isLeather = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Leather;
             var isArmorOrShield = target.ValidLocations != null && (target.ValidLocations & (EquipMask.Extremity | EquipMask.Armor | EquipMask.Shield)) != 0 && target.ArmorLevel < target.OriginalArmorLevel;
 
-            if (isSteel && isArmorOrShield && target.ItemWorkmanship.HasValue && target.ItemWorkmanship.Value > 0)
+            if (isLeather && isArmorOrShield && target.ItemWorkmanship.HasValue && target.ItemWorkmanship.Value > 0)
                 return ApplyDurability(player, source, target);
             if (source.WeenieClassId == 604001)
                 return ApplySlayerSkull(player, source, target);
