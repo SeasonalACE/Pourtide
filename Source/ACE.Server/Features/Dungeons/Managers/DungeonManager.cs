@@ -199,7 +199,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         internal static void ProcessCreaturesDeath(string currentLb, Player damager, int xpOverride, out double returnValue)
         {
-            returnValue = 0.15; // Default value
+            returnValue = 1; // Default value
 
             var damagerInstance = damager.Location.Instance;
 

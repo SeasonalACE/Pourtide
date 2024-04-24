@@ -8,8 +8,8 @@
         "ReplaceMobs":  false,
         "HasRecalls": false,
         "ExperienceMultiplierAll": {
-          "low": 1.0,
-          "high": 2.0,
+          "low": 2.0,
+          "high": 3.0,
           "reroll": "landblock"
         },
         "CreatureRespawnDuration": {
