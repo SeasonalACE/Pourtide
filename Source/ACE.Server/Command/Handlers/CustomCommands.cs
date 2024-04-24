@@ -1,9 +1,13 @@
 using ACE.Common;
 using ACE.Database;
+using ACE.Database.Models.Shard;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
+using ACE.Entity.Models;
+using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
+using ACE.Server.Factories;
 using ACE.Server.Features.Discord;
 using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Features.Xp;
@@ -397,6 +401,7 @@ namespace ACE.Server.Command.Handlers
 
 
         }
+
         /** Leadearboards/Stats End **/
 
         /** Player Utility Commands Start **/
@@ -450,7 +455,36 @@ namespace ACE.Server.Command.Handlers
                 return;
             }
         }
-
         /** Player Utility Commands End **/
+
+        [CommandHandler("bounty", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Get bounty information from Pour Collector")]
+        public static void HandleBountyInfo(Session session, params string[] paramters)
+        {
+            var player  = session?.Player;
+            var holtburg = DatabaseManager.World.GetCachedPointOfInterest("holtburg");
+            var weenie = DatabaseManager.World.GetCachedWeenie(holtburg.WeenieClassId);
+
+            if (weenie == null)
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat("Pour Collector is not available at this time!", ChatMessageType.Broadcast));
+                return;
+            }
+
+            var loc = new Position(weenie.GetPosition(PositionType.Destination));
+            loc.SetToDefaultRealmInstance(player.Location.RealmID);
+
+            var lbId = new LandblockId(loc.GetCell());
+            var lb = LandblockManager.GetLandblock(lbId, loc.Instance, null, false);
+            var collector = lb.GetAllWorldObjectsForDiagnostics().Where(wo => wo.WeenieClassId == 3000381).FirstOrDefault();
+
+            if (collector == null)
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat("Pour Collector is not available at this time!", ChatMessageType.Broadcast));
+                return;
+            }
+
+            Player.GetBounty((Creature)collector, player, true);
+        }
+
     }
 }
