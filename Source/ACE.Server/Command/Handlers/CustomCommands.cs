@@ -176,6 +176,7 @@ namespace ACE.Server.Command.Handlers
 
         /** HotDungeons Start **/
 
+        [CommandHandler("rifts", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
         [CommandHandler("dungeons", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
         public static void HandleCheckDungeons(Session session, params string[] parameters)
         {
@@ -185,13 +186,12 @@ namespace ACE.Server.Command.Handlers
 
             StringBuilder message = new StringBuilder();
 
-            message.Append("<Active Dungeon List>\n");
+            message.Append("<Active Rift List>\n");
             message.Append("-----------------------\n");
 
             foreach (var dungeon in DungeonManager.GetDungeons())
             {
-                var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
-                message.Append($"Dungeon {dungeon.Name} is active {at}, and has a an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x\n");
+                message.Append($"Rift {dungeon.Name} is active, and has a an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x\n");
 
                 if (DungeonManager.DungeonsTimeRemaining.TotalMilliseconds <= 0)
                 {
@@ -201,6 +201,7 @@ namespace ACE.Server.Command.Handlers
             }
 
             message.Append("-----------------------\n");
+            message.Append($"The Rift Entrance Portal in Annex side of Town Network will bring you to a random Rift\n");
             message.Append($"<Time Remaining before reset: {DungeonManager.FormatTimeRemaining(DungeonManager.DungeonsTimeRemaining)}>\n");
 
             if (discordChannel == 0)

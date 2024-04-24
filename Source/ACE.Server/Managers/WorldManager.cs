@@ -164,13 +164,6 @@ namespace ACE.Server.Managers
             if (loc != null && loc.IsEphemeralRealm)
                 player.Location = new Position(player.Sanctuary);
 
-            if (loc != null && !loc.IsEphemeralRealm && RiftManager.TryGetActiveRift(loc.LandblockHex, out Rift activeRift))
-            {
-                player.Location = new Position(player.Location);
-                player.Location.Instance = activeRift.Instance;
-            }
-
-
             session.SetPlayer(player);
 
             if (stripAdminProperties) // continue stripping properties

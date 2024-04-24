@@ -103,6 +103,8 @@ namespace ACE.Server.Features.Rifts
 
         public static Dictionary<string, Rift> ActiveRifts = new Dictionary<string, Rift>();
 
+        public static Position RiftEntryPortal = Position.slocToPosition("0x00070104 [70.125999 -169.860001 -5.995000] 0.999909 0.000000 0.000000 0.013459 393216");
+
         public static void Close()
         {
             lock (lockObject)

@@ -777,14 +777,6 @@ namespace ACE.Server.WorldObjects
             var nextLb = _newPosition.LandblockHex;
             var currentLb = Location.LandblockHex;
 
-            if (RiftManager.TryGetActiveRift(nextLb, out Rift nextActiveRift))
-            {
-                var instance = _newPosition.Instance;
-                _newPosition = new Position(nextActiveRift.DropPosition);
-                if (teleportingFromInstance)
-                    _newPosition.Instance = instance;
-            }
-
             if (_newPosition.Instance == 0)
             {
                 log.Warn($"Trying to teleporting character: {Name} from instance {Location.Instance} replacing destination with current instance! logging destination!!");

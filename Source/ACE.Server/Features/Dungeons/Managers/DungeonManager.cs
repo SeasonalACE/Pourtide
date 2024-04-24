@@ -4,6 +4,7 @@ using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
+using ACE.Server.Factories;
 using ACE.Server.Features.Discord;
 using ACE.Server.Features.HotDungeons;
 using ACE.Server.Features.Rifts;
@@ -29,6 +30,8 @@ namespace ACE.Server.Features.HotDungeons.Managers
         public double BonuxXp { get; set; } = 1.0f;
 
         public uint PlayerTouches { get; set; } = 0;
+
+        public uint Instance { get; set; } = 0;
 
         public ACE.Entity.Position DropPosition { get; set; }
 
@@ -77,7 +80,6 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         public static void Initialize(uint interval = 180, uint intialDelay = 30, float maxBonuxXp = 4.0f)
         {
-            log.Info("Initializing DungeonManager");
             DungeonRepository.Initialize();
             DungeonsInterval = TimeSpan.FromMinutes(interval);
             MaxBonuxXp = maxBonuxXp;
@@ -88,7 +90,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
         public static int GetMaxHotSpots()
         {
             var count = (uint)PlayerManager.GetOnlineCount();
-            return count <= 25 ? 1 : count <= 40 ? 2 : 3;
+            return count <= 25 ? 2 : count <= 40 ? 3 : 4;
         }
 
         public static bool HasHotspotDungeon(string id)
@@ -152,40 +154,16 @@ namespace ACE.Server.Features.HotDungeons.Managers
                 foreach (var dungeon in sorted)
                 {
                     RiftManager.TryAddRift(dungeon.Landblock, dungeon, out Rift activeRift);
-                    var lb = LandblockManager.GetLandblock(activeRift.LandblockInstance.Id, RealmManager.ServerBaseRealmInstance, null, false);
-                    var objects = lb.GetAllWorldObjectsForDiagnostics();
-                    var players = objects.Where(wo => wo is Player).ToList();
-
-                    foreach (var player in players)
-                    {
-                        if (player != null)
-                        {
-                            var newPosition = new ACE.Entity.Position(activeRift.DropPosition); ;
-                            WorldManager.ThreadSafeTeleport(player as Player, newPosition, false);
-                        }
-                    }
-
                     dungeon.BonuxXp = activeRift.BonuxXp;
+                    dungeon.Instance = activeRift.Instance;
                     HotspotDungeons.Add(dungeon.Landblock, dungeon);
 
-                    var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
-                    var message = $"{dungeon.Name} {at} has been very active, this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
+                    var message = $"{dungeon.Name} has been very active, a rift has been created in Town Network (Annex side), this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
                     _ = WebhookRepository.SendGeneralChat(message);
                     log.Info(message);
                     PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
-
-                    /*try
-                    {
-                        var channel = ChatType.General;
-                        Player sender = null;
-                        var formattedMessage = $"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{message}\"";
-                        _ = WebhookRepository.SendWebhookChat(DiscordChatChannel.General, formattedMessage, WebhookGeneral);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Info(ex.StackTrace, log.InfoLevel.Error);
-                    }*/
                 }
+
 
             }
 
@@ -221,15 +199,17 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         internal static void ProcessCreaturesDeath(string currentLb, Player damager, int xpOverride, out double returnValue)
         {
-            returnValue = 1.0; // Default value
+            returnValue = 0.15; // Default value
 
-            if (!HasDungeonLandblock(currentLb))
-                returnValue = 0.25;
+            var damagerInstance = damager.Location.Instance;
 
             if (HotspotDungeons.TryGetValue(currentLb, out Dungeon currentDungeon))
             {
-                currentDungeon.AddTotalXp(xpOverride);
-                returnValue = currentDungeon.BonuxXp; // Assigning the total XP to the out parameter
+                if (damagerInstance == currentDungeon.Instance)
+                {
+                    returnValue = currentDungeon.BonuxXp; // Assigning the total XP to the out parameter
+                }
+
             }
             else if (!PotentialHotspotCandidates.ContainsKey(currentLb))
             {

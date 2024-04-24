@@ -12,6 +12,9 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Server.Features.Rifts;
+using System.Linq;
+using ACE.Server.Realms;
 
 namespace ACE.Server.WorldObjects
 {
@@ -126,6 +129,14 @@ namespace ACE.Server.WorldObjects
 
             if (player.Teleporting)
                 return new ActivationResult(false);
+
+            if (WeenieClassId == 600005)
+            {
+                if (RiftManager.ActiveRifts.Count == 0)
+                    return new ActivationResult(false);
+
+                return new ActivationResult(true);
+            }
 
             if (Destination == null)
             {
@@ -273,11 +284,31 @@ namespace ACE.Server.WorldObjects
 
 #if DEBUG
             // player.Session.Network.EnqueueSend(new GameMessageSystemChat("Portal sending player to destination", ChatMessageType.System));
+
+
 #endif
-            var portalDest = new Position(Destination);
-            var isEphemeralRealm = portalDest.IsEphemeralRealm;
-            if (portalDest.Instance == 0)
+
+            Position portalDest = null;
+
+            if (WeenieClassId == 600005) // if Rift Entry Portal
+            {
+                var rifts = RiftManager.ActiveRifts.Values.ToList();
+                if (rifts.Count <= 0)
+                    return;
+
+                var roll = ThreadSafeRandom.Next(0, rifts.Count - 1);
+                var rift = rifts.GetRandom();
+                portalDest = new Position(rift.DropPosition);
+            } else if (WeenieClassId == 600004) // is Rift Link Portal
+            {
+                portalDest = new Position(Destination);
+            } else
+            {
+                portalDest = new Position(Destination);
                 portalDest.SetToDefaultRealmInstance(Location.RealmID);
+            }
+
+            var isEphemeralRealm = portalDest.IsEphemeralRealm;
 
             AdjustDungeon(portalDest);
 
