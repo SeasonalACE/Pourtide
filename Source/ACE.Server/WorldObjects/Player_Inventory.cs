@@ -3211,17 +3211,7 @@ namespace ACE.Server.WorldObjects
             }
 
 
-            if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2626)
-            {
-                if (DateTime.UtcNow - PrevBountyTurnInTimeStamp < TimeSpan.FromMinutes(30))
-                {
-                    Session.Network.EnqueueSend(new GameEventCommunicationTransientString(Session, "You have used the bounty feature too recently, try again in 30 minutes!")); // Custom error message
-                    Session.Network.EnqueueSend(new GameEventInventoryServerSaveFailed(Session, itemGuid));
-                    return;
-                }
-            }
-
-                CreateMoveToChain(target, (success) =>
+            CreateMoveToChain(target, (success) =>
             {
                 if (CurrentLandblock == null) // Maybe we were teleported as we were motioning to pick up the item
                 {
@@ -3254,8 +3244,6 @@ namespace ACE.Server.WorldObjects
 
             });    // if player is within UseRadius of moveToTarget, perform rotation?
         }
-
-        public DateTime PrevBountyTurnInTimeStamp;
 
         private void GiveObjectToPlayer(Player target, WorldObject item, Container itemFoundInContainer, Container itemRootOwner, bool itemWasEquipped, int amount)
         {
@@ -3447,9 +3435,12 @@ namespace ACE.Server.WorldObjects
 
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2626)
                         {
-                            PrevBountyTurnInTimeStamp = DateTime.UtcNow;
-
-                            var players = PlayerManager.GetEnemyOnlinePlayers(this).Where(p => p.Guid.Full != Guid.Full && !(p is Admin) && !p.IsLoggingOut && p.IsPK).ToList();
+                            var players = PlayerManager.GetEnemyOnlinePlayers(this).Where(p =>
+                            p.Guid.Full != Guid.Full &&
+                            !(p is Admin) &&
+                            !p.IsLoggingOut &&
+                            p.IsPK &&
+                            !HouseManager.ValidatePourHousing(p.Location.LandblockId.Landblock)).ToList();
 
                             if (players.Count <= 0)
                             {
