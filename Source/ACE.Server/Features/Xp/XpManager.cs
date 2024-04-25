@@ -118,25 +118,30 @@ namespace ACE.Server.Features.Xp
                         return;
 
                     CalculateCurrentDailyXpCap();
-                    var players = PlayerManager.GetAllPlayers();
-                    foreach (var player in players)
-                    {
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXp, 0);
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXp, 0);
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXp, 0);
-
-                        var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
-                        var diff = (long)CurrentDailyXp.XpCap - (long)playerTotalXp;
-                        var xpPerCategory = diff / 3;
-                        var xpCategoryHalf = xpPerCategory / 2;
-
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory - xpCategoryHalf);
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory + xpPerCategory);
-                        player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
-                    }
+                    ResetPlayersForDaily();
                 }
             }
 
+        }
+
+        public static void ResetPlayersForDaily()
+        {
+            var players = PlayerManager.GetAllPlayers();
+            foreach (var player in players)
+            {
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXp, 0);
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXp, 0);
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXp, 0);
+
+                var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
+                var diff = (long)CurrentDailyXp.XpCap - (long)playerTotalXp;
+                var xpPerCategory = diff / 3;
+                var xpCategoryHalf = xpPerCategory / 2;
+
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory - xpCategoryHalf);
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory + xpPerCategory);
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
+            }
         }
 
         public static void GetXpCapTimestamps()

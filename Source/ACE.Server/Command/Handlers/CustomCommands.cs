@@ -253,6 +253,13 @@ namespace ACE.Server.Command.Handlers
         }
 
         /** Xp Cap Start **/
+        [CommandHandler("reset-xp", AccessLevel.Admin, CommandHandlerFlag.None, 0, "Reset xp cap.")]
+        public static void HandleResetXpCap(Session session, params string[] paramters)
+        {
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Resetting Daily Xp Cap>", ChatMessageType.System));
+            XpManager.ResetPlayersForDaily();
+        }
+
         [CommandHandler("show-xp", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show xp cap information.")]
         public static void HandleShowXp(Session session, params string[] paramters)
         {
