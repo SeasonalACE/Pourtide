@@ -903,6 +903,7 @@ namespace ACE.Database
                     };
 
                     context.XpCap.Add(timestamps);
+                    context.SaveChanges();
                 }
 
                 return (timestamps.DailyTimestamp, timestamps.WeeklyTimestamp, timestamps.Week);
