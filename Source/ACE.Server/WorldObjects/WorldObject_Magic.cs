@@ -1161,6 +1161,9 @@ namespace ACE.Server.WorldObjects
                     portalRecall.AddDelaySeconds(2.0f);  // 2 second delay
                     portalRecall.AddAction(targetPlayer, () =>
                     {
+                        if (portal.Destination == null)
+                            portal.Destination = new Position(targetPlayer.Sanctuary);
+
                         var teleportDest = new Position(portal.Destination);
                         AdjustDungeon(teleportDest, targetPlayer.Location.Instance);
 
