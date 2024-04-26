@@ -20,6 +20,8 @@ using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using static ACE.Database.WorldDatabaseWithEntityCache;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using Microsoft.Extensions.Logging.Abstractions;
+using ACE.Database.SQLFormatters.Shard;
 
 namespace ACE.Database
 {
@@ -907,6 +909,24 @@ namespace ACE.Database
                 }
 
                 return (timestamps.DailyTimestamp, timestamps.WeeklyTimestamp, timestamps.Week);
+            }
+        }
+
+
+
+        public Dictionary<string, HashSet<uint>> GetIpToCharacterLoginMap()
+        {
+            using (var context = new ShardDbContext())
+            {
+                var characterLogins = context.CharacterLogin.ToList();
+                var ipCharacterMap = characterLogins
+                    .GroupBy(cl => cl.SessionIP)
+                    .ToDictionary(
+                        group => group.Key,
+                        group =>  new HashSet<uint>(group.Select(cl => cl.CharacterId))
+                    ); 
+
+                return ipCharacterMap;
             }
         }
 

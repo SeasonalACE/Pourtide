@@ -693,7 +693,7 @@ namespace ACE.Server.WorldObjects
                 return;
 
             var objects = CurrentLandblock.GetAllWorldObjectsForDiagnostics();
-            var enemies = objects.Where(o => o is Player player && !player.IsAlly(this)).ToList();
+            var enemies = objects.Where(o => o != this && o is Player player && !player.IsAlly(this)).ToList();
 
             if (enemies.Count > 0)
             {

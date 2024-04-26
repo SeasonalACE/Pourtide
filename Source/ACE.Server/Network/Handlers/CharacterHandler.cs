@@ -265,6 +265,8 @@ namespace ACE.Server.Network.Handlers
             try
             {
                 DatabaseManager.Shard.BaseDatabase.LogCharacterLogin(session.AccountId, session.Account, session.EndPointC2S.Address.ToString(), character.Id, character.Name);
+                PlayerManager.UpdatePlayerToIpMap(session.EndPointC2S.Address.ToString(), character.Id);
+
             }
             catch (Exception ex)
             {

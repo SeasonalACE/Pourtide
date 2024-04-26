@@ -73,32 +73,11 @@ namespace ACE.Server.WorldObjects
             return new IPAddress(bytes).ToString();
         }
 
-        public static List<IPlayer> GetCharacters(IPlayer player)
+        public static string GetCharacterIp(IPlayer player)
         {
             var ip = player.Account.LastLoginIP;
             var ipString = ByteArrayToIpAddress(ip);
-            var characters = DatabaseManager.Shard.BaseDatabase
-                .GetCharactersAssociatedWithIp(ipString)
-                .Select(name => PlayerManager.FindByName(name))
-                .ToList();
-
-            return characters;
-        }
-
-        public static bool AreSharedCharacters(List<IPlayer> playerOne, List<IPlayer> playerTwo)
-        {
-            var player1Characters = playerOne.Select(p => p.Name);
-            var player2Characters = playerTwo.Select(p => p.Name);
-
-            return player1Characters.Intersect(player2Characters).Any();
-        }
-
-        public static bool AreSameGuild(List<IPlayer> playerOne, List<IPlayer> playerTwo)
-        {
-            var player1Monarchs = playerOne.Select(p => p.MonarchId).Where(m => m != null);
-            var player2Monarchs = playerTwo.Select(p => p.MonarchId).Where(m => m != null);
-
-            return player1Monarchs.Intersect(player2Monarchs).Any();
+            return ipString;
         }
 
         public bool IsAlly(IPlayer potentialAlly)
@@ -110,17 +89,12 @@ namespace ACE.Server.WorldObjects
             if (potentialAlly.IsEnemyForTesting || ((IPlayer)this).IsEnemyForTesting)
                 return false;
 
-            var players = GetCharacters(this);
-            var potentialAllyPlayers = GetCharacters(potentialAlly);
             try
             {
-                if (AreSharedCharacters(players, potentialAllyPlayers))
-                    return true;
+                var selfIp = GetCharacterIp(this);
+                var potentialAllyIp = GetCharacterIp(potentialAlly);
 
-                if (AreSameGuild(players, potentialAllyPlayers))
-                    return true;
-
-                return false;
+                return PlayerManager.CheckIpAssociations(selfIp, potentialAllyIp);
             }
             catch (Exception ex)
             {
@@ -179,6 +153,8 @@ namespace ACE.Server.WorldObjects
             // handle special case: monarch swearing into another allegiance
             if (Allegiance != null && Allegiance.MonarchId == Guid.Full)
                 HandleMonarchSwear();
+            else
+                PlayerManager.UpdatePlayerToIpMap(GetCharacterIp(this), Guid.Full);
 
             SaveBiotaToDatabase();
 
@@ -218,6 +194,7 @@ namespace ACE.Server.WorldObjects
             AllegianceNode.Walk((node) =>
             {
                 node.Player.UpdateProperty(PropertyInstanceId.Monarch, MonarchId, true);
+                PlayerManager.UpdatePlayerToIpMap(GetCharacterIp(node.Player), node.Player.Guid.Full);
 
                 node.Player.SaveBiotaToDatabase();
 

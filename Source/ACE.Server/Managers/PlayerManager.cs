@@ -28,11 +28,17 @@ namespace ACE.Server.Managers
 {
     public static class PlayerManager
     {
+        public class IpCharacterInfo
+        {
+            public HashSet<uint> Characters = new HashSet<uint>();
+        }
+
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         private static readonly ReaderWriterLockSlim playersLock = new ReaderWriterLockSlim();
         private static readonly Dictionary<uint, Player> onlinePlayers = new Dictionary<uint, Player>();
         private static readonly Dictionary<uint, OfflinePlayer> offlinePlayers = new Dictionary<uint, OfflinePlayer>();
+        private static readonly Dictionary<string, IpCharacterInfo> IptoPlayerGuidMap = new Dictionary<string, IpCharacterInfo>();
 
         // indexed by player name
         private static readonly Dictionary<string, IPlayer> playerNames = new Dictionary<string, IPlayer>(StringComparer.OrdinalIgnoreCase);
@@ -53,6 +59,8 @@ namespace ACE.Server.Managers
         public static void Initialize()
         {
             var results = DatabaseManager.Shard.BaseDatabase.GetAllPlayerBiotasInParallel();
+
+            var semaphore = new SemaphoreSlim(0);
 
             Parallel.ForEach(results, ConfigManager.Config.Server.Threading.DatabaseParallelOptions, result =>
             {
@@ -78,7 +86,81 @@ namespace ACE.Server.Managers
                     else
                         log.Error($"PlayerManager.Initialize: couldn't find account for player {offlinePlayer.Name} ({offlinePlayer.Guid})");
                 }
+
+                semaphore.Release();
             });
+
+            semaphore.Wait(results.Count);
+
+            BuildIpToPlayerGuidMap();
+        }
+
+        public static bool CheckIpAssociations(string ipOne, string ipTwo)
+        {
+            if (IptoPlayerGuidMap.ContainsKey(ipOne) && IptoPlayerGuidMap.ContainsKey(ipTwo))
+            {
+                var guidsOne = IptoPlayerGuidMap[ipOne].Characters;
+                var guidsTwo = IptoPlayerGuidMap[ipTwo].Characters;
+                return guidsOne.Intersect(guidsTwo).Any();
+            }
+
+            log.Warn($"Warn: Could not find IpToPlayer mapping for addressA: {ipOne} or addressB: {ipTwo}");
+            return true; // return true as a failsafe, non associated IPs usually give rewards
+        }
+
+
+        public static void BuildIpToPlayerGuidMap()
+        {
+            var loginMap = DatabaseManager.Shard.BaseDatabase.GetIpToCharacterLoginMap();
+            foreach (var ip in loginMap.Keys)
+            {
+                var characterGuids = loginMap[ip];
+                var monarchs = characterGuids
+                    .Select(guid => FindByGuid(guid))
+                    .Where(player => player != null)
+                    .Select(player => AllegianceManager.GetMonarch(player).Guid.Full);
+
+                foreach (var monarch in monarchs.ToList())
+                    characterGuids.Add(monarch);
+
+                IptoPlayerGuidMap.Add(ip, new IpCharacterInfo
+                {
+                    Characters = characterGuids
+                });
+            }
+        }
+
+        public static void UpdatePlayerToIpMap(string ip, uint guid)
+        {
+            try
+            {
+                var player = FindByGuid(guid);
+
+                if (player == null)
+                {
+                    log.Warn($"Warn: UpdatePlayerToIpMap could not find a player with guid {guid}");
+                    return;
+                }
+
+                if (IptoPlayerGuidMap.TryGetValue(ip, out IpCharacterInfo info))
+                {
+                    info.Characters.Add(guid);
+                    info.Characters.Add(AllegianceManager.GetMonarch(player).Guid.Full);
+                }
+                else
+                {
+                    var newInfo = new IpCharacterInfo()
+                    {
+                        Characters = new HashSet<uint>() { guid },
+                    };
+
+                    newInfo.Characters.Add(AllegianceManager.GetMonarch(player).Guid.Full);
+                    IptoPlayerGuidMap[ip] = newInfo;
+                }
+            } catch (Exception ex)
+            {
+                log.Error($"Error: UpdatePlayerToIpMap with ip {ip} and guid {guid}, Ex: {ex}");
+            }
         }
 
         private static readonly LinkedList<Player> playersPendingLogoff = new LinkedList<Player>();
