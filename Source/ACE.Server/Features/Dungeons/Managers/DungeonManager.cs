@@ -207,7 +207,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
             {
                 if (damagerInstance == currentDungeon.Instance)
                 {
-                    returnValue = currentDungeon.BonuxXp; // Assigning the total XP to the out parameter
+                    //returnValue = currentDungeon.BonuxXp; // Assigning the total XP to the out parameter
                 }
 
             }
