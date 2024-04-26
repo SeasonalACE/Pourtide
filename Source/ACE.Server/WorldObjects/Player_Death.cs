@@ -671,7 +671,7 @@ namespace ACE.Server.WorldObjects
                         var playerHead = WorldObjectFactory.CreateNewWorldObject(60000212);
                         playerHead.Name = $"Head of {victim.Name}";
                         playerHead.LongDesc = $"The severed head of {victim.Name}, killed by {killer.Name}";
-                        playerHead.BountyGuid = (int?)victim.Guid.Full;
+                        playerHead.BountyTrophyGuid = (int?)victim.Guid.Full;
                         corpse.TryAddToInventory(playerHead);
                     }
                 }

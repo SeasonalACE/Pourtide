@@ -3388,17 +3388,27 @@ namespace ACE.Server.WorldObjects
 
                 currentPlayer.PlayerBountySearchTimestamp = DateTime.UtcNow;
 
-                Player player = null;
+                var bountyGuid = currentPlayer.BountyGuid;
+
+                Player bountyPlayer = null;
+
                 if (getCached)
                 {
-                    if (collector.PlayerBountyMap.TryGetValue(currentPlayer.Guid.Full, out uint bountyGuid))
-                        player = PlayerManager.GetOnlinePlayer(bountyGuid);
-                    else
+                    if (bountyGuid == null)
                     {
                         currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"I have not given you a bounty, please bring me a D note if you'd like one!\"", ChatMessageType.Tell));
                         return false;
                     }
-                } else
+
+                    bountyPlayer = PlayerManager.GetOnlinePlayer((uint)bountyGuid);
+
+                    if (bountyPlayer == null)
+                    {
+                        currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"I cannot find your bounty, they may be in an invalid location or not logged on.\"", ChatMessageType.Tell));
+                        return false;
+                    }
+                }
+                else 
                 {
                     var players = PlayerManager.GetEnemyOnlinePlayers(currentPlayer).Where(p =>
                                  p.Guid.Full != currentPlayer.Guid.Full &&
@@ -3409,37 +3419,37 @@ namespace ACE.Server.WorldObjects
 
                     if (players.Count <= 0)
                     {
-                        currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"I cannot give you information at this time.\"", ChatMessageType.Tell));
+                        currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"There are currently no bounty players available at this time.\"", ChatMessageType.Tell));
                         return false;
                     };
 
                     var roll = ThreadSafeRandom.Next(0, players.Count - 1);
 
-                    player = players[roll];
+                    bountyPlayer = players[roll];
                 }
 
-                if (player == null)
+                if (bountyPlayer == null)
                 {
-                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"I cannot give you information at this time.\"", ChatMessageType.Tell));
+                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"There are currently no bounty players available at this time.\"", ChatMessageType.Tell));
                     return false;
                 }
 
-                var coords = player.Location.GetMapCoordStr();
+                var coords = bountyPlayer.Location.GetMapCoordStr();
 
-                if (DungeonManager.TryGetDungeonLandblock(player.Location.LandblockHex, out DungeonLandblock landblock))
+                if (DungeonManager.TryGetDungeonLandblock(bountyPlayer.Location.LandblockHex, out DungeonLandblock landblock))
                 {
-                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {player.Name} was last seen at {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Tell));
-                    collector.PlayerBountyMap[currentPlayer.Guid.Full] = player.Guid.Full;
+                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Tell));
+                    currentPlayer.BountyGuid = bountyGuid;
                 }
                 else if (coords != null && coords.Length > 0)
                 {
-                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {player.Name} was last seen at {player.Location.GetMapCoordStr()}.\"", ChatMessageType.Tell));
-                    collector.PlayerBountyMap[currentPlayer.Guid.Full] = player.Guid.Full;
+                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at {bountyPlayer.Location.GetMapCoordStr()}.\"", ChatMessageType.Tell));
+                    currentPlayer.BountyGuid = bountyGuid;
                 }
                 else
                 {
                     if (getCached)
-                        currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Sorry, I could not find your bounty {player?.Name} at this time ... Try again later.\"", ChatMessageType.Tell));
+                        currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Sorry, I could not find your bounty {bountyPlayer?.Name} at this time ... Try again later.\"", ChatMessageType.Tell));
                     else 
                         currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Sorry, I could not find you a bounty ... Try again later.\"", ChatMessageType.Tell));
 
@@ -3508,17 +3518,15 @@ namespace ACE.Server.WorldObjects
                         {
                             var xp = PvpXpDailyMax * 0.02; // give 5% of total PvpXpDailyMax
 
-                            var bountyExists = PlayerBountyMap.ContainsKey(Guid.Full);
-
-                            if (bountyExists)
+                            if (BountyGuid != null && item.BountyTrophyGuid != null)
                             {
-                                var bounty = PlayerBountyMap[Guid.Full];
-                                if (bounty == item.BountyGuid)
+
+                                if (BountyGuid.Value == item.BountyTrophyGuid.Value)
                                 {
                                     xp = PvpXpDailyMax * 0.25;
                                     var ore = WorldObjectFactory.CreateNewWorldObject(603004);
                                     TryCreateInInventoryWithNetworking(ore);
-                                    PlayerBountyMap.Remove(Guid.Full);
+                                    BountyGuid = null;
                                 }
                             }
 

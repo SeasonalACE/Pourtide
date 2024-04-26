@@ -654,7 +654,10 @@ namespace ACE.Entity.Enum.Properties
         OriginalArmorLevel                      = 60000,
 
         [ServerOnly]
-        BountyGuid                              = 60001
+        BountyGuid                              = 60001,
+
+        [ServerOnly]
+        BountyTrophyGuid                        = 60002
             
 
 
