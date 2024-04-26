@@ -229,6 +229,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
                 {
                     potentialDungeon.AddTotalXp(xpOverride);
                     potentialDungeon.PlayerTouches++;
+                    potentialDungeon.DropPosition = new ACE.Entity.Position(damager.Location);
                 }
             }
 
