@@ -138,8 +138,8 @@ namespace ACE.Server.Features.Xp
                 var xpPerCategory = diff / 3;
                 var xpCategoryHalf = xpPerCategory / 2;
 
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory - xpCategoryHalf);
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory + xpPerCategory);
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory + xpPerCategory);
+                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory - xpCategoryHalf);
                 player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
             }
         }

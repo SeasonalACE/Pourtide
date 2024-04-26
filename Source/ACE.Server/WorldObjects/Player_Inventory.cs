@@ -16,6 +16,7 @@ using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
 using ACE.Server.Features.HotDungeons.Managers;
+using ACE.Server.Features.Xp;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
@@ -3552,6 +3553,14 @@ namespace ACE.Server.WorldObjects
                             TryCreateInInventoryWithNetworking(leatherBag);
                             return;
                         }
+
+                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 603004)
+                        {
+                            var xp = QuestXpDailyMax * 0.025;
+                            EarnXP((long)xp, XpType.Quest, ShareType.None);
+                            return;
+                        }
+
 
                         if (item == itemToGive)
                             Session.Network.EnqueueSend(new GameEventItemServerSaysContainId(Session, item, target));
