@@ -78,7 +78,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint interval = 180, uint intialDelay = 30, float maxBonuxXp = 4.0f)
+        public static void Initialize(uint interval = 60, uint intialDelay = 30, float maxBonuxXp = 4.0f)
         {
             DungeonRepository.Initialize();
             DungeonsInterval = TimeSpan.FromMinutes(interval);
