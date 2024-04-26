@@ -78,10 +78,11 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint interval = 60, uint intialDelay = 30, float maxBonuxXp = 4.0f)
+        public static void Initialize(uint intialDelay = 30, float maxBonuxXp = 4.0f)
         {
             DungeonRepository.Initialize();
-            DungeonsInterval = TimeSpan.FromMinutes(interval);
+            var duration = PropertyManager.GetLong("rift_duration").Item;
+            DungeonsInterval = TimeSpan.FromMinutes(duration);
             MaxBonuxXp = maxBonuxXp;
             DungeonsLastCheck = DateTime.UtcNow - DungeonsInterval + TimeSpan.FromMinutes(intialDelay);
             log.Info($"Dungeons will be reset in {FormatTimeRemaining(DungeonsTimeRemaining)}");
