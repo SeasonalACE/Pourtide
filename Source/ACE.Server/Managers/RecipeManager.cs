@@ -24,6 +24,7 @@ using ACE.Server.WorldObjects;
 using ACE.Server.Realms;
 using System.Text;
 using Discord;
+using Mono.Cecil;
 
 namespace ACE.Server.Managers
 {
@@ -189,7 +190,7 @@ namespace ACE.Server.Managers
             return false;
         }
 
-        private static bool ApplyDurability(Player player, WorldObject source, WorldObject target)
+        public static void ApplyDurability(WorldObject target)
         {
             var sum = target.ArmorLevel + 10;
             if (sum > target.OriginalArmorLevel)
@@ -198,6 +199,23 @@ namespace ACE.Server.Managers
                 target.ArmorLevel = sum;
 
             WorldObject.UpdateDurability(target, target.OriginalArmorLevel);
+        }
+
+        private static bool ApplyDurability(Player player, WorldObject source, WorldObject target)
+        {
+            ApplyDurability(target);
+
+            var equippedItems = player.EquippedObjects.Values.ToList();
+
+            foreach (var item in equippedItems)
+            {
+                if (item.Bonded != null || item.Attuned != null || item.ItemWorkmanship == null)
+                    continue;
+
+                if (item.ArmorLevel != null)
+                    ApplyDurability(item);
+            }
+
             player.TryConsumeFromInventoryWithNetworking(source);
             return true;
         }
