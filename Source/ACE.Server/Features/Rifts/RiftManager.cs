@@ -39,6 +39,8 @@ namespace ACE.Server.Features.Rifts
             }
         }
 
+        public List<WorldObject> RiftPortals = new List<WorldObject>();
+
         public uint AverageMonsterLevel = 1;
 
         public Rift Next = null;
@@ -85,6 +87,11 @@ namespace ACE.Server.Features.Rifts
                 }
             }
 
+            foreach (var portal in RiftPortals)
+            {
+                portal.Destroy();
+            }
+
             Instance = 0;
             DropPosition = null;
             Next = null;
@@ -92,6 +99,7 @@ namespace ACE.Server.Features.Rifts
             LandblockInstance.Permaload = false;
             LandblockInstance = null;
             Players.Clear();
+            RiftPortals.Clear();
         }
     }
 
@@ -206,7 +214,6 @@ namespace ACE.Server.Features.Rifts
             };
             var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(dungeon.DropPosition.LandblockId, rules, true);
 
-
             var instance = ephemeralRealm.Instance;
 
             var dropPosition = new Position(dungeon.DropPosition)
@@ -277,7 +284,11 @@ namespace ACE.Server.Features.Rifts
                 return false;
 
             var rift = CreateRiftInstance(dungeon);
+
+            SpawnHomeRiftPortal(rift);
+
             var rifts = ActiveRifts.Values.ToList();
+
 
             var last = rifts.LastOrDefault();
 
@@ -286,8 +297,8 @@ namespace ACE.Server.Features.Rifts
                 rift.Previous = last;
                 last.Next = rift;
 
-                SpawnNextAsync(last);
-                SpawnPreviousAsync(rift);
+                SpawnNextLinkAsync(last);
+                SpawnPreviousLinkAsync(rift);
             }
 
             ActiveRifts[currentLb] = rift;
@@ -301,8 +312,31 @@ namespace ACE.Server.Features.Rifts
             return true;
         }
 
+        public static void SpawnHomeRiftPortal(Rift rift)
+        {
+            var riftHomeDrop = new Position(rift.DropPosition);
+            riftHomeDrop.Instance = RealmManager.ServerBaseRealmInstance;
 
-        internal static void SpawnPreviousAsync(Rift rift)
+            var portal = WorldObjectFactory.CreateNewWorldObject(600004);
+            portal.Name = $"Rift Portal {rift.Name}";
+            portal.Location = new Position(riftHomeDrop);
+
+            var dest = new Position(rift.DropPosition);
+            dest.Instance = rift.Instance;
+
+            portal.Destination = new Position(dest);
+            portal.Lifespan = int.MaxValue;
+
+            var name = "Portal to " + rift.Name;
+            portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
+            portal.ObjScale *= 0.25f;
+
+            rift.RiftPortals.Add(portal);
+
+            portal.EnterWorld();
+        }
+
+        internal static void SpawnPreviousLinkAsync(Rift rift)
         {
             var landblock = rift.LandblockInstance;
             var chain = new ActionChain();
@@ -313,7 +347,7 @@ namespace ACE.Server.Features.Rifts
 
                 if (!landblock.CreateWorldObjectsCompleted)
                 {
-                    SpawnPreviousAsync(rift);
+                    SpawnPreviousLinkAsync(rift);
                     return;
                 }
 
@@ -349,7 +383,7 @@ namespace ACE.Server.Features.Rifts
             chain.EnqueueChain();
         }
 
-        internal static void SpawnNextAsync(Rift rift)
+        internal static void SpawnNextLinkAsync(Rift rift)
         {
             var landblock = rift.LandblockInstance;
             var chain = new ActionChain();
@@ -359,7 +393,7 @@ namespace ACE.Server.Features.Rifts
             {
                 if (!landblock.CreateWorldObjectsCompleted)
                 {
-                    SpawnNextAsync(rift);
+                    SpawnNextLinkAsync(rift);
                     return;
                 }
 
