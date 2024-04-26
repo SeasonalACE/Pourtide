@@ -3544,7 +3544,7 @@ namespace ACE.Server.WorldObjects
                             }
                         }
 
-                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2624)
+                        if (target.WeenieClassId == 3000381 && item.WeenieClassId == 7377)
                         {
                             var wcid = (uint)Player.MaterialSalvage[52];
                             var leatherBag = WorldObjectFactory.CreateNewWorldObject(wcid);

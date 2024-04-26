@@ -1,7 +1,7 @@
 DELETE FROM `weenie` WHERE `class_Id` = 3000381;
 
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
-VALUES (3000381, 'ace3000381-pourcollector', 10, '2024-04-24 11:08:01') /* Creature */;
+VALUES (3000381, 'ace3000381-pourcollector', 10, '2024-04-26 10:16:39') /* Creature */;
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES (3000381,   1,         16) /* ItemType - Creature */
@@ -132,7 +132,7 @@ INSERT INTO `weenie_properties_emote` (`object_Id`, `category`, `probability`, `
 VALUES (3000381,  6 /* Give */,      1, 2626 /* Trade Note (50,000) */, NULL, NULL, NULL, NULL, NULL, NULL);
 
 INSERT INTO `weenie_properties_emote` (`object_Id`, `category`, `probability`, `weenie_Class_Id`, `style`, `substyle`, `quest`, `vendor_Type`, `min_Health`, `max_Health`)
-VALUES (3000381,  6 /* Give */,      1, 2624 /* Trade Note (5,000) */, NULL, NULL, NULL, NULL, NULL, NULL);
+VALUES (3000381,  6 /* Give */,      1, 7377 /* Trade Note (75,000) */, NULL, NULL, NULL, NULL, NULL, NULL);
 
 SET @parent_id = LAST_INSERT_ID();
 
@@ -157,7 +157,7 @@ VALUES (3000381, 2,   134,  0, 9, 1, False) /* Create Tunic (134) for Wield */
 
 /* Lifestoned Changelog:
 {
-  "LastModified": "2024-04-24T04:07:31.287788-07:00",
+  "LastModified": "2024-04-26T03:15:55.0160522-07:00",
   "ModifiedBy": "pourman",
   "Changelog": [],
   "UserChangeSummary": "player head",
