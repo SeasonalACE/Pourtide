@@ -192,12 +192,7 @@ namespace ACE.Server.Managers
 
         public static void ApplyDurability(WorldObject target)
         {
-            var sum = target.ArmorLevel + 10;
-            if (sum > target.OriginalArmorLevel)
-                target.ArmorLevel = target.OriginalArmorLevel;
-            else
-                target.ArmorLevel = sum;
-
+            target.ArmorLevel = target.OriginalArmorLevel;
             WorldObject.UpdateDurability(target, target.OriginalArmorLevel);
         }
 
