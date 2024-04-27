@@ -1,6 +1,7 @@
 using ACE.Database;
 using ACE.DatLoader.FileTypes;
 using ACE.Entity.Enum;
+using ACE.Server.Entity;
 using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
 using log4net;
@@ -129,20 +130,23 @@ namespace ACE.Server.Features.Xp
         {
             var players = PlayerManager.GetAllPlayers();
             foreach (var player in players)
-            {
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXp, 0);
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXp, 0);
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXp, 0);
+                SetPlayerXpCap(player);
+        }
 
-                var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
-                var diff = (long)CurrentDailyXp.XpCap - (long)playerTotalXp;
-                var xpPerCategory = diff / 3;
-                var xpCategoryHalf = xpPerCategory / 2;
+        public static void SetPlayerXpCap(IPlayer player)
+        {
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXp, 0);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXp, 0);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXp, 0);
 
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory + xpPerCategory);
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory - xpCategoryHalf);
-                player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
-            }
+            var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
+            var diff = (long)CurrentDailyXp.XpCap - (long)playerTotalXp;
+            var xpPerCategory = diff / 3;
+            var xpCategoryHalf = xpPerCategory / 2;
+
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory + xpPerCategory);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory - xpCategoryHalf);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
         }
 
         public static double GetPlayerLevelXpModifier(int level)

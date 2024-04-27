@@ -60,14 +60,7 @@ namespace ACE.Server.Factories
             player.MonsterXpDailyMax = (long)dailyCap;
             player.PvpXpDailyMax = (long)dailyCap;*/
 
-            var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
-            var diff = (long)XpManager.CurrentDailyXp.XpCap - (long)playerTotalXp;
-            var xpPerCategory = diff / 3;
-            var xpCategoryHalf = xpPerCategory / 2;
-
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory - xpCategoryHalf);
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory + xpPerCategory);
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
+            XpManager.SetPlayerXpCap(player);
         }
 
         public static CreateResult Create(CharacterCreateInfo characterCreateInfo, Weenie weenie, ObjectGuid guid, uint accountId, WeenieType weenieType, out Player player)
