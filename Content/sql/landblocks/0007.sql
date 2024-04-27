@@ -704,6 +704,3 @@ INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `ori
 VALUES (0x700070AF, 43004, 0x00070187, 146.565, -80.047, -0.063, 0.707107, 0, 0, -0.707107, False, '2021-11-01 00:00:00'); /* Freehold Portal */
 /* @teleloc 0x00070187 [146.565002 -80.046997 -0.063000] 0.707107 0.000000 0.000000 -0.707107 */
 
-INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x700070B0, 600005, 0x00070104, 70.01316, -168.5208, -6.063, -0.008034, 0, 0, -0.999968, False, '2024-04-24 06:04:25'); /* Rift Entrance Portal */
-/* @teleloc 0x00070104 [70.013161 -168.520798 -6.063000] -0.008034 0.000000 0.000000 -0.999968 */
