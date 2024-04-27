@@ -1,5 +1,6 @@
 using ACE.Database;
 using ACE.DatLoader.FileTypes;
+using ACE.Entity.Enum;
 using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
 using log4net;
@@ -142,6 +143,23 @@ namespace ACE.Server.Features.Xp
                 player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory - xpCategoryHalf);
                 player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
             }
+        }
+
+        public static double GetPlayerLevelXpModifier(int level)
+        {
+            var players = PlayerManager.GetAllPlayers()
+               .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player && player.Level > 10)
+               .OrderByDescending(player => player.Level)
+               .Select(player => player.Level)
+               .Distinct()
+               .ToList();
+
+            var average = players.Average();
+
+            if (average == null)
+                return 1.0;
+
+            return (double)average / (double)level;
         }
 
         public static void GetXpCapTimestamps()

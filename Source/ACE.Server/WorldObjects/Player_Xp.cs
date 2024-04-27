@@ -6,6 +6,7 @@ using ACE.DatLoader;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity.Actions;
+using ACE.Server.Features.Xp;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameMessages.Messages;
 
@@ -29,12 +30,14 @@ namespace ACE.Server.WorldObjects
             if (xpType == XpType.Quest)
                 modifier *= questModifier;
 
+            var playerLevelModifier = XpManager.GetPlayerLevelXpModifier((int)Level);
+
             var realmMultiplierAll = RealmRuleset?.GetProperty(RealmPropertyFloat.ExperienceMultiplierAll) ?? 1;
 
             // should this be passed upstream to fellowship / allegiance?
             var enchantment = GetXPAndLuminanceModifier(xpType);
 
-            var capped = amount * enchantment * modifier * realmMultiplierAll;
+            var capped = amount * enchantment * modifier * playerLevelModifier * realmMultiplierAll;
 
             var m_amount = (long)Math.Round(capped);
 
