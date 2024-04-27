@@ -3,6 +3,7 @@ using ACE.DatLoader.FileTypes;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
 using ACE.Server.Managers;
+using ACE.Server.Network.GameAction.Actions;
 using ACE.Server.WorldObjects;
 using log4net;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -149,21 +150,33 @@ namespace ACE.Server.Features.Xp
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
         }
 
+        public static double? AverageLevel = null;
+
+        private static DateTime GetAverageModifierTimestamp;
+
         public static double GetPlayerLevelXpModifier(int level)
         {
-            var players = PlayerManager.GetAllPlayers()
-               .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player && player.Level > 10)
-               .OrderByDescending(player => player.Level)
-               .Select(player => player.Level)
-               .Distinct()
-               .ToList();
+            var duration = PropertyManager.GetLong("xp_average_check_duration").Item;
+            if (AverageLevel == null || DateTime.UtcNow - GetAverageModifierTimestamp > TimeSpan.FromMinutes(duration))
+            {
+                GetAverageModifierTimestamp = DateTime.UtcNow;
 
-            var average = players.Average();
+                var players = PlayerManager.GetAllPlayers()
+                   .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player && player.Level > 10)
+                   .OrderByDescending(player => player.Level)
+                   .Select(player => player.Level)
+                   .Distinct()
+                   .ToList();
 
-            if (average == null)
-                return 1.0;
+                var average = players.Average();
 
-            return (double)average / (double)level;
+                if (average == null)
+                    return 1.0;
+
+               AverageLevel = average;
+            }
+
+           return (double)AverageLevel / (double)level;
         }
 
         public static void GetXpCapTimestamps()
