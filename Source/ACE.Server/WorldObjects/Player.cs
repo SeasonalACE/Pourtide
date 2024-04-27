@@ -62,7 +62,8 @@ namespace ACE.Server.WorldObjects
             }
         }
 
-        public  DateTime PrevLeaderboardXPCommandRequestTimestamp;
+        public DateTime PrevWho;
+        public DateTime PrevLeaderboardXPCommandRequestTimestamp;
         public  DateTime PrevLeaderboardPvPKillsCommandRequestTimestamp;
         public  DateTime PrevLeaderboardPvPDeathsCommandRequestTimestamp;
 

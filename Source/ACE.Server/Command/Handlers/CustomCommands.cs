@@ -463,6 +463,52 @@ namespace ACE.Server.Command.Handlers
                 return;
             }
         }
+
+        /// <summary>
+        /// List online players within the character's allegiance.
+        /// </summary>
+        [CommandHandler("who", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "List online players within the character's allegiance.")]
+        public static void HandleWho(Session session, params string[] parameters)
+        {
+            if (!PropertyManager.GetBool("command_who_enabled").Item)
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat("The command \"who\" is not currently enabled on this server.", ChatMessageType.Broadcast));
+                return;
+            }
+
+            if (session.Player.MonarchId == null)
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat("You must be in an allegiance to use this command.", ChatMessageType.Broadcast));
+                return;
+            }
+
+            if (DateTime.UtcNow - session.Player.PrevWho < TimeSpan.FromMinutes(1))
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat("You have used this command too recently!", ChatMessageType.Broadcast));
+                return;
+            }
+
+            session.Player.PrevWho = DateTime.UtcNow;
+
+            StringBuilder message = new StringBuilder();
+            message.Append("Allegiance Members: \n");
+
+
+            uint playerCounter = 0;
+            foreach (var player in PlayerManager.GetAllOnline().OrderBy(p => p.Name))
+            {
+                if (player.MonarchId == session.Player.MonarchId)
+                {
+                    message.Append($"{player.Name} - Level {player.Level}\n");
+                    playerCounter++;
+                }
+            }
+
+            message.Append("Total: " + playerCounter + "\n");
+
+            CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
+        }
+
         /** Player Utility Commands End **/
 
         [CommandHandler("bounty", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Get bounty information from Pour Collector")]

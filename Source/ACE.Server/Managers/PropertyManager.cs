@@ -544,6 +544,7 @@ namespace ACE.Server.Managers
                 ("chat_log_townchans", new Property<bool>(false, "log advocate town chat")),
                 ("chat_requires_account_15days", new Property<bool>(false, "global chat privileges requires accounts to be 15 days or older")),
                 ("chess_enabled", new Property<bool>(false, "if FALSE then chess will be disabled")),
+                ("command_who_enabled", new Property<bool>(true, "disable this to prevent players from listing online players in their allegiance")),
                 ("use_cloak_proc_custom_scale", new Property<bool>(false, "If TRUE, the calculation for cloak procs will be based upon the values set by the server oeprator.")),
                 ("client_movement_formula", new Property<bool>(false, "If enabled, server uses DoMotion/StopMotion self-client movement methods instead of apply_raw_movement")),
                 ("container_opener_name", new Property<bool>(false, "If enabled, when a player tries to open a container that is already in use by someone else, replaces 'someone else' in the message with the actual name of the player")),
