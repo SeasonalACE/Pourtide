@@ -3448,12 +3448,12 @@ namespace ACE.Server.WorldObjects
                 if (DungeonManager.TryGetDungeonLandblock(bountyPlayer.Location.LandblockHex, out DungeonLandblock landblock))
                 {
                     currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Tell));
-                    currentPlayer.BountyGuid = bountyGuid;
+                    currentPlayer.BountyGuid = (int?)bountyPlayer.Guid.Full;
                 }
                 else if (coords != null && coords.Length > 0)
                 {
                     currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at {bountyPlayer.Location.GetMapCoordStr()}.\"", ChatMessageType.Tell));
-                    currentPlayer.BountyGuid = bountyGuid;
+                    currentPlayer.BountyGuid = (int?)bountyPlayer.Guid.Full;
                 }
                 else
                 {
