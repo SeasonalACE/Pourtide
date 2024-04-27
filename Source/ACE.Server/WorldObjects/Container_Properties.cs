@@ -28,5 +28,11 @@ namespace ACE.Server.WorldObjects
             get => GetProperty(PropertyBool.ResetMessagePending) ?? false;
             set { if (!value) RemoveProperty(PropertyBool.ResetMessagePending); else SetProperty(PropertyBool.ResetMessagePending, value); }
         }
+
+        public int? MerchandiseItemTypes
+        {
+            get => GetProperty(PropertyInt.MerchandiseItemTypes);
+            set { if (!value.HasValue) RemoveProperty(PropertyInt.MerchandiseItemTypes); else SetProperty(PropertyInt.MerchandiseItemTypes, value.Value); }
+        }
     }
 }

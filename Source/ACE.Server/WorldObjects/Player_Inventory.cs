@@ -1257,6 +1257,14 @@ namespace ACE.Server.WorldObjects
         {
             //Console.WriteLine($"-> DoHandleActionPutItemInContainer({item.Name}, {itemRootOwner?.Name}, {itemWasEquipped}, {container?.Name}, {containerRootOwner?.Name}, {placement})");
 
+            ItemType containerValidTypes = (ItemType)(container.MerchandiseItemTypes ?? 0);
+            if (containerValidTypes != 0 && (item.ItemType & containerValidTypes) == 0)
+            {
+                Session.Network.EnqueueSend(new GameEventCommunicationTransientString(Session, $"The {container.Name} can't hold that type of item!")); // Custom error message
+                Session.Network.EnqueueSend(new GameEventInventoryServerSaveFailed(Session, item.Guid.Full)); // Change to ClientGUID in realms v2
+                return false;
+            }
+
             Position prevLocation = null;
             Landblock prevLandblock = null;
 
