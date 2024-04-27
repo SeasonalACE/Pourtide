@@ -514,6 +514,7 @@ namespace ACE.Server.Managers
                 ("allow_pkl_bump", new Property<bool>(true, "enables retail behavior where /pkl checks for entry collisions, bumping the player position over if standing on another PKLite. This effectively enables /pkl door skipping from retail")),
                 ("allow_summoning_killtask_multicredit", new Property<bool>(true, "enables retail behavior where a summoner can get multiple killtask credits from a monster")),
                 ("assess_creature_mod", new Property<bool>(false, "(non-retail function) If enabled, re-enables former skill formula, when assess creature skill is not trained or spec'ed")),
+                ("assess_creature_pve_always_succeed", new Property<bool>(false, "enable this to bypass assess creature PvE skill checks (workaround to fix 5 second delay on vtank looting which occurs due to failed assess)")),
                 ("attribute_augmentation_safety_cap", new Property<bool>(true, "if TRUE players are not able to use attribute augmentations if the innate value of the target attribute is >= 96. All normal restrictions to these augmentations still apply.")),
                 ("block_vpn_connections", new Property<bool>(false, "enable this to block user sessions from IPs identified as VPN proxies")),
                 ("chat_disable_general", new Property<bool>(false, "disable general global chat channel")),
