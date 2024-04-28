@@ -41,23 +41,23 @@ namespace ACE.Server.Features.Xp
 
         private static bool Initialized = false;
 
-        public static readonly Dictionary<uint, ulong> WeeklyLevelWithCapXp = new Dictionary<uint, ulong>()
+        public static readonly Dictionary<uint, WeeklyXp> WeeklyLevelWithCapXp = new Dictionary<uint, WeeklyXp>()
         {
-            { 1, 46465302 },
-            { 2, 150013037 },
-            { 3, 387419625 },
-            { 4, 859755734 },
-            { 5, 1709581309 },
-            { 6, 3128116563 },
-            { 7, 5362412965 },
-            { 8, 8722524219 },
-            { 9, 13588677261 },
-            { 10, 20418443236 },
-            { 11, 29753908491 },
-            { 12, 42228845559 },
-            { 13, 58575884147 },
-            { 14, 79633682122 },
-            { 15, 106354096497 }
+            { 1, new WeeklyXp(46465302, 48) },
+            { 2, new WeeklyXp(150013037,62) },
+            { 3, new WeeklyXp(387419625, 76) },
+            { 4, new WeeklyXp(859755734, 90) },
+            { 5, new WeeklyXp(1709581309, 104) },
+            { 6, new WeeklyXp(3128116563, 118) },
+            { 7, new WeeklyXp(5362412965, 132) },
+            { 8, new WeeklyXp(8722524219, 146) },
+            { 9, new WeeklyXp(13588677261, 160) },
+            { 10, new WeeklyXp(20418443236, 174) },
+            { 11, new WeeklyXp(29753908491, 188) },
+            { 12, new WeeklyXp(42228845559, 202) },
+            { 13, new WeeklyXp(58575884147, 216) },
+            { 14, new WeeklyXp(79633682122, 230) },
+            { 15, new WeeklyXp(106354096497, 244) },
         };
 
         public static void Initialize()
@@ -65,6 +65,17 @@ namespace ACE.Server.Features.Xp
             GetXpCapTimestamps();
             CalculateCurrentDailyXpCap();
             Initialized = true;
+        }
+
+        public class WeeklyXp
+        {
+            public readonly ulong TotalXp;
+            public readonly int Level;
+            public WeeklyXp(ulong totalXp, int level)
+            {
+                TotalXp = totalXp;
+                Level = level;
+            }
         }
 
         public class DailyXp
@@ -83,11 +94,11 @@ namespace ACE.Server.Features.Xp
         {
             DailyXpCache.Clear();
             var week = Week;
-            var totalWeeklyXp = week > 1 ? WeeklyLevelWithCapXp[week] - WeeklyLevelWithCapXp[week - 1] : WeeklyLevelWithCapXp[week];
+            var totalWeeklyXp = week > 1 ? WeeklyLevelWithCapXp[week].TotalXp - WeeklyLevelWithCapXp[week - 1].TotalXp : WeeklyLevelWithCapXp[week].TotalXp;
             var dailyxp = totalWeeklyXp / 7;
             var endOfWeek = WeeklyTimestamp;
 
-            ulong previous = week > 1 ? WeeklyLevelWithCapXp[week - 1] : 0;
+            ulong previous = week > 1 ? WeeklyLevelWithCapXp[week - 1].TotalXp : 0;
             for (var i = 7; i >= 1; i--)
             {
                 var day = endOfWeek.AddDays(-i);
@@ -145,27 +156,14 @@ namespace ACE.Server.Features.Xp
             var xpPerCategory = diff / 3;
             var xpCategoryHalf = xpPerCategory / 2;
 
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory + xpPerCategory);
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory - xpCategoryHalf);
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, (int)(diff * 0.4));
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, (int)(diff * 0.4));
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, (int)(diff * 0.2));
         }
-
-        public static ulong? DailyXpCap = null;
-
-        private static DateTime GetAverageModifierTimestamp;
 
         public static double GetPlayerLevelXpModifier(Player player)
         {
-            var duration = PropertyManager.GetLong("xp_average_check_duration").Item;
-            if (DailyXpCap == null || DateTime.UtcNow - GetAverageModifierTimestamp > TimeSpan.FromMinutes(duration))
-            {
-                GetAverageModifierTimestamp = DateTime.UtcNow;
-
-
-               DailyXpCap = CurrentDailyXp.XpCap;
-            }
-
-           return (double)DailyXpCap / (double)player.TotalExperience;
+            return (double)WeeklyLevelWithCapXp[Week].Level / (double)player.Level;
         }
 
         public static void GetXpCapTimestamps()
