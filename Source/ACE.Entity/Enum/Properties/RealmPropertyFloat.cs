@@ -10,7 +10,7 @@ namespace ACE.Entity.Enum.Properties
         [RealmPropertyFloat(1f, 0.1f, 5f)]
         SpellCasting_MoveToState_UpdatePosition_Threshold,
 
-        [RealmPropertyFloat(5f, 1f, 360f)]
+        [RealmPropertyFloat(30f, 1f, 360f)]
         Spellcasting_Max_Angle,
 
         [RealmPropertyFloat(6f, 1f, 1000f)]
