@@ -655,6 +655,7 @@ namespace ACE.Server.Managers
                 ("rift_duration", new Property<long>(120, "the number of minutes a rift should exist for")),
                 ("summoning_killtask_multicredit_cap", new Property<long>(2, "if allow_summoning_killtask_multicredit is enabled, the maximum # of killtask credits a player can receive from 1 kill")),
                 ("teleport_visibility_fix", new Property<long>(0, "Fixes some possible issues with invisible players and mobs. 0 = default / disabled, 1 = players only, 2 = creatures, 3 = all world objects")),
+                ("minimum_portalspace_seconds", new Property<long>(3, "the minimum number of seconds a player must be in portal space before exiting")),
                 ("xp_average_check_duration", new Property<long>(30, "The duration in minutes the GetPlayerLevelXpModifier should be cached for"))
                 );
 
