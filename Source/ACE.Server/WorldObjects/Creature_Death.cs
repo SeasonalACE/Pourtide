@@ -13,6 +13,7 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
 using ACE.Server.Factories.Tables;
 using ACE.Server.Features.HotDungeons.Managers;
+using ACE.Server.Features.Rifts;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
@@ -135,7 +136,10 @@ namespace ACE.Server.WorldObjects
                 dieChain.AddAction(this, () =>
                 {
                     CreateCorpse(topDamager);
+                    HandleRiftCreatureDeath(Location);
                     Destroy();
+
+
                 });
 
                 dieChain.EnqueueChain();
@@ -146,6 +150,31 @@ namespace ACE.Server.WorldObjects
                 log.Error(ex.StackTrace);
             }
 
+        }
+
+        private void HandleRiftCreatureDeath(Position location)
+        {
+            if (location.RealmID != 1016)
+                return;
+
+            if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift rift))
+            {
+                var ore = MutationsManager.CreateOre(location, rift.Tier);
+
+                if (ore != null)
+                    ore.EnterWorld();
+                else
+                {
+                    if (ThreadSafeRandom.Next(1, 5) == 1)
+                    {
+                        var riftCreatureId = rift.GetRandomCreature();
+                        var creature = WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
+                        creature.Location = new Position(location);
+                        creature.Name = $"Rift {creature.Name}";
+                        creature.EnterWorld();
+                    }
+                }
+            }
         }
 
         /// <summary>

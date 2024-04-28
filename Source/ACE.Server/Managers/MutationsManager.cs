@@ -84,7 +84,7 @@ namespace ACE.Server.Managers
             return weenie;
         }
 
-        private static WorldObject RollForOre(Position position, uint tier = 1)
+        public static WorldObject CreateOre(Position position, uint tier = 1)
         {
             if (ThreadSafeRandom.Next(1, 100) == 1)
             {
