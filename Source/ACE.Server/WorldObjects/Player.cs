@@ -549,6 +549,12 @@ namespace ACE.Server.WorldObjects
                     MaterializeLogoutState = MaterializedLogoutState
                 });
 
+                var objects = CurrentLandblock.GetAllWorldObjectsForDiagnostics();
+                var enemies = objects.Where(o => o != this && o is Player player && player.IsPK && !player.IsAlly(this)).ToList();
+
+                if (enemies.Count > 0)
+                    UpdatePKTimer();
+
                 if (PKLogoutActive && !forceImmediate || PkLogoutState != LogoutState.Pending)
                 {
                     return HandlePKLogout();
@@ -647,8 +653,6 @@ namespace ACE.Server.WorldObjects
 
         public void LogOut_Inner(bool clientSessionTerminatedAbruptly = false)
         {
-
-
             IsBusy = true;
             IsLoggingOut = true;
 
@@ -696,20 +700,7 @@ namespace ACE.Server.WorldObjects
             if (IsInDeathProcess)
                 return;
 
-            var objects = CurrentLandblock.GetAllWorldObjectsForDiagnostics();
-            var enemies = objects.Where(o => o != this && o is Player player && !player.IsAlly(this)).ToList();
-
-            if (enemies.Count > 0)
-            {
-                var delayLogoutChain = new ActionChain();
-                delayLogoutChain.AddDelaySeconds(PropertyManager.GetLong("pk_timer").Item);
-                delayLogoutChain.AddAction(WorldManager.ActionQueue, () =>
-                {
-                    LogOut_Final();
-                });
-                delayLogoutChain.EnqueueChain();
-            } else
-                LogOut_Final();
+            LogOut_Final();
 
         }
 
