@@ -165,7 +165,8 @@ namespace ACE.Server.WorldObjects
                     ore.EnterWorld();
                 else
                 {
-                    if (ThreadSafeRandom.Next(1, 5) == 1)
+                    var riftCreatureChance = PropertyManager.GetLong("rift_creature_chance").Item;
+                    if (ThreadSafeRandom.Next(1, riftCreatureChance) == 1)
                     {
                         var riftCreatureId = rift.GetRandomCreature();
                         var creature = WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
