@@ -188,11 +188,11 @@ namespace ACE.Server.Features.Rifts
             }
         }
 
-        public static List<WorldObject> GetDungeonObjectsFromPosition(Position position, AppliedRuleset ruleset)
+        public static List<WorldObject> GetDungeonObjectsFromPosition(Position position, ushort realmId)
         {
             var Id = new LandblockId(position.LandblockId.Raw);
 
-            var objects = DatabaseManager.World.GetCachedInstancesByLandblock(Id.Landblock, RealmManager.DefaultRealm.Realm.Id);
+            var objects = DatabaseManager.World.GetCachedInstancesByLandblock(Id.Landblock, realmId);
             return objects.Select(link => WorldObjectFactory.CreateNewWorldObject(link.WeenieClassId)).ToList();
         }
 
@@ -206,22 +206,9 @@ namespace ACE.Server.Features.Rifts
                 .ToList();
         }
 
-        public static Rift CreateRiftInstance(Dungeon dungeon)
+        public static (uint, List<uint>) GetRiftCreatureIds(Position dropPosition, ushort realmId)
         {
-            var rules = new List<Realm>()
-            {
-                RealmManager.GetRealm(1016).Realm // rift ruleset
-            };
-            var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(dungeon.DropPosition.LandblockId, rules, true);
-
-            var instance = ephemeralRealm.Instance;
-
-            var dropPosition = new Position(dungeon.DropPosition)
-            {
-                Instance = instance,
-            };
-
-            var dungeonObjects = GetDungeonObjectsFromPosition(dropPosition, ephemeralRealm.RealmRuleset);
+            var dungeonObjects = GetDungeonObjectsFromPosition(dropPosition, realmId);
 
             var generatorCreatureObjects = GetGeneratorCreaturesObjectsFromDungeon(dungeonObjects);
 
@@ -240,6 +227,26 @@ namespace ACE.Server.Features.Rifts
                 .Where(c => c.Level <= averageLevel)
                 .Select(c => c.Id)
                 .ToList();
+
+            return (tier, creatureIds);
+        }
+
+        public static Rift CreateRiftInstance(Dungeon dungeon)
+        {
+            var rules = new List<Realm>()
+            {
+                RealmManager.GetRealm(1016).Realm // rift ruleset
+            };
+            var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(dungeon.DropPosition.LandblockId, rules, true);
+
+            var instance = ephemeralRealm.Instance;
+
+            var dropPosition = new Position(dungeon.DropPosition)
+            {
+                Instance = instance,
+            };
+
+            var (tier, creatureIds) = GetRiftCreatureIds(dropPosition, 1016);
 
             var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureIds, tier);
 
