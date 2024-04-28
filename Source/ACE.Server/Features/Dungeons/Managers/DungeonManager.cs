@@ -154,15 +154,23 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
                 foreach (var dungeon in sorted)
                 {
-                    RiftManager.TryAddRift(dungeon.Landblock, dungeon, out Rift activeRift);
-                    dungeon.BonuxXp = activeRift.BonuxXp;
-                    dungeon.Instance = activeRift.Instance;
-                    HotspotDungeons.Add(dungeon.Landblock, dungeon);
+                    try
+                    {
+                        RiftManager.TryAddRift(dungeon.Landblock, dungeon, out Rift activeRift);
+                        dungeon.BonuxXp = activeRift.BonuxXp;
+                        dungeon.Instance = activeRift.Instance;
+                        HotspotDungeons.Add(dungeon.Landblock, dungeon);
 
-                    var message = $"{dungeon.Name} has been very active, a rift has been created in Town Network (Annex side), this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
-                    _ = WebhookRepository.SendGeneralChat(message);
-                    log.Info(message);
-                    PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
+                        var message = $"{dungeon.Name} has been very active, a rift has been created in Town Network (Annex side), this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
+                        _ = WebhookRepository.SendGeneralChat(message);
+                        log.Info(message);
+                        PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
+                    } catch (Exception _)
+                    {
+                        log.Error($"Error: failed to create rift for dungeon {dungeon.Name}");
+                        log.Error(System.Environment.StackTrace);
+                    }
+
                 }
 
 
