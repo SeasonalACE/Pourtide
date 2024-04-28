@@ -150,33 +150,22 @@ namespace ACE.Server.Features.Xp
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
         }
 
-        public static double? AverageLevel = null;
+        public static ulong? DailyXpCap = null;
 
         private static DateTime GetAverageModifierTimestamp;
 
-        public static double GetPlayerLevelXpModifier(int level)
+        public static double GetPlayerLevelXpModifier(Player player)
         {
             var duration = PropertyManager.GetLong("xp_average_check_duration").Item;
-            if (AverageLevel == null || DateTime.UtcNow - GetAverageModifierTimestamp > TimeSpan.FromMinutes(duration))
+            if (DailyXpCap == null || DateTime.UtcNow - GetAverageModifierTimestamp > TimeSpan.FromMinutes(duration))
             {
                 GetAverageModifierTimestamp = DateTime.UtcNow;
 
-                var players = PlayerManager.GetAllPlayers()
-                   .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player && player.Level > 10)
-                   .OrderByDescending(player => player.Level)
-                   .Select(player => player.Level)
-                   .Distinct()
-                   .ToList();
 
-                var average = players.Average();
-
-                if (average == null)
-                    return 1.0;
-
-               AverageLevel = average;
+               DailyXpCap = CurrentDailyXp.XpCap;
             }
 
-           return (double)AverageLevel / (double)level;
+           return (double)DailyXpCap / (double)player.TotalExperience;
         }
 
         public static void GetXpCapTimestamps()
