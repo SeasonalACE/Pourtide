@@ -40,7 +40,6 @@ namespace ACE.Server.WorldObjects
                 {
                     wo = WorldObjectFactory.CreateWorldObject(DatabaseManager.World.GetCachedWeenie(link.WeenieClassId), new ObjectGuid(link.Guid));
                     wo.Location = new Position(parent.Location);
-                    wo = MutationsManager.ProcessWorldObject(wo, ruleset);
                 }
                 else
                 {

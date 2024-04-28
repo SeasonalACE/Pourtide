@@ -270,7 +270,7 @@ namespace ACE.Server.Entity
                     log.Warn("Failed to create AddWorldObject during Spawn in Generator Profile");
                     log.Error(ex.Message);
                     log.Error(ex.StackTrace);
-                    return objects;
+                    wo = null;
                 }
 
                 if (wo == null)
@@ -345,7 +345,6 @@ namespace ACE.Server.Entity
 
                 var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId);
                 wo.Location = new ACE.Entity.Position(Generator.Location);
-                wo = MutationsManager.ProcessWorldObject(wo, Generator.RealmRuleset, replace);
                 if (wo == null)
                 {
                     log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");

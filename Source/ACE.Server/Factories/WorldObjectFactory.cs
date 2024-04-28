@@ -14,6 +14,7 @@ using ACE.Server.WorldObjects;
 using Biota = ACE.Database.Models.Shard.Biota;
 using LandblockInstance = ACE.Database.Models.World.LandblockInstance;
 using ACE.Server.Realms;
+using System.Security.Cryptography;
 
 namespace ACE.Server.Factories
 {
@@ -96,7 +97,7 @@ namespace ACE.Server.Factories
                 case WeenieType.AdvocateFane:
                     return new AdvocateFane(weenie, guid);
                 case WeenieType.AdvocateItem:
-                    return new AdvocateItem(weenie, guid);
+                    return new AdvocateItem(weenie, guid, ruleset);
                 case WeenieType.Healer:
                     return new Healer(weenie, guid);
                 case WeenieType.Lockpick:
@@ -140,9 +141,9 @@ namespace ACE.Server.Factories
                 case WeenieType.CraftTool:
                     return new CraftTool(weenie, guid);
                 case WeenieType.LightSource:
-                    return new LightSource(weenie, guid);
+                    return new LightSource(weenie, guid, ruleset);
                 default:
-                    return new GenericObject(weenie, guid);
+                    return new GenericObject(weenie, guid, ruleset);
             }
         }
 
@@ -284,11 +285,14 @@ namespace ACE.Server.Factories
             {
                 var weenie = DatabaseManager.World.GetCachedWeenie(instance.WeenieClassId);
 
+                weenie = MutationsManager.ProcessLandblockInstance(weenie, ruleset, instance, iid);
+
                 if (weenie == null)
                 {
                     log.Warn($"CreateNewWorldObjects: Database does not contain weenie {instance.WeenieClassId} for instance 0x{instance.Guid:X8} at {new Position(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid).ToLOCString()}");
                     continue;
                 }
+
 
                 if (restrict_wcid != null && restrict_wcid.Value != instance.WeenieClassId)
                     continue;
@@ -300,14 +304,13 @@ namespace ACE.Server.Factories
                 var biota = biotas.FirstOrDefault(b => b.Id == instance.Guid);
                 if (biota == null)
                 {
-                    worldObject = CreateWorldObject(weenie, guid);
+                    worldObject = CreateWorldObject(weenie, guid, ruleset);
+
                     worldObject.Location = new Position(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
-                    worldObject = MutationsManager.ProcessWorldObject(worldObject, ruleset);
                 }
                 else
                 {
                     worldObject = CreateWorldObject(biota);
-                    worldObject = MutationsManager.ProcessWorldObject(worldObject, worldObject.RealmRuleset ?? ruleset);
 
                     if (worldObject.Location == null)
                     {
@@ -421,3 +424,4 @@ namespace ACE.Server.Factories
         }
     }
 }
+

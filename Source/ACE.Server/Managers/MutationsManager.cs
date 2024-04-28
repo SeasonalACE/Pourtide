@@ -1,6 +1,7 @@
 using ACE.Common;
 using ACE.Database;
 using ACE.Database.Models.Shard;
+using ACE.Database.Models.World;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
@@ -52,70 +53,35 @@ namespace ACE.Server.Managers
 
         private static List<ushort> BlackListedLandblocks = BlackListedLandblockIds.Select(r => new LandblockId(r).Landblock).ToList(); // Winthur Gate, Random Villas
 
-        public static WorldObject ProcessWorldObject(WorldObject wo, AppliedRuleset ruleset, bool replace = true)
+        public static ACE.Entity.Models.Weenie ProcessLandblockInstance(ACE.Entity.Models.Weenie weenie, AppliedRuleset ruleset, LandblockInstance instance, uint iid)
         {
+            if (weenie == null)
+                return null;
+
+            var location = new Position(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
+
+            var lb = location.LandblockId.Landblock;
+            if (BlackListedLandblocks.Contains(lb))
+            {
+                return null;
+            }
+
+            var weenieType = weenie.WeenieType;
+
             var disableHousing = ruleset.Realm.Id != RealmManager.ServerBaseRealm.Realm.Id;
 
-            if (wo is House || wo is Storage || wo is Hook || wo is Hooker || wo is HousePortal || wo is SlumLord)
+            if (weenieType == WeenieType.House ||
+                weenieType == WeenieType.Storage ||
+                weenieType == WeenieType.Hook ||
+                weenieType == WeenieType.Hooker ||
+                weenieType == WeenieType.HousePortal ||
+                weenieType == WeenieType.SlumLord)
             {
-                if (disableHousing || !HouseManager.ValidatePourHousing(wo.Location.LandblockId.Landblock))
-
-                {
-                    wo = null;
-                    return wo;
-                }
+                if (disableHousing || !HouseManager.ValidatePourHousing(location.LandblockId.Landblock))
+                    return null;
             }
 
-            if (wo.Location != null)
-            {
-                var lb = wo.Location.LandblockId.Landblock;
-                if (BlackListedLandblocks.Contains(lb))
-                {
-                    wo = null;
-                    return wo;
-                }
-            }
-        
-            if (ruleset.Realm.Id == 1016 && wo.WeenieType == WeenieType.Generic)
-            {
-                var creatureRespawnDuration = ruleset.GetProperty(RealmPropertyFloat.CreatureRespawnDuration);
-                var creatureSpawnRateMultiplier = ruleset.GetProperty(RealmPropertyFloat.CreatureSpawnRateMultiplier);
-
-                if (creatureRespawnDuration > 0)
-                {
-                    wo.RegenerationInterval = (int)((float)creatureRespawnDuration * creatureSpawnRateMultiplier);
-
-                    wo.ReinitializeHeartbeats();
-
-                    if (wo.Biota.PropertiesGenerator != null)
-                    {
-                        // While this may be ugly, it's done for performance reasons.
-                        // Common weenie properties are not cloned into the bota on creation. Instead, the biota references simply point to the weenie collections.
-                        // The problem here is that we want to update one of those common collection properties. If the biota is referencing the weenie collection,
-                        // then we'll end up updating the global weenie (from the cache), instead of just this specific biota.
-                        if (wo.Biota.PropertiesGenerator == wo.Weenie.PropertiesGenerator)
-                        {
-                            wo.Biota.PropertiesGenerator = new List<ACE.Entity.Models.PropertiesGenerator>(wo.Weenie.PropertiesGenerator.Count);
-
-                            foreach (var record in wo.Weenie.PropertiesGenerator)
-                                wo.Biota.PropertiesGenerator.Add(record.Clone());
-                        }
-                    }
-                }
-
-                return wo;
-            }
-
-            if (ruleset.Realm.Id == 1016 && wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator)
-            {
-
-                var lb = wo.Location.LandblockHex;
-
-                if (RiftManager.TryGetActiveRift(lb, out Rift activeRift))
-                    return ProcessRiftCreature(wo, activeRift);
-            }
-
-            return wo;
+            return weenie;
         }
 
         private static WorldObject RollForOre(Position position, uint tier = 1)
@@ -141,46 +107,5 @@ namespace ACE.Server.Managers
 
             return null;
         }
-
-        private static WorldObject ProcessRiftCreature(WorldObject wo, Rift rift)
-        {
-            var ore = RollForOre(wo.Location, rift.Tier);
-
-            if (ore != null)
-            {
-                wo.Destroy();
-                return ore;
-            }
-
-            if (ThreadSafeRandom.Next(1, 100) <= 25)
-            {
-
-                try
-                {
-                    var riftCreatureId = rift.GetRandomCreature();
-                    var creature = WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
-                    creature.Location = new Position(wo.Location);
-                    creature.Name = $"Rift {creature.Name}";
-                    wo.Destroy();
-                    return creature;
-                } catch (Exception ex)
-                {
-                    log.Error(ex.Message);
-                    log.Error(ex.StackTrace);
-                    if (!wo.IsDestroyed)
-                        return wo;
-                    else
-                        wo.Destroy();
-
-                    return null;
-                }
-
-
-            }
-
-            return wo;
-
-        }
-        
     }
 }
