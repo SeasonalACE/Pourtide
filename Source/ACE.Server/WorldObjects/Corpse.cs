@@ -61,6 +61,7 @@ namespace ACE.Server.WorldObjects
             ItemCapacity = 120;
 
             SuppressGenerateEffect = true;
+            CorpsePermitOpenTimestamp = DateTime.UtcNow;
         }
 
         protected override void OnInitialInventoryLoadCompleted()
@@ -146,11 +147,17 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         private HashSet<uint> permitteeOpened = null;
 
+        private DateTime CorpsePermitOpenTimestamp;
+
         /// <summary>
         /// Returns TRUE if input player has permission to loot this corpse
         /// </summary>
         public bool HasPermission(Player player)
         {
+            // corpses can be opened after 10 minutes
+            if (DateTime.UtcNow - CorpsePermitOpenTimestamp > TimeSpan.FromMinutes(10))
+                return true;
+
             // players can loot their own corpses
             if (VictimId == null || player.Guid.Full == VictimId)
                 return true;
