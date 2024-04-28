@@ -161,14 +161,16 @@ namespace ACE.Server.Features.HotDungeons.Managers
                         dungeon.Instance = activeRift.Instance;
                         HotspotDungeons.Add(dungeon.Landblock, dungeon);
 
-                        var message = $"{dungeon.Name} has been very active, a rift has been created in Town Network (Annex side), this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
+                        var message = $"{dungeon.Name} has been very active, a rift portal has been created in Subway (main hall, first room on the right), this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
                         _ = WebhookRepository.SendGeneralChat(message);
                         log.Info(message);
                         PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
                     } catch (Exception _)
                     {
+                        RiftManager.Close();
                         log.Error($"Error: failed to create rift for dungeon {dungeon.Name}");
                         log.Error(System.Environment.StackTrace);
+
                     }
 
                 }

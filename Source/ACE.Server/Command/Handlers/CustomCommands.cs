@@ -201,7 +201,7 @@ namespace ACE.Server.Command.Handlers
             }
 
             message.Append("-----------------------\n");
-            message.Append($"The Rift Entrance Portal in Annex side of Town Network will bring you to a random Rift\n");
+            message.Append($"The Rift Entrance Portal in Subway (main hall, first room on the right) will bring you to a random Rift\n");
             message.Append($"<Time Remaining before reset: {DungeonManager.FormatTimeRemaining(DungeonManager.DungeonsTimeRemaining)}>\n");
 
             if (discordChannel == 0)
