@@ -150,33 +150,31 @@ namespace ACE.Server.Features.Xp
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
         }
 
-        public static double? AverageLevel = null;
+        public static double? MaxLevel = null;
 
         private static DateTime GetAverageModifierTimestamp;
 
         public static double GetPlayerLevelXpModifier(int level)
         {
             var duration = PropertyManager.GetLong("xp_average_check_duration").Item;
-            if (AverageLevel == null || DateTime.UtcNow - GetAverageModifierTimestamp > TimeSpan.FromMinutes(duration))
+            if (MaxLevel == null || DateTime.UtcNow - GetAverageModifierTimestamp > TimeSpan.FromMinutes(duration))
             {
                 GetAverageModifierTimestamp = DateTime.UtcNow;
 
-                var players = PlayerManager.GetAllPlayers()
-                   .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player && player.Level > 10)
-                   .OrderByDescending(player => player.Level)
-                   .Select(player => player.Level)
-                   .Distinct()
-                   .ToList();
+                var maxLevel = PlayerManager.GetAllPlayers()
+                .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player)
+                .OrderByDescending(player => player.Level)
+                .Select(player => player.Level)
+                .Take(1)
+                .FirstOrDefault();
 
-                var average = players.Average();
+                if (maxLevel == null)
+                    return 1;
 
-                if (average == null)
-                    return 1.0;
-
-               AverageLevel = average;
+               MaxLevel = maxLevel;
             }
 
-           return (double)AverageLevel / (double)level;
+           return (double)MaxLevel / (double)level;
         }
 
         public static void GetXpCapTimestamps()
