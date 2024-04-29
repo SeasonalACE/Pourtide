@@ -273,9 +273,10 @@ namespace ACE.Server.Command.Handlers
             var pvpXpDailyCap = player.PvpXpDailyMax;
             var monsterXpDailyCap = player.MonsterXpDailyMax;
 
-            var globalAverageModifier = XpManager.GetPlayerLevelXpModifier(player).ToString("0.00");
+            var globalAverageModifier = XpManager.GetPlayerLevelXpModifier((int)player.Level).ToString("0.00");
 
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> The daily xp cap today for all players is {Formatting.FormatIntWithCommas(XpManager.CurrentDailyXp.XpCap)}.", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> The current average player level for the server is {(uint)XpManager.AverageLevel}.", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your current global average xp modifier is {globalAverageModifier}x.", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)queryXp)} / {Formatting.FormatIntWithCommas((ulong)queryXpDailyCap)} quest xp for the day.", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> You have currently earned {Formatting.FormatIntWithCommas((ulong)pvpXp)} / {Formatting.FormatIntWithCommas((ulong)pvpXpDailyCap)} pvp xp for the day.", ChatMessageType.System));

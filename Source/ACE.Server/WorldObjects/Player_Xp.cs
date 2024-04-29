@@ -30,7 +30,7 @@ namespace ACE.Server.WorldObjects
             if (xpType == XpType.Quest)
                 modifier *= questModifier;
 
-            var playerLevelModifier = XpManager.GetPlayerLevelXpModifier(this);
+            var playerLevelModifier = XpManager.GetPlayerLevelXpModifier((int)Level);
 
             var realmMultiplierAll = RealmRuleset?.GetProperty(RealmPropertyFloat.ExperienceMultiplierAll) ?? 1;
 
