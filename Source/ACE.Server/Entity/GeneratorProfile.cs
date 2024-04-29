@@ -343,7 +343,7 @@ namespace ACE.Server.Entity
                 if (Generator == null)
                     log.Warn($"GeneratorProfile.AddWorldObject failed to Spawn(): failed to create wcid {Biota.WeenieClassId} Generator is null");
 
-                var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId);
+                var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId, Generator.RealmRuleset);
                 wo.Location = new ACE.Entity.Position(Generator.Location);
                 if (wo == null)
                 {
