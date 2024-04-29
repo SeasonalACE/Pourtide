@@ -657,10 +657,10 @@ namespace ACE.Entity.Enum.Properties
         BountyGuid                              = 60001,
 
         [ServerOnly]
-        BountyTrophyGuid                        = 60002
-            
+        BountyTrophyGuid                        = 60002,
 
-
+        [ServerOnly]
+        CorpsePermitOpenTimestamp               = 60003
     }
 
     public static class PropertyIntExtensions

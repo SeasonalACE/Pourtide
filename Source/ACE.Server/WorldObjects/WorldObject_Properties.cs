@@ -1793,6 +1793,11 @@ namespace ACE.Server.WorldObjects
             get => GetProperty(PropertyInt.CreationTimestamp);
             set { if (!value.HasValue) RemoveProperty(PropertyInt.CreationTimestamp); else SetProperty(PropertyInt.CreationTimestamp, value.Value); }
         }
+        public int? CorpsePermitOpenTimestamp
+        {
+            get => GetProperty(PropertyInt.CorpsePermitOpenTimestamp);
+            set { if (!value.HasValue) RemoveProperty(PropertyInt.CorpsePermitOpenTimestamp); else SetProperty(PropertyInt.CorpsePermitOpenTimestamp, value.Value); }
+        }
 
         public double? ReleasedTimestamp
         {
