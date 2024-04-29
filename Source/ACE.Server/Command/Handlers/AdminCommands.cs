@@ -3507,7 +3507,7 @@ namespace ACE.Server.Command.Handlers
 
             var guid = GuidManager.NewPlayerGuid();
 
-            var player = new Player(weenie, guid, session.AccountId);
+            var player = new Player(weenie, guid, session.AccountId, session.Player.RealmRuleset);
 
             player.Biota.WeenieType = session.Player.WeenieType;
 

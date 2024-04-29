@@ -2,6 +2,7 @@ using System;
 
 using ACE.Entity;
 using ACE.Entity.Models;
+using ACE.Server.Realms;
 namespace ACE.Server.WorldObjects
 {
     public class Cow : Creature
@@ -9,7 +10,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// A new biota be created taking all of its values from weenie.
         /// </summary>
-        public Cow(Weenie weenie, ObjectGuid guid) : base(weenie, guid)
+        public Cow(Weenie weenie, ObjectGuid guid, AppliedRuleset ruleset) : base(weenie, guid, ruleset)
         {
             SetEphemeralValues();
         }

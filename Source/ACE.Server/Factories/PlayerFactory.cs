@@ -68,11 +68,11 @@ namespace ACE.Server.Factories
             var heritageGroup = DatManager.PortalDat.CharGen.HeritageGroups[(uint)characterCreateInfo.Heritage];
 
             if (weenieType == WeenieType.Admin)
-                player = new Admin(weenie, guid, accountId);
+                player = new Admin(weenie, guid, accountId, RealmManager.ServerBaseRealm.StandardRules);
             else if (weenieType == WeenieType.Sentinel)
-                player = new Sentinel(weenie, guid, accountId);
+                player = new Sentinel(weenie, guid, accountId, RealmManager.ServerBaseRealm.StandardRules);
             else
-                player = new Player(weenie, guid, accountId);
+                player = new Player(weenie, guid, accountId, RealmManager.ServerBaseRealm.StandardRules);
 
             player.SetProperty(PropertyInt.HeritageGroup, (int)characterCreateInfo.Heritage);
             player.SetProperty(PropertyString.HeritageGroup, heritageGroup.Name);
