@@ -142,12 +142,10 @@ namespace ACE.Server.Features.Xp
 
             var playerTotalXp = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt64.TotalExperience);
             var diff = (long)CurrentDailyXp.XpCap - (long)playerTotalXp;
-            var xpPerCategory = diff / 3;
-            var xpCategoryHalf = xpPerCategory / 2;
 
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, xpPerCategory + xpPerCategory);
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, xpPerCategory - xpCategoryHalf);
-            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, xpPerCategory - xpCategoryHalf);
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, (int)(diff * 0.4));
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, (int)(diff * 0.4));
+            player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, (int)(diff * 0.2));
         }
 
         public static double? MaxLevel = null;
