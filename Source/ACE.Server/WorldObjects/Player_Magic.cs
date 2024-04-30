@@ -640,9 +640,7 @@ namespace ACE.Server.WorldObjects
             }
 
             if (FastTick)
-                windupTime = EnqueueMotionAction(castChain, spell.Formula.WindupGestures, CastSpeed, MotionStance.Magic);
-
-
+                windupTime = EnqueueMotionAction(castChain, spell.Formula.WindupGestures, CastSpeed, MotionStance.Magic, checkCasting: true);
         }
 
         public void DoCastGesture(Spell spell, WorldObject casterItem, ActionChain castChain)
@@ -667,6 +665,8 @@ namespace ACE.Server.WorldObjects
 
             castChain.AddAction(this, () =>
             {
+                if (!MagicState.IsCasting) return;
+
                 MagicState.CastGestureStartTime = DateTime.UtcNow;
 
                 if (FastTick)
@@ -823,7 +823,7 @@ namespace ACE.Server.WorldObjects
                 var stopCompletely = !MagicState.CastMotionDone;
                 //var stopCompletely = true;
 
-                CreateTurnToChain2(target, null, stopCompletely, MagicState.AlwaysTurn);
+                CreateTurnToChain2(target, null, null, stopCompletely, MagicState.AlwaysTurn);
 
                 MagicState.AlwaysTurn = false;
             }

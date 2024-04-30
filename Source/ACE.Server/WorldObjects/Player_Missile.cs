@@ -226,7 +226,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            var launchTime = EnqueueMotion(actionChain, aimLevel);
+            var launchTime = EnqueueMotionPersist(actionChain, aimLevel);
 
             // launch projectile
             actionChain.AddAction(this, () =>
@@ -264,11 +264,10 @@ namespace ACE.Server.WorldObjects
 
             // reload animation
             var animSpeed = GetAnimSpeed();
-            var reloadTime = EnqueueMotion(actionChain, MotionCommand.Reload, animSpeed);
-
+            var reloadTime = EnqueueMotionPersist(actionChain, stance, MotionCommand.Reload, animSpeed);
 
             // reset for next projectile
-            EnqueueMotion(actionChain, MotionCommand.Ready);
+            EnqueueMotionPersist(actionChain, stance, MotionCommand.Ready);
             var linkTime = MotionTable.GetAnimationLength(MotionTableId, stance, MotionCommand.Reload, MotionCommand.Ready);
             //var cycleTime = MotionTable.GetCycleLength(MotionTableId, CurrentMotionState.Stance, MotionCommand.Ready);
 
