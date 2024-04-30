@@ -27,6 +27,14 @@ namespace ACE.Server.Factories.Tables
             var wcids = new List<int>();
             for (var i = 0; i < 2; i++)
             {
+                var steelChance = ThreadSafeRandom.Next(1, 2);
+
+                if (steelChance == 1)
+                {
+                    wcids.Add(20993);
+                    continue;
+                }
+
                 var item = ThreadSafeRandom.Next(0, values.Count - 1);
                 wcids.Add(values[item]);
 
