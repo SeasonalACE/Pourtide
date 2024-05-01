@@ -57,7 +57,7 @@ namespace ACE.Database
         /// <summary>
         /// Will return uint.MaxValue if no records were found within the range provided.
         /// </summary>
-        public uint GetMaxGuidFoundInRange(uint min, uint max)
+        public ulong GetMaxGuidFoundInRange(ulong min, ulong max)
         {
             using (var context = new ShardDbContext())
             {
@@ -68,7 +68,7 @@ namespace ACE.Database
                     .FirstOrDefault();
 
                 if (result == null)
-                    return uint.MaxValue;
+                    return (ulong)(uint.MaxValue);
 
                 return result.Id;
             }
@@ -88,17 +88,17 @@ namespace ACE.Database
             var sql = "SET @available_ids=0, @rownum=0;" + Environment.NewLine +
                       "SELECT" + Environment.NewLine +
                       " z.gap_starts_at, z.gap_ends_at_not_inclusive, @available_ids:=@available_ids+(z.gap_ends_at_not_inclusive - z.gap_starts_at) as running_total_available_ids" + Environment.NewLine +
-                      "FROM (" + Environment.NewLine +
-                      " SELECT" + Environment.NewLine +
-                      "  @rownum:=@rownum+1 AS gap_starts_at," + Environment.NewLine +
-                      "  @available_ids:=0," + Environment.NewLine +
-                      "  IF(@rownum=id, 0, @rownum:=id) AS gap_ends_at_not_inclusive" + Environment.NewLine +
-                      " FROM" + Environment.NewLine +
-                      "  (SELECT @rownum:=(SELECT MIN(id)-1 FROM biota WHERE id > " + min + ")) AS a" + Environment.NewLine +
-                      "  JOIN biota" + Environment.NewLine +
-                      "  WHERE id > " + min + Environment.NewLine +
-                      "  ORDER BY id" + Environment.NewLine +
-                      " ) AS z" + Environment.NewLine +
+                      "FROM ("                                                                          + Environment.NewLine +
+                      " SELECT"                                                                         + Environment.NewLine +
+                      "  @rownum:=@rownum+1 AS gap_starts_at,"                                          + Environment.NewLine +
+                      "  @available_ids:=0,"                                                            + Environment.NewLine +
+                      "  IF(@rownum=id, 0, @rownum:=id) AS gap_ends_at_not_inclusive"                   + Environment.NewLine +
+                      " FROM"                                                                           + Environment.NewLine +
+                     $"  (SELECT @rownum:=(SELECT MIN(id)-1 FROM biota WHERE id > {min} AND id < {uint.MaxValue})) AS a"   + Environment.NewLine +
+                      "  JOIN biota"                                                                    + Environment.NewLine +
+                     $"  WHERE id > {min} AND id < {uint.MaxValue}"                                     + Environment.NewLine +
+                      "  ORDER BY id"                                                                   + Environment.NewLine +
+                      " ) AS z"                                                                         + Environment.NewLine +
                       "WHERE z.gap_ends_at_not_inclusive!=0 AND @available_ids<" + limitAvailableIDsReturned + "; ";
 
             using (var context = new ShardDbContext())
@@ -196,7 +196,7 @@ namespace ACE.Database
             biota.PopulatedCollectionFlags = (uint)populatedCollectionFlags;
         }
 
-        public virtual Biota GetBiota(ShardDbContext context, uint id, bool doNotAddToCache = false)
+        public virtual Biota GetBiota(ShardDbContext context, ulong id, bool doNotAddToCache = false)
         {
             var biota = context.Biota
                 .FirstOrDefault(r => r.Id == id);
@@ -235,7 +235,7 @@ namespace ACE.Database
             return biota;
         }
 
-        public virtual Biota GetBiota(uint id, bool doNotAddToCache = false)
+        public virtual Biota GetBiota(ulong id, bool doNotAddToCache = false)
         {
             using (var context = new ShardDbContext())
                 return GetBiota(context, id, doNotAddToCache);
@@ -355,7 +355,7 @@ namespace ACE.Database
             return result;
         }
 
-        public virtual bool RemoveBiota(uint id)
+        public virtual bool RemoveBiota(ulong id)
         {
             using (var context = new ShardDbContext())
             {
@@ -376,7 +376,7 @@ namespace ACE.Database
                     context.SaveChanges();
 
                     if (firstException != null)
-                        log.Debug($"[DATABASE] RemoveBiota 0x{id:X8} retry succeeded after initial exception of: {firstException.GetFullMessage()}");
+                        log.Debug($"[DATABASE] RemoveBiota 0x{id:X16} retry succeeded after initial exception of: {firstException.GetFullMessage()}");
 
                     return true;
                 }
@@ -389,14 +389,14 @@ namespace ACE.Database
                     }
 
                     // Character name might be in use or some other fault
-                    log.Error($"[DATABASE] RemoveBiota 0x{id:X8} failed first attempt with exception: {firstException.GetFullMessage()}");
-                    log.Error($"[DATABASE] RemoveBiota 0x{id:X8} failed second attempt with exception: {ex.GetFullMessage()}");
+                    log.Error($"[DATABASE] RemoveBiota 0x{id:X16} failed first attempt with exception: {firstException.GetFullMessage()}");
+                    log.Error($"[DATABASE] RemoveBiota 0x{id:X16} failed second attempt with exception: {ex.GetFullMessage()}");
                     return false;
                 }
             }
         }
 
-        public bool RemoveBiotasInParallel(IEnumerable<uint> ids)
+        public bool RemoveBiotasInParallel(IEnumerable<ulong> ids)
         {
             var result = true;
 
@@ -410,7 +410,7 @@ namespace ACE.Database
         }
 
 
-        public PossessedBiotas GetPossessedBiotasInParallel(uint id)
+        public PossessedBiotas GetPossessedBiotasInParallel(ulong id)
         {
             var inventory = GetInventoryInParallel(id, true);
 
@@ -419,7 +419,7 @@ namespace ACE.Database
             return new PossessedBiotas(inventory, wieldedItems);
         }
 
-        public List<Biota> GetInventoryInParallel(uint parentId, bool includedNestedItems)
+        public List<Biota> GetInventoryInParallel(ulong parentId, bool includedNestedItems)
         {
             var inventory = new ConcurrentBag<Biota>();
 
@@ -453,7 +453,7 @@ namespace ACE.Database
             return inventory.ToList();
         }
 
-        public List<Biota> GetWieldedItemsInParallel(uint parentId)
+        public List<Biota> GetWieldedItemsInParallel(ulong parentId)
         {
             var wieldedItems = new ConcurrentBag<Biota>();
 
@@ -477,13 +477,13 @@ namespace ACE.Database
             return wieldedItems.ToList();
         }
 
-        public List<Biota> GetStaticObjectsByLandblock(ushort landblockId)
+        public List<Biota> GetStaticObjectsByLandblock(ushort landblockId, uint instance)
         {
             var staticObjects = new List<Biota>();
 
             var staticLandblockId = (uint)(0x70000 | landblockId);
 
-            var min = staticLandblockId << 12;
+            var min = ((ulong)instance << 32) | (staticLandblockId << 12);
             var max = min | 0xFFF;
 
             using (var context = new ShardDbContext())
@@ -514,7 +514,7 @@ namespace ACE.Database
                 context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
                 var results = context.BiotaPropertiesPosition
-                    .Where(p => p.PositionType == 1 && p.ObjCellId >= min && p.ObjCellId <= max && p.ObjectId >= 0x80000000 && (p.Instance ?? 0) == instance)
+                    .Where(p => p.PositionType == 1 && p.ObjCellId >= min && p.ObjCellId <= max && p.ObjectId >= 0x80000000 && p.ObjectId <= 0xFFFFFFFF && (p.Instance ?? 0) == instance)
                     .ToList();
 
                 foreach (var result in results)
@@ -581,12 +581,12 @@ namespace ACE.Database
             return GetCharacterList(accountId, includeDeleted);
         }
 
-        public Character GetCharacter(uint characterId)
+        public Character GetCharacter(ulong characterId)
         {
             return GetCharacterList(0, true, characterId).FirstOrDefault();
         }
 
-        private static List<Character> GetCharacterList(uint accountID, bool includeDeleted, uint characterID = 0)
+        private static List<Character> GetCharacterList(uint accountID, bool includeDeleted, ulong characterID = 0)
         {
             var context = new ShardDbContext();
 
@@ -635,7 +635,7 @@ namespace ACE.Database
             return result;
         }
 
-        public Character GetCharacterStubByGuid(uint guid)
+        public Character GetCharacterStubByGuid(ulong guid)
         {
             var context = new ShardDbContext();
 
@@ -773,7 +773,7 @@ namespace ACE.Database
             return biotas.ToList();
         }
 
-        public uint? GetAllegianceID(uint monarchID)
+        public ulong? GetAllegianceID(ulong monarchID)
         {
             using (var context = new ShardDbContext())
             {
@@ -920,7 +920,7 @@ namespace ACE.Database
 
 
 
-        public Dictionary<string, HashSet<uint>> GetIpToCharacterLoginMap()
+        public Dictionary<string, HashSet<ulong>> GetIpToCharacterLoginMap()
         {
             using (var context = new ShardDbContext())
             {
@@ -929,14 +929,14 @@ namespace ACE.Database
                     .GroupBy(cl => cl.SessionIP)
                     .ToDictionary(
                         group => group.Key,
-                        group =>  new HashSet<uint>(group.Select(cl => cl.CharacterId))
+                        group =>  new HashSet<ulong>(group.Select(cl => cl.CharacterId))
                     ); 
 
                 return ipCharacterMap;
             }
         }
 
-        public void LogCharacterLogin(uint accountId, string accountName, string sessionIP, uint characterId, string characterName)
+        public void LogCharacterLogin(uint accountId, string accountName, string sessionIP, ulong characterId, string characterName)
         {
             var logEntry = new CharacterLogin();
 
@@ -969,7 +969,7 @@ namespace ACE.Database
             }
         }
 
-        public PKStatsKill TrackPkStatsKill(uint killerId, uint victimId)
+        public PKStatsKill TrackPkStatsKill(ulong killerId, ulong victimId)
         {
             using (var context = new ShardDbContext())
             {
@@ -1003,7 +1003,7 @@ namespace ACE.Database
             }
         }
 
-        public (uint PlayerId, int KillCount) GetPlayerWithMostKills()
+        public (ulong PlayerId, int KillCount) GetPlayerWithMostKills()
         {
             using (var context = new ShardDbContext())
             {
@@ -1078,7 +1078,7 @@ namespace ACE.Database
 
         }
 
-        public bool UpdatePkTrophyCooldown(uint killerId, uint victimId)
+        public bool UpdatePkTrophyCooldown(ulong killerId, ulong victimId)
         {
             using (var context = new ShardDbContext())
             {

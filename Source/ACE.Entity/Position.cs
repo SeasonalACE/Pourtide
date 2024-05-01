@@ -19,6 +19,8 @@ namespace ACE.Entity
 
         // FIXME: this is returning landblock + cell
         public uint Cell { get => landblockId.Raw; }
+
+        // Only defined here for database I/O
         public uint Instance;
         
         // REALMS: New fields/props on existing entity classes should be marked as private where possible
@@ -82,10 +84,6 @@ namespace ACE.Entity
             }
         }
 
-        public void Rotate(Vector3 dir)
-        {
-            Rotation = Quaternion.CreateFromYawPitchRoll(0, 0, (float)Math.Atan2(-dir.X, dir.Y));
-        }
 
         // TODO: delete this, use proper Vector3 and Quaternion
         public float PositionX { get; set; }
@@ -114,29 +112,6 @@ namespace ACE.Entity
         {
             var invLen = 1.0f / v.Length();
             return v * invLen;
-        }
-
-        public Position InFrontOf(double distanceInFront, bool rotate180 = false)
-        {
-            float qw = RotationW; // north
-            float qz = RotationZ; // south
-
-            double x = 2 * qw * qz;
-            double y = 1 - 2 * qz * qz;
-
-            var heading = Math.Atan2(x, y);
-            var dx = -1 * Convert.ToSingle(Math.Sin(heading) * distanceInFront);
-            var dy = Convert.ToSingle(Math.Cos(heading) * distanceInFront);
-
-            // move the Z slightly up and let gravity pull it down.  just makes things easier.
-            var bumpHeight = 0.05f;
-            if (rotate180)
-            {
-                var rotate = new Quaternion(0, 0, qz, qw) * Quaternion.CreateFromYawPitchRoll(0, 0, (float)Math.PI);
-                return new Position(LandblockId.Raw, PositionX + dx, PositionY + dy, PositionZ + bumpHeight, 0f, 0f, rotate.Z, rotate.W, Instance);
-            }
-            else
-                return new Position(LandblockId.Raw, PositionX + dx, PositionY + dy, PositionZ + bumpHeight, 0f, 0f, qz, qw, Instance);
         }
 
         /// <summary>
@@ -242,6 +217,9 @@ namespace ACE.Entity
             Rotation = pos.Rotation;
         }
 
+        public Position(Position pos, uint instance)
+            : this(pos) { Instance = instance; }
+
         public Position(uint blockCellID, float newPositionX, float newPositionY, float newPositionZ, float newRotationX, float newRotationY, float newRotationZ, float newRotationW, uint instance, bool relativePos = false)
         {
             LandblockId = new LandblockId(blockCellID);
@@ -264,11 +242,9 @@ namespace ACE.Entity
             }
         }
 
-        public Position(uint blockCellID, Vector3 position, Quaternion rotation, uint instance)
+        public Position(uint blockCellID, Vector3 position, Quaternion rotation)
         {
             LandblockId = new LandblockId(blockCellID);
-
-            Instance = instance;
 
             Pos = position;
             Rotation = rotation;
@@ -277,11 +253,9 @@ namespace ACE.Entity
                 SetPosition(Pos);
         }
 
-        public Position(BinaryReader payload, uint instance)
+        public Position(BinaryReader payload)
         {
             LandblockId = new LandblockId(payload.ReadUInt32());
-
-            Instance = instance;
 
             PositionX = payload.ReadSingle();
             PositionY = payload.ReadSingle();
@@ -294,7 +268,7 @@ namespace ACE.Entity
             RotationZ = payload.ReadSingle();
         }
 
-        public Position(float northSouth, float eastWest, uint instance)
+        public Position(float northSouth, float eastWest)
         {
             northSouth = (northSouth - 0.5f) * 10.0f;
             eastWest = (eastWest - 0.5f) * 10.0f;
@@ -310,8 +284,6 @@ namespace ACE.Entity
             // float zOffset = GetZFromCellXY(LandblockId.Raw, xOffset, yOffset);
             const float zOffset = 0.0f;
 
-            Instance = instance;
-
             LandblockId = new LandblockId(GetCellFromBase(baseX, baseY));
             PositionX = xOffset;
             PositionY = yOffset;
@@ -323,7 +295,7 @@ namespace ACE.Entity
         /// Given a Vector2 set of coordinates, create a new position object for use in converting from VLOC to LOC
         /// </summary>
         /// <param name="coordinates">A set coordinates provided in a Vector2 object with East-West being the X value and North-South being the Y value</param>
-        public Position(Vector2 coordinates, uint instance)
+        public Position(Vector2 coordinates)
         {
             // convert from (-101.95, 102.05) to (0, 204)
             coordinates += Vector2.One * 101.95f;
@@ -353,8 +325,6 @@ namespace ACE.Entity
             Pos = new Vector3(originX, originY, 0);     // must use PositionExtensions.AdjustMapCoords() to get Z
 
             Rotation = Quaternion.Identity;
-
-            Instance = instance;
         }
 
         public void Serialize(BinaryWriter payload, PositionFlags positionFlags, int animationFrame, bool writeLandblock = true)
@@ -528,6 +498,24 @@ namespace ACE.Entity
             return new Vector3(dx, dy, dz);
         }
 
+        public Vector3 ToGlobal(bool skipIndoors = false)
+        {
+            // TODO: Is this necessary? It seemed to be loading rogue physics landblocks. Commented out 2019-04 Mag-nus
+            //var landblock = LScape.get_landblock(p.LandblockId.Raw);
+
+            // TODO: investigate dungeons that are below actual traversable overworld terrain
+            // ex., 010AFFFF
+            //if (landblock.IsDungeon)
+            if (Indoors && skipIndoors)
+                return Pos;
+
+            var x = LandblockId.LandblockX * BlockLength + PositionX;
+            var y = LandblockId.LandblockY * BlockLength + PositionY;
+            var z = PositionZ;
+
+            return new Vector3(x, y, z);
+        }
+
         public override string ToString()
         {
             return $"{LandblockId.Raw:X8} [{PositionX} {PositionY} {PositionZ}]";
@@ -547,11 +535,11 @@ namespace ACE.Entity
             return Cell == p.Cell && Pos.Equals(p.Pos) && Rotation.Equals(p.Rotation);
         }
 
-        public static void ParseInstanceID(uint instanceId, out bool isTemporaryRuleset, out ushort realmId, out ushort shortInstanceId)
+        public static void ParseInstanceID(uint instanceId, out bool isEphemeralRealm, out ushort realmId, out ushort shortInstanceId)
         {
             shortInstanceId = (ushort)(instanceId & 0xFFFF);
             ushort left = (ushort)(instanceId >> 16);
-            isTemporaryRuleset = (left & 0x8000) == 0x8000;
+            isEphemeralRealm = (left & 0x8000) == 0x8000;
             realmId = (ushort)(left & 0x7FFF);
         }
 
@@ -571,53 +559,44 @@ namespace ACE.Entity
             Instance = InstanceIDFromVars(newRealmId, 0, false);
         }
 
-        public static Position slocToPosition(string location)
+        // differs from ac physics engine
+        private static readonly float RotationEpsilon = 0.0001f;
+
+        public static bool IsRotationValid(Quaternion q)
         {
-            var parameters = location.Split(' ');
-            uint cell;
+            if (q == Quaternion.Identity)
+                return true;
 
-            if (parameters[0].StartsWith("0x"))
-            {
-                string strippedcell = parameters[0].Substring(2);
-                cell = (uint)int.Parse(strippedcell, System.Globalization.NumberStyles.HexNumber);
-            }
-            else
-                cell = (uint)int.Parse(parameters[0], System.Globalization.NumberStyles.HexNumber);
+            if (float.IsNaN(q.X) || float.IsNaN(q.Y) || float.IsNaN(q.Z) || float.IsNaN(q.W))
+                return false;
 
-            var positionData = new float[7];
-            for (uint i = 0u; i < 7u; i++)
-            {
-                if (i > 2 && parameters.Length < 8)
-                {
-                    positionData[3] = 1;
-                    positionData[4] = 0;
-                    positionData[5] = 0;
-                    positionData[6] = 0;
-                    break;
-                }
+            var length = q.Length();
+            if (float.IsNaN(length))
+                return false;
 
-                if (!float.TryParse(parameters[i + 1].Trim(new Char[] { ' ', '[', ']' }), out var position))
-                    throw new Exception();
+            if (Math.Abs(1.0f - length) > RotationEpsilon)
+                return false;
 
-                positionData[i] = position;
-            }
-
-            uint inst = 0;
-            if (parameters.Length >= 9)
-                inst = uint.Parse(parameters[8].Trim());
-
-            return new Position(cell, positionData[0], positionData[1], positionData[2], positionData[4], positionData[5], positionData[6], positionData[3], inst);
+            return true;
         }
 
-        public string LandblockHex
+        public void AttemptToFixRotation()
         {
-            get
-            {
-                var currentLbRaw = LandblockId.Raw;
-                var currentLb = $"{currentLbRaw:X8}".Substring(0, 4);
-                return currentLb;
-            }
+            //log.Warn($"detected bad quaternion x y z w for {wo.Name} (0x{wo.Guid}) | WCID: {wo.WeenieClassId} | WeenieType: {wo.WeenieType} | PositionType: {positionType}");
+            //log.Warn($"before fix: {pos.ToLOCString()}");
+
+            var normalized = Quaternion.Normalize(Rotation);
+
+            var success = IsRotationValid(normalized);
+
+            if (success)
+                Rotation = normalized;
+
+            //log.Warn($" after fix: {pos.ToLOCString()}");
+
+            //return success;
         }
 
+       
     }
 }

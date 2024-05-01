@@ -6,6 +6,7 @@ using System.Numerics;
 using ACE.Common;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
+using ACE.Entity.Enum.RealmProperties;
 using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
@@ -17,6 +18,7 @@ using ACE.Server.Network.Sequence;
 using ACE.Server.Network.Structure;
 using ACE.Server.Physics;
 using ACE.Server.Physics.Common;
+using ACE.Server.Realms;
 
 namespace ACE.Server.WorldObjects
 {
@@ -91,11 +93,11 @@ namespace ACE.Server.WorldObjects
             {
                 if (houseRentWarnTimestamp > 0 && currentUnixTime > houseRentWarnTimestamp)
                 {
-                    HouseManager.GetHouse(House.Guid.Full, (house) =>
+                    HouseManager.GetHouse(House.Guid, (house) =>
                     {
                         if (house != null && house.HouseStatus == HouseStatus.Active && !house.SlumLord.IsRentPaid())
                             Session.Network.EnqueueSend(new GameMessageSystemChat($"Warning!  You have not paid your maintenance costs for the last {(house.IsApartment ? "90" : "30")} day maintenance period.  Please pay these costs by this deadline or you will lose your house, and all your items within it.", ChatMessageType.Broadcast));
-                    }, Location.RealmID);
+                    });
 
                     houseRentWarnTimestamp = Time.GetFutureUnixTime(houseRentWarnInterval);
                 }
@@ -304,7 +306,7 @@ namespace ACE.Server.WorldObjects
                 // update position through physics engine
                 if (RequestedLocation != null)
                 {
-                    landblockUpdate = UpdatePlayerPosition(RequestedLocation);
+                    landblockUpdate = UpdatePlayerPosition(RequestedLocation.AsInstancedPosition(this, PlayerInstanceSelectMode.Same));
                     RequestedLocation = null;
                 }
 
@@ -342,7 +344,7 @@ namespace ACE.Server.WorldObjects
             PhysicsObj.update_object(Location.Instance);
 
             // sync ace position?
-            Location.Rotation = PhysicsObj.Position.Frame.Orientation;
+            Location = Location.SetRotation(PhysicsObj.Position.Frame.Orientation);
 
             if (!FastTick) return;
 
@@ -417,7 +419,7 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         /// <param name="newPosition">The new position being requested, before verification through physics engine</param>
         /// <returns>TRUE if object moves to a different landblock</returns>
-        public bool UpdatePlayerPosition(ACE.Entity.Position newPosition, bool forceUpdate = false)
+        public bool UpdatePlayerPosition(InstancedPosition newPosition, bool forceUpdate = false)
         {
             //Console.WriteLine($"{Name}.UpdatePlayerPhysics({newPosition}, {forceUpdate}, {Teleporting})");
             bool verifyContact = false;
@@ -493,7 +495,7 @@ namespace ACE.Server.WorldObjects
                                 if (blockDist <= 1)
                                 {
                                     log.Warn($"z-pos hacking detected for {Name}, lastGroundPos: {LastGroundPos.ToLOCString()} - requestPos: {newPosition.ToLOCString()}");
-                                    Location = new ACE.Entity.Position(LastGroundPos);
+                                    Location = new InstancedPosition(LastGroundPos);
                                     Sequences.GetNextSequence(SequenceType.ObjectForcePosition);
                                     SendUpdatePosition();
                                     return false;
@@ -557,7 +559,7 @@ namespace ACE.Server.WorldObjects
             0xD599012C
         };
 
-        public bool ValidateMovement(ACE.Entity.Position newPosition)
+        public bool ValidateMovement(InstancedPosition newPosition)
         {
             if (CurrentLandblock == null)
                 return false;
@@ -595,7 +597,7 @@ namespace ACE.Server.WorldObjects
 
             var landblockUpdate = blockcell << 16 != CurrentLandblock.Id.Landblock;
 
-            Location = new ACE.Entity.Position(blockcell, pos, rotate, Location.Instance);
+            Location = new InstancedPosition(blockcell, pos, rotate, Location.Instance);
 
             return landblockUpdate;
         }

@@ -19,13 +19,13 @@ namespace ACE.Server.WorldObjects
         public WorldObject ParentLink;
         public List<WorldObject> ChildLinks = new List<WorldObject>();
 
-        public void ActivateLinks(List<LandblockInstance> sourceObjects, List<Biota> biotas, AppliedRuleset ruleset, WorldObject parent = null)
+        public void ActivateLinks(List<LandblockInstance> sourceObjects, List<Biota> biotas, WorldObject parent = null)
         {
             if (LinkedInstances.Count == 0) return;
 
             if (IsGenerator)
             {
-                AddGeneratorLinks(ruleset);
+                AddGeneratorLinks();
                 return;
             }
 
@@ -35,12 +35,9 @@ namespace ACE.Server.WorldObjects
             foreach (var link in LinkedInstances)
             {
                 WorldObject wo = null;
-                var biota = biotas.FirstOrDefault(b => b.Id == link.Guid);
+                var biota = biotas.FirstOrDefault(b => b.Id == new ObjectGuid(link.Guid, parent.Guid.Instance ?? 0).Full);
                 if (biota == null)
-                {
-                    wo = WorldObjectFactory.CreateWorldObject(DatabaseManager.World.GetCachedWeenie(link.WeenieClassId), new ObjectGuid(link.Guid));
-                    wo.Location = new Position(parent.Location);
-                }
+                    wo = WorldObjectFactory.CreateWorldObject(DatabaseManager.World.GetCachedWeenie(link.WeenieClassId), new ObjectGuid(link.Guid, parent.Location.Instance));
                 else
                 {
                     wo = WorldObjectFactory.CreateWorldObject(biota);
@@ -49,7 +46,8 @@ namespace ACE.Server.WorldObjects
 
                 if (wo == null) continue;
 
-                wo.Location = new Position(link.ObjCellId, link.OriginX, link.OriginY, link.OriginZ, link.AnglesX, link.AnglesY, link.AnglesZ, link.AnglesW, 0);
+                var instanceId = CurrentLandblock?.Instance ?? Guid.Instance ?? parent.Location.Instance;
+                wo.Location = new InstancedPosition(link.ObjCellId, link.OriginX, link.OriginY, link.OriginZ, link.AnglesX, link.AnglesY, link.AnglesZ, link.AnglesW, instanceId);
                 parent.SetLinkProperties(wo);
                 CurrentLandblock?.AddWorldObject(wo);
                 if (wo.PhysicsObj != null)
@@ -68,7 +66,7 @@ namespace ACE.Server.WorldObjects
                 }
 
                 if (wo.LinkedInstances.Count > 0)
-                    wo.ActivateLinks(sourceObjects, biotas, ruleset);
+                    wo.ActivateLinks(sourceObjects, biotas);
             }
         }
 

@@ -4,6 +4,7 @@ using System.IO;
 using System.Numerics;
 using ACE.Entity;
 using ACE.Entity.Enum;
+using ACE.Server.Realms;
 
 namespace ACE.Server.Network.Structure
 {
@@ -57,7 +58,7 @@ namespace ACE.Server.Network.Structure
             var motd = "";
             var motdSetBy = "";
             uint chatRoomID = 0;
-            var bindPoint = new Position();
+            var bindPoint = new LocalPosition();
             var allegianceName = "";
             uint nameLastSetTime = 0;
             bool isLocked = false;
@@ -87,7 +88,7 @@ namespace ACE.Server.Network.Structure
                 //motdSetBy = allegiance.AllegianceMotdSetBy ?? "";
                 motd = "";          // fixes decal AllegianceUpdate parsing
                 motdSetBy = "";
-                chatRoomID = allegiance.Biota.Id;
+                chatRoomID = (uint)allegiance.Biota.Id;
 
                 if (allegiance.Sanctuary != null)
                     bindPoint = allegiance.Sanctuary;
@@ -148,7 +149,7 @@ namespace ACE.Server.Network.Structure
             writer.WriteString16L(motd);
             writer.WriteString16L(motdSetBy);
             writer.Write(chatRoomID);
-            writer.Write(bindPoint);
+            writer.Write(bindPoint.GetPosition());
             writer.WriteString16L(allegianceName);
             writer.Write(nameLastSetTime);
             writer.Write(Convert.ToUInt32(isLocked));
@@ -177,7 +178,7 @@ namespace ACE.Server.Network.Structure
 
             foreach (var officer in officers)
             {
-                writer.Write(officer.Key.Full);
+                writer.Write(officer.Key.ClientGUID);
                 writer.Write((uint)officer.Value);
             }
         }
@@ -216,7 +217,7 @@ namespace ACE.Server.Network.Structure
             //writer.Write(records.Count);
             foreach (var record in records)
             {
-                writer.Write(record.Item1.Full);
+                writer.Write(record.Item1.ClientGUID);
                 writer.Write(record.Item2);
             }
         }

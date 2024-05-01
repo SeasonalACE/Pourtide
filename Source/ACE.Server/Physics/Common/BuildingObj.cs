@@ -51,7 +51,7 @@ namespace ACE.Server.Physics.Common
             return transitionState;
         }
 
-        public void find_building_transit_cells(Position pos, int numSphere, List<Sphere> sphere, CellArray cellArray, SpherePath path, uint instance)
+        public void find_building_transit_cells(PhysicsPosition pos, int numSphere, List<Sphere> sphere, CellArray cellArray, SpherePath path, uint instance)
         {
             foreach (var portal in Portals)
             {
@@ -97,7 +97,7 @@ namespace ACE.Server.Physics.Common
                 add_cells_recursive(visibleCell);
         }
 
-        public PhysicsObj get_object(int objectID)
+        public PhysicsObj get_object(ulong objectID)
         {
             // visited cells?
             return null;

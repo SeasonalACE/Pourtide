@@ -84,7 +84,7 @@ namespace ACE.Server.Managers
             return weenie;
         }
 
-        public static WorldObject CreateOre(Position position, uint tier = 1)
+        public static WorldObject CreateOre(InstancedPosition position, uint tier = 1)
         {
             if (ThreadSafeRandom.Next(1, 100) == 1)
             {
@@ -101,7 +101,7 @@ namespace ACE.Server.Managers
                     ore?.Destroy();
                     ore = WorldObjectFactory.CreateNewWorldObject((uint)603003);
                 }
-                ore.Location = new Position(position);
+                ore.Location = new InstancedPosition(position);
                 return ore;
             }
 

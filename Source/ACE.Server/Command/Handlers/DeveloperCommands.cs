@@ -35,6 +35,8 @@ using ACE.Server.WorldObjects.Entity;
 
 using Position = ACE.Entity.Position;
 using Spell = ACE.Server.Entity.Spell;
+using ACE.Server.Realms;
+using ACE.Entity.Enum.RealmProperties;
 
 namespace ACE.Server.Command.Handlers
 {
@@ -97,15 +99,13 @@ namespace ACE.Server.Command.Handlers
         [CommandHandler("nudge", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Correct player position cell ID after teleporting into black space.")]
         public static void HandleNudge(Session session, params string[] parameters)
         {
-            var pos = session.Player.GetPosition(PositionType.Location);
-            if (WorldObject.AdjustDungeonCells(pos, pos.Instance))
-            {
-                pos.PositionZ += 0.005000f;
-                var posReadable = PostionAsLandblocksGoogleSpreadsheetFormat(pos);
-                AdminCommands.HandleTeleportLOC(session, posReadable.Split(' '));
-                var positionMessage = new GameMessageSystemChat($"Nudge player to {posReadable}", ChatMessageType.Broadcast);
-                session.Network.EnqueueSend(positionMessage);
-            }
+            var pos = session.Player.Location;
+            pos = WorldObject.AdjustDungeonCells(pos);
+            pos = pos.SetPositionZ(pos.PositionZ + 0.005000f);
+            var posReadable = PostionAsLandblocksGoogleSpreadsheetFormat(pos);
+            AdminCommands.HandleTeleportLOC(session, posReadable.Split(' '));
+            var positionMessage = new GameMessageSystemChat($"Nudge player to {posReadable}", ChatMessageType.Broadcast);
+            session.Network.EnqueueSend(positionMessage);
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace ACE.Server.Command.Handlers
         }
 
 
-        static string PostionAsLandblocksGoogleSpreadsheetFormat(Position pos)
+        static string PostionAsLandblocksGoogleSpreadsheetFormat(UsablePosition pos)
         {
             return $"0x{pos.Cell.ToString("X")} {pos.Pos.X} {pos.Pos.Y} {pos.Pos.Z} {pos.Rotation.W} {pos.Rotation.X} {pos.Rotation.Y} {pos.Rotation.Z}";
         }
@@ -254,7 +254,7 @@ namespace ACE.Server.Command.Handlers
                 if (parameters.Length > 1)
                     float.TryParse(parameters[1], out volume);
 
-                uint guid = session.Player.Guid.Full;
+                uint guid = session.Player.Guid.ClientGUID;
 
                 if (parameters.Length > 2)
                     uint.TryParse(parameters[2].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out guid);
@@ -395,11 +395,11 @@ namespace ACE.Server.Command.Handlers
 
             WorldObject loot = WorldObjectFactory.CreateNewWorldObject(trainingWandTarget);
             loot.Location = session.Player.Location.InFrontOf((loot.UseRadius ?? 2) > 2 ? loot.UseRadius.Value : 2);
-            loot.Location.LandblockId = new LandblockId(loot.Location.GetCell());
+            loot.Location = loot.Location.SetLandblockId(new LandblockId(loot.Location.GetCell()));
 
             loot.EnterWorld();
 
-            session.Player.HandleActionPutItemInContainer(loot.Guid.Full, session.Player.Guid.Full);
+            session.Player.HandleActionPutItemInContainer(loot.Guid, session.Player.Guid);
         }
 
         /// <summary>
@@ -675,7 +675,8 @@ namespace ACE.Server.Command.Handlers
                 positionData[i] = position;
             }
 
-            session.Player.Teleport(new Position(cell, positionData[0], positionData[1], positionData[2], positionData[3], positionData[4], positionData[5], positionData[6], session.Player.Location.Instance));
+            session.Player.Teleport(new LocalPosition(cell, positionData[0], positionData[1], positionData[2], positionData[3], positionData[4], positionData[5], positionData[6])
+                .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.Same));
         }
 
         /// <summary>
@@ -733,7 +734,7 @@ namespace ACE.Server.Command.Handlers
                     if (positionType != PositionType.Undef)
                     {
                         // Create a new position from the current player location
-                        var playerPosition = new Position(session.Player.Location);
+                        var playerPosition = new InstancedPosition(session.Player.Location);
 
                         // Save the position
                         session.Player.SetPosition(positionType, playerPosition);
@@ -1615,7 +1616,7 @@ namespace ACE.Server.Command.Handlers
 
             newPos.SetPosition(newPos.Pos + offset);
 
-            session.Player.Teleport(newPos);
+            session.Player.Teleport(new LocalPosition(newPos).AsInstancedPosition(session.Player, PlayerInstanceSelectMode.Same));
 
             var globLastSpawnPos = lastSpawnPos.ToGlobal();
             var globNewPos = newPos.ToGlobal();
@@ -2143,9 +2144,9 @@ namespace ACE.Server.Command.Handlers
                     return;
                 }
 
-                var pos = new Position(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW, session.Player.Location.Instance);
-                pos.SetToDefaultRealmInstance(session.Player.Location.RealmID);
-                WorldObject.AdjustDungeon(pos);
+                var pos = new LocalPosition(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW)
+                    .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.RealmDefaultInstanceID);
+                pos = WorldObject.AdjustDungeon(pos);
 
                 session.Player.Teleport(pos);
             }
@@ -2178,9 +2179,9 @@ namespace ACE.Server.Command.Handlers
                     return;
                 }
 
-                var pos = new Position(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW, session.Player.Location.Instance);
-                pos.SetToDefaultRealmInstance(session.Player.Location.RealmID);
-                WorldObject.AdjustDungeon(pos);
+                var pos = new LocalPosition(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW)
+                    .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.RealmDefaultInstanceID);
+                pos = WorldObject.AdjustDungeon(pos);
 
                 session.Player.Teleport(pos);
             }
@@ -3105,9 +3106,9 @@ namespace ACE.Server.Command.Handlers
             var angle = motionCommand.GetAimAngle().ToRadians();
             var zRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitX, angle);
 
-            wo.Location = new Position(session.Player.Location);
-            wo.Location.Pos = globalOrigin;
-            wo.Location.Rotation *= zRotation;
+            wo.Location = new InstancedPosition(session.Player.Location);
+            wo.Location = wo.Location.SetPos(globalOrigin);
+            wo.Location = wo.Location.SetRotation(wo.Location.Rotation * zRotation);
 
             session.Player.CurrentLandblock.AddWorldObject(wo);
 
@@ -3127,7 +3128,7 @@ namespace ACE.Server.Command.Handlers
             landblock.DestroyAllNonPlayerObjects();
 
             // clear landblock cache
-            DatabaseManager.World.ClearCachedInstancesByLandblock(landblock.Id.Landblock, 0);
+            DatabaseManager.World.ClearCachedInstancesByLandblock(landblock.Id.Landblock);
 
             // reload landblock
             var actionChain = new ActionChain();
@@ -3926,7 +3927,7 @@ namespace ACE.Server.Command.Handlers
 
             //session.Player.TryCastSpell(spell, target, tryResist: false);
 
-            session.Player.HandleActionUseWithTarget(guid, target.Guid.Full);
+            session.Player.HandleActionUseWithTarget(new ObjectGuid(guid, session.Player.Location.Instance), target.Guid);
         }
 
         [CommandHandler("portalstorm", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 1, "Tests starting a portal storm on yourself", "storm_level [0=Brewing, 1=Imminent, 2=Stormed, 3=Subsided]")]
@@ -3951,7 +3952,7 @@ namespace ACE.Server.Command.Handlers
                     session.Network.EnqueueSend(new GameEventPortalStorm(session));
 
                     // We're going to move the player to 0,0
-                    Position newPos = new Position(0x7F7F001C, 84, 84, 80, 0, 0, 0, 1, session.Player.Location.Instance);
+                    var newPos = new InstancedPosition(0x7F7F001C, 84, 84, 80, 0, 0, 0, 1, session.Player.Location.Instance);
                     session.Player.Teleport(newPos);
                     break;
                 case 3:

@@ -27,10 +27,17 @@ namespace ACE.Server.WorldObjects
         /// Called when player clicks the 'Buy house' button,
         /// after adding the items required
         /// </summary>
-        public void HandleActionBuyHouse(uint slumlord_id, List<uint> item_ids)
+        public void HandleActionBuyHouse(ObjectGuid slumlord_id, List<uint> item_ids)
         {
             //Console.WriteLine($"\n{Name}.HandleActionBuyHouse()");
             log.Info($"[HOUSE] {Name}.HandleActionBuyHouse()");
+
+            if (!CurrentLandblock.IsHomeInstanceForPlayer(this))
+            {
+                Session.Network.EnqueueSend(new GameMessageSystemChat("You may only purchase a house in your home realm.", ChatMessageType.Broadcast));
+                log.Info($"[HOUSE] {Name}.HandleActionBuyHouse(): Failed pre-purchase requirement - Not in home realm instance");
+                return;
+            }
 
             // verify player doesn't already own a house
             var houseInstance = GetHouseInstance();
@@ -448,7 +455,7 @@ namespace ACE.Server.WorldObjects
 
             return true;
         }
-        
+
         public void HandleActionAbandonHouse()
         {
             //Console.WriteLine($"\n{Name}.HandleActionAbandonHouse()");
@@ -554,7 +561,7 @@ namespace ACE.Server.WorldObjects
             // var rentTime = (uint)(houseOwner.HouseRentTimestamp ?? 0);
 
             if (HouseRentTimestamp != houseOwner.HouseRentTimestamp)
-                HouseRentTimestamp  = houseOwner.HouseRentTimestamp;
+                HouseRentTimestamp = houseOwner.HouseRentTimestamp;
 
             if (!House.SlumLord.InventoryLoaded)
             {
@@ -622,7 +629,7 @@ namespace ACE.Server.WorldObjects
             house.HouseOwnerName = Name;
             house.OpenToEveryone = false;
             house.SaveBiotaToDatabase();
-            
+
             // relink
             house.UpdateLinks();
 
@@ -665,7 +672,7 @@ namespace ACE.Server.WorldObjects
                 // boot anyone who may have been wandering around inside...
                 HandleActionBootAll(false);
 
-                HouseManager.AddRentQueue(this, house.Guid.Full, Location.RealmID);
+                HouseManager.AddRentQueue(this, house.Guid.Full);
                 slumlord.ActOnUse(this);
             });
             actionChain.EnqueueChain();
@@ -889,7 +896,7 @@ namespace ACE.Server.WorldObjects
             return accountHouseOwner;
         }
 
-        public uint? GetHouseInstance()
+        public ulong? GetHouseInstance()
         {
             return GetHouseOwner()?.HouseInstance;
         }
@@ -911,14 +918,14 @@ namespace ACE.Server.WorldObjects
             if (House == null)
                 LoadHouse(houseInstance);
 
-            HouseManager.GetHouse(houseInstance.Value, (house) =>
+            HouseManager.GetHouse(new ObjectGuid(houseInstance.Value), (house) =>
             {
                 var houseData = house.GetHouseData(houseOwner);
                 Session.Network.EnqueueSend(new GameEventHouseData(Session, houseData));
-            }, Location.RealmID);
+            });
         }
 
-        public House LoadHouse(uint? houseInstance, bool forceLoad = false)
+        public House LoadHouse(ulong? houseInstance, bool forceLoad = false)
         {
             if (House != null && !forceLoad)
                 return House;
@@ -926,7 +933,7 @@ namespace ACE.Server.WorldObjects
             if (houseInstance == null)
                 return House;
 
-            House = House.Load(houseInstance.Value, Location.RealmID);
+            House = House.Load(new ObjectGuid(houseInstance.Value));
 
             return House;
         }
@@ -938,23 +945,22 @@ namespace ACE.Server.WorldObjects
             return GetHouse(houseInstance);
         }
 
-        public House GetHouse(uint? houseInstance)
+        public House GetHouse(ulong? houseInstance)
         {
-            var instance = Location.Instance;
             if (houseInstance == null)
                 return null;
 
-            var houseGuid = houseInstance.Value;
-            var landblock = (ushort)((houseGuid >> 12) & 0xFFFF);
+            var houseGuid = new ObjectGuid(houseInstance.Value);
+            var landblock = houseGuid.StaticObjectLandblock.Value;
 
-            var landblockId = new LandblockId((uint)(landblock << 16 | 0xFFFF));
-            var isLoaded = LandblockManager.IsLoaded(landblockId, instance);
+            var landblockId = new LandblockId(landblock);
+            var isLoaded = LandblockManager.IsLoaded(landblockId, houseGuid.Instance.Value);
 
             if (!isLoaded)
-                return House = House.Load(houseGuid, Location.RealmID);
+                return House = House.Load(houseGuid);
 
-            var loaded = LandblockManager.GetLandblock(landblockId, instance, null, false);
-            return House = loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+            var loaded = LandblockManager.GetLandblock(landblockId, houseGuid.Instance.Value, null, false);
+            return House = loaded.GetObject(houseGuid) as House;
         }
 
         public void HandleActionAddGuest(string guestName)
@@ -1345,7 +1351,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            var house = allegianceHouse ? Allegiance.GetHouse(Location) : GetHouse();
+            var house = allegianceHouse ? Allegiance.GetHouse() : GetHouse();
             var player = PlayerManager.GetOnlinePlayer(playerName);
 
             if (player == null)
@@ -1363,7 +1369,7 @@ namespace ACE.Server.WorldObjects
             }
 
             // play script?
-            player.Teleport(house.BootSpot.Location, false, false, TeleportType.HouseBoot);
+            player.Teleport(house.BootSpot.Location);
 
             owner = allegianceHouse ? "the allegiance" : "your";
             Session.Network.EnqueueSend(new GameMessageSystemChat($"Booted {player.Name} from {owner} house.", ChatMessageType.Broadcast));
@@ -1402,17 +1408,9 @@ namespace ACE.Server.WorldObjects
             if (CurrentLandblock == null || IgnoreHouseBarriers)
                 return false;
 
-
             foreach (var house in CurrentLandblock.Houses)
             {
                 var rootHouse = house.RootHouse;
-
-                // If realm season has changed, housing WorldObjects may not be created in previous seasons, players in basement must be removed.
-                if (rootHouse == null)
-                {
-                    Teleport(Sanctuary, false, false, TeleportType.HouseBoot);
-                    return true;
-                }
 
                 if (!rootHouse.OnProperty(this))
                     continue;
@@ -1421,7 +1419,7 @@ namespace ACE.Server.WorldObjects
                 {
                     if (!rootHouse.IsOpen || (rootHouse.HouseType != HouseType.Apartment && CurrentLandblock.HasDungeon))
                     {
-                        Teleport(rootHouse.BootSpot.Location, false, false, TeleportType.HouseBoot);
+                        Teleport(rootHouse.BootSpot.Location);
                         return true;
                     }
                 }
@@ -1606,7 +1604,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            var allegianceHouse = Allegiance.GetHouse(Location);
+            var allegianceHouse = Allegiance.GetHouse();
 
             if (allegianceHouse == null)
             {
@@ -1767,7 +1765,7 @@ namespace ACE.Server.WorldObjects
 
             var accountHouseOwner = GetAccountHouseOwner();
 
-            if (accountHouseOwner != null)
+            if (accountHouseOwner == null)
                 return null;
 
             //Console.WriteLine($"Account House Owner: {accountHouseOwner.Name}");
@@ -1777,27 +1775,24 @@ namespace ACE.Server.WorldObjects
 
         public House GetHouse(IPlayer player)
         {
-            return null;
-            /*
             if (player.HouseInstance == null)
                 return null;
 
             // is landblock loaded?
-            var houseGuid = player.HouseInstance.Value;
-            var landblock = (ushort)((houseGuid >> 12) & 0xFFFF);
+            var houseGuid = new ObjectGuid(player.HouseInstance.Value);
+            var landblock = houseGuid.StaticObjectLandblock.Value;
 
-            var landblockId = new LandblockId((uint)(landblock << 16 | 0xFFFF));
-            var isLoaded = LandblockManager.IsLoaded(landblockId);
+            var landblockId = new LandblockId(landblock);
+            var isLoaded = LandblockManager.IsLoaded(landblockId, houseGuid.Instance.Value);
 
             if (isLoaded)
             {
-                var loaded = LandblockManager.GetLandblock(landblockId, false);
-                return loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+                var loaded = LandblockManager.GetLandblock(landblockId, houseGuid.Instance.Value, null, false);
+                return loaded.GetObject(houseGuid) as House;
             }
 
             // load an offline copy
             return House.Load(houseGuid);
-            */
         }
 
         public bool IsMultiHouseOwner(bool showMsg = true)
@@ -1806,7 +1801,7 @@ namespace ACE.Server.WorldObjects
             var accountHouses = HouseManager.GetAccountHouses(Account.AccountId);
 
             //if (showMsg)
-                //Session.Network.EnqueueSend(new GameMessageSystemChat($"AccountHouses: {accountHouses.Count}, CharacterHouses: {characterHouses.Count}", ChatMessageType.Broadcast));
+            //Session.Network.EnqueueSend(new GameMessageSystemChat($"AccountHouses: {accountHouses.Count}, CharacterHouses: {characterHouses.Count}", ChatMessageType.Broadcast));
 
             if (PropertyManager.GetBool("house_per_char").Item)
             {
@@ -1850,7 +1845,7 @@ namespace ACE.Server.WorldObjects
                     log.Error($"{Name}.IsMultiHouseOwner(): {house.Guid} slumlord is null!");
                     continue;
                 }
-                var coords = HouseManager.GetCoords(slumlord.Location);
+                var coords = HouseManager.GetCoords(slumlord.Location.AsLocalPosition());
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"{i + 1}. {coords}", ChatMessageType.Broadcast));
             }
             Session.Network.EnqueueSend(new GameMessageSystemChat($"Please choose the house you want to keep with /house-select # , where # is 1-{houses.Count}", ChatMessageType.Broadcast));
@@ -1889,3 +1884,4 @@ namespace ACE.Server.WorldObjects
         }
     }
 }
+

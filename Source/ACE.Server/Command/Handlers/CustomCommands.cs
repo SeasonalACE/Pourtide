@@ -15,6 +15,7 @@ using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Server.Physics.Common;
 using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
 using System;
@@ -26,38 +27,6 @@ namespace ACE.Server.Command.Handlers
 {
     public static class CustomCommands
     {
-        [CommandHandler("change-season", AccessLevel.Admin, CommandHandlerFlag.None, 1, "Updates the season for the server by providing a new realmId from `Content/json/realms.jsonc`", "change-season <realmId>")]
-        public static void HandleChangeSeason(Session session, params string[] paramters)
-        {
-            try
-            {
-                var longVal = long.Parse(paramters[0]);
-
-                var realm = RealmManager.GetRealm((ushort)longVal);
-
-                if (realm == null)
-                {
-                    CommandHandlerHelper.WriteOutputInfo(session, $"RealmId: {longVal} does not exist, please provide a valid realmId from `Content/json/realms.jsonc`, type: /season-list for a list of available seasons to choose from.");
-                    return;
-                }
-
-                if (longVal != RealmManager.ServerBaseRealm.Realm.Id)
-                {
-                     var modifyParams = new string[] { "server_base_realm", paramters[0] };
-                    AdminCommands.HandleModifyServerLongProperty(session, modifyParams);
-                    var message = $"The season has changed to {RealmManager.ServerBaseRealm.Realm.Name}";
-                    PlayerManager.BroadcastToAuditChannel(session?.Player, message);
-                    PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
-                } else
-
-                    CommandHandlerHelper.WriteOutputInfo(session, $"RealmId: {longVal} is already applied, Please input a new RealmId", ChatMessageType.Help);
-            }
-            catch (Exception)
-            {
-                CommandHandlerHelper.WriteOutputInfo(session, "Please input a valid long", ChatMessageType.Help);
-            }
-        }
-
         [CommandHandler("season-info", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Get info about the current season your character belongs to.")]
         public static void HandleSeasonInfo(Session session, params string[] paramters)
         {
@@ -98,9 +67,8 @@ namespace ACE.Server.Command.Handlers
             if (!ushort.TryParse(parameters[0], out var realmid))
                 return;
 
-            var pos = session.Player.GetPosition(PositionType.Location);
-            var newpos = new Position(pos);
-            newpos.SetToDefaultRealmInstance(realmid);
+            var pos = session.Player.Location;
+            var newpos = new InstancedPosition(pos, InstancedPosition.InstanceIDFromVars(realmid, 0, false));
 
             session.Player.Teleport(newpos);
             var positionMessage = new GameMessageSystemChat($"Teleporting to realm {realmid}.", ChatMessageType.Broadcast);
@@ -512,13 +480,12 @@ namespace ACE.Server.Command.Handlers
 
             CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
         }
-
         /** Player Utility Commands End **/
 
         [CommandHandler("bounty", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Get bounty information from Pour Collector")]
         public static void HandleBountyInfo(Session session, params string[] paramters)
         {
-            var player  = session?.Player;
+            var player = session?.Player;
             var holtburg = DatabaseManager.World.GetCachedPointOfInterest("holtburg");
             var weenie = DatabaseManager.World.GetCachedWeenie(holtburg.WeenieClassId);
 
@@ -528,8 +495,7 @@ namespace ACE.Server.Command.Handlers
                 return;
             }
 
-            var loc = new Position(weenie.GetPosition(PositionType.Destination));
-            loc.SetToDefaultRealmInstance(player.Location.RealmID);
+            var loc = new LocalPosition(weenie.GetPosition(PositionType.Destination)).AsInstancedPosition(session.Player, ACE.Entity.Enum.RealmProperties.PlayerInstanceSelectMode.Same);
 
             var lbId = new LandblockId(loc.GetCell());
             var lb = LandblockManager.GetLandblock(lbId, loc.Instance, null, false);
@@ -542,6 +508,35 @@ namespace ACE.Server.Command.Handlers
             }
 
             Player.GetBounty((Creature)collector, player, true);
+        }
+
+        [CommandHandler("reload-all-landblocks", AccessLevel.Admin, CommandHandlerFlag.None, 0, "Reloads all landblocks currently loaded.")]
+        public static void HandleReloadAllLandblocks(Session session, params string[] parameters)
+        {
+            ActionChain lbResetChain = new ActionChain();
+            var lbs = LandblockManager.GetLoadedLandblocks().Select(x => (id: x.Id, instance: x.Instance));
+            var enumerator = lbs.GetEnumerator();
+
+            ActionEventDelegate resetLandblockAction = null;
+            resetLandblockAction = new ActionEventDelegate(() =>
+            {
+                if (!enumerator.MoveNext())
+                    return;
+                if (LandblockManager.IsLoaded(enumerator.Current.id, enumerator.Current.instance))
+                {
+                    var lb = LandblockManager.GetLandblockUnsafe(enumerator.Current.id, enumerator.Current.instance);
+                    if (lb != null)
+                    {
+                        if (session?.Player?.CurrentLandblock != lb)
+                            CommandHandlerHelper.WriteOutputInfo(session, $"Reloading 0x{lb.LongId:X16}", ChatMessageType.Broadcast);
+                        lb.Reload();
+                    }
+                }
+                lbResetChain.AddDelayForOneTick();
+                lbResetChain.AddAction(WorldManager.ActionQueue, resetLandblockAction);
+            });
+            lbResetChain.AddAction(WorldManager.ActionQueue, resetLandblockAction);
+            lbResetChain.EnqueueChain();
         }
 
     }

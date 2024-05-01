@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using ACE.Entity;
+using ACE.Server.Realms;
 
 namespace ACE.Server.Physics.Util
 {
@@ -43,15 +44,15 @@ namespace ACE.Server.Physics.Util
             //DungeonProfiles.Add(0x536d, nuhmudirasDungeon); // No longer needed as of 11/24/19
         }
 
-        public static bool Adjust(uint dungeonID, Position pos)
+        public static InstancedPosition Adjust(uint dungeonID, InstancedPosition pos)
         {
             if (!DungeonProfiles.TryGetValue(dungeonID, out var profile))
-                return false;
+                return pos;
 
-            pos.Pos += profile.GoodPosition - profile.BadPosition;
+            pos = pos.AddPos(profile.GoodPosition - profile.BadPosition);
             //pos.Rotation *= profile.GoodRotation * Quaternion.Inverse(profile.BadRotation);
 
-            return true;
+            return pos;
         }
     }
 }

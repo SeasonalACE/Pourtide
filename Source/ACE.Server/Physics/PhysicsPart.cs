@@ -21,7 +21,7 @@ namespace ACE.Server.Physics
         //public int DegMode;
         public GfxObj GfxObj;
         public Vector3 GfxObjScale;
-        public Position Pos;        // this contains all of the per-part, per-frame animation data
+        public PhysicsPosition Pos;        // this contains all of the per-part, per-frame animation data
         //public Position DrawPos;
         //public Material Material;
         //public List<uint> Surfaces;
@@ -64,7 +64,7 @@ namespace ACE.Server.Physics
             return GfxObj.GfxBoundBox;
         }
 
-        public uint GetPhysObjID()
+        public ulong GetPhysObjID()
         {
             if (PhysicsObj == null)
                 return 0;
@@ -75,7 +75,7 @@ namespace ACE.Server.Physics
         public void InitEmpty()
         {
             GfxObjScale = new Vector3(1.0f, 1.0f, 1.0f);
-            Pos = new Position();
+            Pos = new PhysicsPosition();
             //DrawPos = new Position();
             //ViewerHeading = new Vector3(0.0f, 0.0f, 1.0f);
             PhysObjIndex = -1;

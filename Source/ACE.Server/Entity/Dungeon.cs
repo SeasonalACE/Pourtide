@@ -28,6 +28,6 @@ namespace ACE.Server.Entity
         {
         }
 
-        public Dictionary<uint, Player> Players { get; set; } = new Dictionary<uint, Player>();
+        public Dictionary<ulong, Player> Players { get; set; } = new Dictionary<ulong, Player>();
     }
 }

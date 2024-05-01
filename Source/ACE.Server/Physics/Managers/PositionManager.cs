@@ -27,7 +27,7 @@ namespace ACE.Server.Physics.Animation
                 ConstraintManager.adjust_offset(frame, quantum);
         }
 
-        public void ConstrainTo(Position position, float startDistance, float maxDistance)
+        public void ConstrainTo(PhysicsPosition position, float startDistance, float maxDistance)
         {
             if (ConstraintManager == null)
                 ConstraintManager = ConstraintManager.Create(PhysicsObj);
@@ -40,7 +40,7 @@ namespace ACE.Server.Physics.Animation
             return new PositionManager(physicsObj);
         }
 
-        public uint GetStickyObjectID()
+        public ulong GetStickyObjectID()
         {
             if (StickyManager == null) return 0;
             return StickyManager.TargetID;
@@ -52,7 +52,7 @@ namespace ACE.Server.Physics.Animation
                 StickyManager.HandleUpdateTarget(targetInfo);
         }
 
-        public void InterpolateTo(Position position, bool keepHeading)
+        public void InterpolateTo(PhysicsPosition position, bool keepHeading)
         {
             if (InterpolationManager == null)
                 InterpolationManager = InterpolationManager.Create(PhysicsObj);
@@ -90,7 +90,7 @@ namespace ACE.Server.Physics.Animation
                 ConstraintManager.SetPhysicsObject(obj);
         }
 
-        public void StickTo(uint objectID, float radius, float height)
+        public void StickTo(ulong objectID, float radius, float height)
         {
             if (StickyManager == null)
                 MakeStickyManager();

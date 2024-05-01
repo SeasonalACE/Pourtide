@@ -33,6 +33,8 @@ using ACE.Server.WorldObjects.Entity;
 using Position = ACE.Entity.Position;
 using ACE.Server.Network.Handlers;
 using ACE.Server.Features.Discord;
+using ACE.Server.Realms;
+using ACE.Entity.Enum.RealmProperties;
 
 namespace ACE.Server.Command.Handlers
 {
@@ -631,7 +633,7 @@ namespace ACE.Server.Command.Handlers
             {
                 // parsedPositionInt value should be limited too a value from, 0-9
                 // Create a new position from the current player location
-                Position playerPosition = session.Player.Location;
+                InstancedPosition playerPosition = session.Player.Location;
                 PositionType positionType = PositionType.Sanctuary;
                 // Set the correct PositionType, based on the "Saved Positions" position type subset:
                 switch (parsedPositionInt)
@@ -689,7 +691,7 @@ namespace ACE.Server.Command.Handlers
                 }
 
                 // Save the position
-                session.Player.SetPosition(positionType, new Position(playerPosition));
+                session.Player.SetPosition(positionType, playerPosition);
                 // Report changes to client
                 var positionMessage = new GameMessageSystemChat($"Set: {positionType} to Loc: {playerPosition}", ChatMessageType.Broadcast);
                 session.Network.EnqueueSend(positionMessage);
@@ -844,7 +846,7 @@ namespace ACE.Server.Command.Handlers
                 session.Network.EnqueueSend(new GameMessageSystemChat($"Player {playerName} was not found.", ChatMessageType.Broadcast));
                 return;
             }
-            var currentPos = new Position(player.Location);
+            var currentPos = new InstancedPosition(player.Location);
             player.Teleport(session.Player.Location);
             player.SetPosition(PositionType.TeleportedCharacter, currentPos);
             player.Session.Network.EnqueueSend(new GameMessageSystemChat($"{session.Player.Name} has teleported you.", ChatMessageType.Magic));
@@ -872,7 +874,7 @@ namespace ACE.Server.Command.Handlers
                 return;
             }
 
-            player.Teleport(new Position(player.TeleportedCharacter));
+            player.Teleport(new InstancedPosition(player.TeleportedCharacter));
             player.SetPosition(PositionType.TeleportedCharacter, null);
             player.Session.Network.EnqueueSend(new GameMessageSystemChat($"{session.Player.Name} has returned you to your previous location.", ChatMessageType.Magic));
 
@@ -896,9 +898,9 @@ namespace ACE.Server.Command.Handlers
                 if (player == destinationPlayer)
                     continue;
 
-                player.SetPosition(PositionType.TeleportedCharacter, new Position(player.Location));
+                player.SetPosition(PositionType.TeleportedCharacter, new InstancedPosition(player.Location));
 
-                player.Teleport(new Position(destinationPlayer.Location));
+                player.Teleport(new InstancedPosition(destinationPlayer.Location));
             }
 
             PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has teleported all online players to their location.");
@@ -932,9 +934,9 @@ namespace ACE.Server.Command.Handlers
                 if (teleportPOI == null)
                     return;
                 var weenie = DatabaseManager.World.GetCachedWeenie(teleportPOI.WeenieClassId);
-                var portalDest = new Position(weenie.GetPosition(PositionType.Destination));
-                portalDest.SetToDefaultRealmInstance(session.Player.Location.RealmID);
-                WorldObject.AdjustDungeon(portalDest);
+                var portalDest = new LocalPosition(weenie.GetPosition(PositionType.Destination)).AsInstancedPosition(session.Player, PlayerInstanceSelectMode.Same);
+
+                portalDest = WorldObject.AdjustDungeon(portalDest);
                 session.Player.Teleport(portalDest);
             }
         }
@@ -981,9 +983,25 @@ namespace ACE.Server.Command.Handlers
 
                 uint inst = 0;
                 if (parameters.Length >= 9)
+                {
                     inst = uint.Parse(parameters[8].Trim());
+                    if (inst == 0)
+                    {
+                        // REALMS-TODO: Better validation of instance id
+                        session.Network.EnqueueSend(new GameMessageSystemChat($"Instance ID may not be 0", ChatMessageType.Broadcast));
+                        return;
+                    }
+                }
 
-                session.Player.Teleport(new Position(cell, positionData[0], positionData[1], positionData[2], positionData[4], positionData[5], positionData[6], positionData[3], inst));
+                LocalPosition posLocal = new LocalPosition(new Position(cell, positionData[0], positionData[1], positionData[2], positionData[4], positionData[5], positionData[6], positionData[3], 0));
+
+                InstancedPosition pos;
+                if (inst == 0)
+                    pos = posLocal.AsInstancedPosition(session.Player, PlayerInstanceSelectMode.Same);
+                else
+                    pos = posLocal.AsInstancedPosition(inst);
+
+                session.Player.Teleport(pos);
             }
             catch (Exception)
             {
@@ -1520,8 +1538,7 @@ namespace ACE.Server.Command.Handlers
 
         private static void DumpHouse(Session session, House targetHouse, WorldObject wo)
         {
-            var realmId = wo.Location.RealmID;
-            HouseManager.GetHouse(targetHouse.Guid.Full, (house) =>
+            HouseManager.GetHouse(targetHouse.Guid, (house) =>
             {
                 var msg = "";
                 msg = $"House Dump for {wo.Name} (0x{wo.Guid})\n";
@@ -1594,7 +1611,7 @@ namespace ACE.Server.Command.Handlers
                     session.Player.SendMessage(msg, ChatMessageType.System);
                 }
 
-                session.Player.SendMessage(AppendHouseLinkDump(house), ChatMessageType.System);                
+                session.Player.SendMessage(AppendHouseLinkDump(house), ChatMessageType.System);
 
                 if (house.HouseType == HouseType.Villa || house.HouseType == HouseType.Mansion)
                 {
@@ -1671,7 +1688,7 @@ namespace ACE.Server.Command.Handlers
                     }
                 }
                 session.Player.SendMessage(msg, ChatMessageType.System);
-            }, realmId);
+            });
         }
 
         private static House GetSelectedHouse(Session session, out WorldObject target)
@@ -1910,7 +1927,7 @@ namespace ACE.Server.Command.Handlers
             DoCopyChar(session, existingCharName, existingPlayer.Guid.Full, false, newCharName);
         }
 
-        private static void DoCopyChar(Session session, string existingCharName, uint existingCharId, bool isDeletedChar, string newCharacterName = null, uint newAccountId = 0)
+        private static void DoCopyChar(Session session, string existingCharName, ulong existingCharId, bool isDeletedChar, string newCharacterName = null, uint newAccountId = 0)
         {
             DatabaseManager.Shard.GetCharacter(existingCharId, existingCharacter =>
             {
@@ -1971,7 +1988,7 @@ namespace ACE.Server.Command.Handlers
                             foreach (var entry in existingCharacter.CharacterPropertiesTitleBook)
                                 newCharacter.CharacterPropertiesTitleBook.Add(new Database.Models.Shard.CharacterPropertiesTitleBook { CharacterId = newPlayerGuid.Full, TitleId = entry.TitleId });
 
-                            var idSwaps = new ConcurrentDictionary<uint, uint>();
+                            var idSwaps = new ConcurrentDictionary<ulong, ulong>();
 
                             var newPlayerBiota = Database.Adapter.BiotaConverter.ConvertToEntityBiota(existingPlayerBiota);
 
@@ -2454,7 +2471,7 @@ namespace ACE.Server.Command.Handlers
                 PlayerManager.BroadcastToAuditChannel(session.Player, $"{session.Player.Name} has created {obj.Name} (0x{obj.Guid:X8}) at {obj.Location.ToLOCString()}.");
         }
 
-        public static Position LastSpawnPos;
+        public static InstancedPosition LastSpawnPos;
 
         /// <summary>
         /// Creates WorldObjects from Weenies for /create, /createliveops, and /ci
@@ -2474,8 +2491,6 @@ namespace ACE.Server.Command.Handlers
 
                 obj.Location = session.Player.Location.InFrontOf(dist);
             }
-
-            obj.Location.LandblockId = new LandblockId(obj.Location.GetCell());
 
             LastSpawnPos = obj.Location;
 
@@ -2851,7 +2866,7 @@ namespace ACE.Server.Command.Handlers
             else if (wo is Player player)
             {
                 var items = new List<WorldObject>();
-                var playerLoc = new Position(player.Location);
+                var playerLoc = new InstancedPosition(player.Location);
 
                 foreach (var item in player.Inventory)
                 {
@@ -2869,8 +2884,8 @@ namespace ACE.Server.Command.Handlers
 
                 foreach (var item in items)
                 {
-                    item.Location = new Position(playerLoc);
-                    item.Location.PositionZ += .5f;
+                    item.Location = new InstancedPosition(playerLoc);
+                    item.Location = item.Location.SetPositionZ(item.Location.PositionZ + .5f);
                     item.Placement = Placement.Resting;  // This is needed to make items lay flat on the ground.
 
                     // increased precision for non-ethereal objects
@@ -2879,10 +2894,10 @@ namespace ACE.Server.Command.Handlers
 
                     if (session.Player.CurrentLandblock?.AddWorldObject(item) ?? false)
                     {
-                        item.Location.LandblockId = new LandblockId(item.Location.GetCell());
+                        item.Location = item.Location.SetLandblockId(new LandblockId(item.Location.GetCell()));
 
                         // try slide to new position
-                        var transit = item.PhysicsObj.transition(item.PhysicsObj.Position, new Physics.Common.Position(item.Location), false);
+                        var transit = item.PhysicsObj.transition(item.PhysicsObj.Position, new Physics.Common.PhysicsPosition(item.Location), false);
 
                         if (transit != null && transit.SpherePath.CurCell != null)
                         {
@@ -4412,27 +4427,10 @@ namespace ACE.Server.Command.Handlers
             try
             {
                 var longVal = long.Parse(paramters[1]);
-
-                var realm = RealmManager.GetRealm((ushort)longVal);
-
-                if (paramters[0] == "server_base_realm" && realm == null)
-                {
-                    CommandHandlerHelper.WriteOutputInfo(session, $"RealmId: {longVal} does not exist, please provide a valid realmId from `Content/json/realms.jsonc`");
-                    return;
-                }
-
                 if (PropertyManager.ModifyLong(paramters[0], longVal))
                 {
                     CommandHandlerHelper.WriteOutputInfo(session, "Long property successfully updated!");
                     PlayerManager.BroadcastToAuditChannel(session?.Player, $"Successfully changed server long property {paramters[0]} to {longVal}");
-
-                    if (paramters[0] == "server_base_realm")
-                    {
-                        WorldManager.Close(null, true);
-                        HouseManager.HandleSeasonalRealmChange();
-                        AdminShardCommands.ShutdownServerNow(session);
-
-                    }
                 }
                 else
                     CommandHandlerHelper.WriteOutputInfo(session, "Unknown long property was not updated. Type showprops for a list of properties.");
@@ -4781,8 +4779,8 @@ namespace ACE.Server.Command.Handlers
             }
 
             var prevLoc = obj.Location;
-            var newLoc = new Position(session.Player.Location);
-            newLoc.Rotation = prevLoc.Rotation;     // keep previous rotation
+            var newLoc = new InstancedPosition(session.Player.Location);
+            newLoc = newLoc.SetRotation(prevLoc.Rotation); // keep previous rotation
 
             var setPos = new Physics.Common.SetPosition(newLoc.PhysPosition(), Physics.Common.SetPositionFlags.Teleport | Physics.Common.SetPositionFlags.Slide, newLoc.Instance);
             var result = obj.PhysicsObj.SetPosition(setPos);

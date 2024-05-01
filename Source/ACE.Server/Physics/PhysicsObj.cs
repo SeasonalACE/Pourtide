@@ -30,7 +30,7 @@ namespace ACE.Server.Physics
     {
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public uint ID;
+        public ulong ID;
         public ObjectGuid ObjID;
         public PartArray PartArray;
         public Vector3 PlayerVector;
@@ -46,7 +46,7 @@ namespace ACE.Server.Physics
         public bool HasDefaultScript;
         public PhysicsObj Parent;
         public ChildList Children;
-        public Position Position;
+        public PhysicsPosition Position;
         private ObjCell _curCell;
         public ObjCell CurCell
         {
@@ -90,7 +90,7 @@ namespace ACE.Server.Physics
         public uint ContactPlaneCellID;
         public Vector3 SlidingNormal;
         public Vector3 CachedVelocity;
-        public Dictionary<uint, CollisionRecord> CollisionTable;
+        public Dictionary<ulong, CollisionRecord> CollisionTable;
         public bool CollidingWithEnvironment;
         public int[] UpdateTimes;
         public PhysicsObj ProjectileTarget;
@@ -108,7 +108,7 @@ namespace ACE.Server.Physics
             MovementManager.MotionInterpreter.InterpretedState.HasCommands() || MovementManager.MoveToManager.Initialized;
 
         // server
-        public Position RequestPos { get; set; }
+        public PhysicsPosition RequestPos { get; set; }
         public uint RequestInstance { get; set; }
 
         public string Name
@@ -135,7 +135,7 @@ namespace ACE.Server.Physics
             PlayerVector = new Vector3(0, 0, 1);
             PlayerDistance = float.MaxValue;
             CYpt = float.MaxValue;
-            Position = new Position();
+            Position = new PhysicsPosition();
             Elasticity = PhysicsGlobals.DefaultElasticity;
             Translucency = PhysicsGlobals.DefaultTranslucency;
             Friction = PhysicsGlobals.DefaultFriction;
@@ -152,7 +152,7 @@ namespace ACE.Server.Physics
             AnimHooks = new List<DatLoader.Entity.AnimationHook>();
             Children = new ChildList();
             ShadowObjects = new Dictionary<uint, ShadowObj>();
-            CollisionTable = new Dictionary<uint, CollisionRecord>();
+            CollisionTable = new Dictionary<ulong, CollisionRecord>();
             CellArray = new CellArray();
             UpdateTime = PhysicsTimer.CurrentTime;
             UpdateTimes = new int[UpdateTimeLength];
@@ -165,7 +165,7 @@ namespace ACE.Server.Physics
 
             if (PhysicsEngine.Instance != null && PhysicsEngine.Instance.Server)
             {
-                RequestPos = new Position();
+                RequestPos = new PhysicsPosition();
             }
         }
 
@@ -241,7 +241,7 @@ namespace ACE.Server.Physics
             }
         }
 
-        public ObjCell AdjustPosition(Position position, Vector3 low_pt, bool dontCreateCells, bool searchCells, uint instance)
+        public ObjCell AdjustPosition(PhysicsPosition position, Vector3 low_pt, bool dontCreateCells, bool searchCells, uint instance)
         {
             var cellID = position.ObjCellID & 0xFFFF;
 
@@ -311,7 +311,7 @@ namespace ACE.Server.Physics
                 PartArray.CheckForCompletedMotions();
         }
 
-        public bool CheckPositionInternal(ObjCell newCell, Position newPos, Transition transition, SetPosition setPos)
+        public bool CheckPositionInternal(ObjCell newCell, PhysicsPosition newPos, Transition transition, SetPosition setPos)
         {
             transition.InitPath(newCell, null, newPos);
 
@@ -334,7 +334,7 @@ namespace ACE.Server.Physics
             return false;
         }
 
-        public void ConstrainTo(Position pos, float startDistance, float maxDistance)
+        public void ConstrainTo(PhysicsPosition pos, float startDistance, float maxDistance)
         {
             MakePositionManager();
             if (PositionManager != null)
@@ -542,7 +542,7 @@ namespace ACE.Server.Physics
             return false;
         }
 
-        public SetPositionError ForceIntoCell(ObjCell newCell, Position pos)
+        public SetPositionError ForceIntoCell(ObjCell newCell, PhysicsPosition pos)
         {
             if (newCell == null) return SetPositionError.NoCell;
             set_frame(pos.Frame);
@@ -584,7 +584,7 @@ namespace ACE.Server.Physics
             return (Position.ObjCellID & 0xFFFF) < 0x100 ? 50.0f : 20.0f;
         }
 
-        public PhysicsObj GetObjectA(uint objectID)
+        public PhysicsObj GetObjectA(ulong objectID)
         {
             return ServerObjectManager.GetObjectA(objectID);
         }
@@ -831,7 +831,7 @@ namespace ACE.Server.Physics
                 return MovementManager.InqRawMotionState();
         }
 
-        public void InterpolateTo(Position p, bool keepHeading)
+        public void InterpolateTo(PhysicsPosition p, bool keepHeading)
         {
             MakePositionManager();
             PositionManager.InterpolateTo(p, keepHeading);
@@ -914,7 +914,7 @@ namespace ACE.Server.Physics
                 MovementManager.MotionDone(motion, success);
         }
 
-        public bool MoveOrTeleport(Position pos, int timestamp, bool contact, Vector3 velocity, uint instance)
+        public bool MoveOrTeleport(PhysicsPosition pos, int timestamp, bool contact, Vector3 velocity, uint instance)
         {
             var updateTime = UpdateTimes[4];
             bool timeDiff;
@@ -967,7 +967,7 @@ namespace ACE.Server.Physics
             MoveToObject_Internal(obj, parent.ID, radius, height, movementParams);
         }
 
-        public void MoveToObject_Internal(PhysicsObj obj, uint topLevelID, float objRadius, float objHeight, MovementParameters movementParams)
+        public void MoveToObject_Internal(PhysicsObj obj, ulong topLevelID, float objRadius, float objHeight, MovementParameters movementParams)
         {
             if (MovementManager == null)
             {
@@ -992,10 +992,10 @@ namespace ACE.Server.Physics
             MovementManager.PerformMovement(mvs);
         }
 
-        public void MoveToPosition(Position pos, MovementParameters movementParams)
+        public void MoveToPosition(PhysicsPosition pos, MovementParameters movementParams)
         {
             var mvs = new MovementStruct();
-            mvs.Position = new Position(pos);
+            mvs.Position = new PhysicsPosition(pos);
             mvs.Type = MovementType.MoveToPosition;
             mvs.Params = movementParams;
             MovementManager.PerformMovement(mvs);
@@ -1286,7 +1286,7 @@ namespace ACE.Server.Physics
             return true;
         }
 
-        public SetPositionError SetPositionInternal(Position pos, SetPosition setPos, Transition transition)
+        public SetPositionError SetPositionInternal(PhysicsPosition pos, SetPosition setPos, Transition transition)
         {
             if (CurCell == null) prepare_to_enter_world();
 
@@ -1371,7 +1371,7 @@ namespace ACE.Server.Physics
             return result;
         }
 
-        public SetPositionError SetPositionSimple(Position pos, bool sliding, uint instance)
+        public SetPositionError SetPositionSimple(PhysicsPosition pos, bool sliding, uint instance)
         {
             var setPos = new SetPosition(instance);
             setPos.Pos = pos;
@@ -1410,7 +1410,7 @@ namespace ACE.Server.Physics
 
             for (var i = 0; i < setPos.NumTries; i++)
             {
-                var newPos = new Position(setPos.Pos);
+                var newPos = new PhysicsPosition(setPos.Pos);
 
                 newPos.Frame.Origin.X += (float)ThreadSafeRandom.Next(-1.0f, 1.0f) * setPos.RadX;
                 newPos.Frame.Origin.Y += (float)ThreadSafeRandom.Next(-1.0f, 1.0f) * setPos.RadY;
@@ -1621,7 +1621,7 @@ namespace ACE.Server.Physics
             return true;
         }
 
-        public void TurnToObject_Internal(uint objectID, uint topLevelID, MovementParameters movementParams)
+        public void TurnToObject_Internal(ulong objectID, ulong topLevelID, MovementParameters movementParams)
         {
             if (MovementManager == null)
             {
@@ -1673,7 +1673,7 @@ namespace ACE.Server.Physics
                 set_ethereal(false, false);
 
             JumpedThisFrame = false;
-            var newPos = new Position(Position.ObjCellID);
+            var newPos = new PhysicsPosition(Position.ObjCellID);
             UpdatePositionInternal(quantum, ref newPos.Frame);
 
             if (PartArray != null && PartArray.GetNumSphere() != 0)
@@ -1749,7 +1749,7 @@ namespace ACE.Server.Physics
             if (ScriptManager != null) ScriptManager.UpdateScripts();
         }
 
-        public static int GetBlockDist(Position a, Position b)
+        public static int GetBlockDist(PhysicsPosition a, PhysicsPosition b)
         {
             // protection, figure out FastTeleport state
             if (a == null || b == null)
@@ -1822,7 +1822,7 @@ namespace ACE.Server.Physics
                 set_ethereal(false, false);
 
             JumpedThisFrame = false;
-            var newPos = new Position(Position.ObjCellID);
+            var newPos = new PhysicsPosition(Position.ObjCellID);
 
             //UpdatePositionInternal(quantum, ref newPos.Frame);
             if (PartArray != null)
@@ -2022,7 +2022,7 @@ namespace ACE.Server.Physics
                 PartArray.AddPartsShadow(cell, NumShadowObjects);
         }
 
-        public void add_voyeur(uint objectID, float radius, double quantum)
+        public void add_voyeur(ulong objectID, float radius, double quantum)
         {
             if (TargetManager == null) TargetManager = new TargetManager(this);
             TargetManager.AddVoyeur(objectID, radius, quantum);
@@ -2194,7 +2194,7 @@ namespace ACE.Server.Physics
                 enter_cell_server(newCell);
         }
 
-        public Quadrant check_attack(Position attackerPos, float attackerScale, AttackCone attackCone, float attackerAttackRadius)
+        public Quadrant check_attack(PhysicsPosition attackerPos, float attackerScale, AttackCone attackCone, float attackerAttackRadius)
         {
             if (Parent != null || State.HasFlag(PhysicsState.IgnoreCollisions) || State.HasFlag(PhysicsState.ReportCollisionsAsEnvironment))
                 return 0;
@@ -2417,7 +2417,7 @@ namespace ACE.Server.Physics
 
         public bool entering_world;
 
-        public bool enter_world(Position pos, uint instance)
+        public bool enter_world(PhysicsPosition pos, uint instance)
         {
             entering_world = true;
 
@@ -2524,7 +2524,7 @@ namespace ACE.Server.Physics
             var curHeight = PartArray != null ? PartArray.GetHeight() : 0.0f;
             var curRadius = PartArray != null ? PartArray.GetRadius() : 0.0f;
 
-            return Position.CylinderDistance(curRadius, curHeight, Position, radius, height, obj.Position);
+            return PhysicsPosition.CylinderDistance(curRadius, curHeight, Position, radius, height, obj.Position);
         }
 
         // custom, based on above
@@ -2539,7 +2539,7 @@ namespace ACE.Server.Physics
             var curHeight = PartArray != null ? PartArray.GetHeight() : 0.0f;
             var curRadius = PartArray != null ? PartArray.GetRadius() : 0.0f;
 
-            return Position.CylinderDistanceSq(curRadius, curHeight, Position, radius, height, obj.Position);
+            return PhysicsPosition.CylinderDistanceSq(curRadius, curHeight, Position, radius, height, obj.Position);
         }
 
         public AFrame get_frame()
@@ -2640,7 +2640,7 @@ namespace ACE.Server.Physics
             return PositionManager;
         }
 
-        public uint get_sticky_object()
+        public ulong get_sticky_object()
         {
             if (PositionManager == null) return 0;
 
@@ -3265,7 +3265,7 @@ namespace ACE.Server.Physics
             ObjMaint.RemoveObject(this);
         }
 
-        public bool remove_voyeur(uint objectID)
+        public bool remove_voyeur(ulong objectID)
         {
             if (TargetManager == null) return false;
             return TargetManager.RemoveVoyeur(objectID);
@@ -3293,7 +3293,7 @@ namespace ACE.Server.Physics
         {
             if (CollisionTable == null) return;
 
-            var ends = new List<uint>();
+            var ends = new List<ulong>();
 
             foreach (var kvp in CollisionTable)
             {
@@ -3389,7 +3389,7 @@ namespace ACE.Server.Physics
             return collided;
         }
 
-        public bool report_object_collision_end(uint objectID)
+        public bool report_object_collision_end(ulong objectID)
         {
             if (ObjMaint != null)
             {
@@ -3474,7 +3474,7 @@ namespace ACE.Server.Physics
             return (TransientState & TransientStateFlags.Active) != 0;
         }
 
-        public void set_current_pos(Position newPos, uint instance)
+        public void set_current_pos(PhysicsPosition newPos, uint instance)
         {
             Position.ObjCellID = newPos.ObjCellID;
             Position.Frame = new AFrame(newPos.Frame);
@@ -3958,7 +3958,7 @@ namespace ACE.Server.Physics
             return true;
         }
 
-        public void set_target(uint contextID, uint objectID, float radius, double quantum)
+        public void set_target(uint contextID, ulong objectID, float radius, double quantum)
         {
             if (TargetManager == null)
                 TargetManager = new TargetManager(this);
@@ -4010,7 +4010,7 @@ namespace ACE.Server.Physics
                 MovementManager.SetWeenieObject(wobj);
         }
 
-        public void stick_to_object(uint objectID)
+        public void stick_to_object(ulong objectID)
         {
             MakePositionManager();
             if (ObjMaint == null) return;
@@ -4032,7 +4032,7 @@ namespace ACE.Server.Physics
             return ParticleManager.StopParticleEmitter(emitterID);
         }
 
-        public void store_position(Position pos)
+        public void store_position(PhysicsPosition pos)
         {
             // position ref?
             if ((pos.ObjCellID & 0xFFFF) < 0x100)
@@ -4070,14 +4070,14 @@ namespace ACE.Server.Physics
                 return report_environment_collision(prev_has_contact);
 
             if (CollisionTable == null)
-                CollisionTable = new Dictionary<uint, CollisionRecord>();
+                CollisionTable = new Dictionary<ulong, CollisionRecord>();
 
             CollisionTable[obj.ID] = new CollisionRecord(PhysicsTimer.CurrentTime, obj.State.HasFlag(PhysicsState.Ethereal));
 
             return report_object_collision(obj, prev_has_contact);
         }
 
-        public Transition transition(Position oldPos, Position newPos, bool adminMove)
+        public Transition transition(PhysicsPosition oldPos, PhysicsPosition newPos, bool adminMove)
         {
             var trans = Transition.MakeTransition(CurLandblock.Instance);
             if (trans == null) return null;

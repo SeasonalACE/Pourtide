@@ -297,16 +297,16 @@ namespace ACE.Server.Factories
                 if (restrict_wcid != null && restrict_wcid.Value != instance.WeenieClassId)
                     continue;
 
-                var guid = new ObjectGuid(instance.Guid);
+                var guid = new ObjectGuid(instance.Guid, iid);
 
                 WorldObject worldObject;
 
-                var biota = biotas.FirstOrDefault(b => b.Id == instance.Guid);
+                var biota = biotas.FirstOrDefault(b => b.Id == guid.Full);
                 if (biota == null)
                 {
                     worldObject = CreateWorldObject(weenie, guid, ruleset);
 
-                    worldObject.Location = new Position(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
+                    worldObject.Location = new InstancedPosition(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
                 }
                 else
                 {
@@ -315,7 +315,7 @@ namespace ACE.Server.Factories
                     if (worldObject.Location == null)
                     {
                         log.Warn($"CreateNewWorldObjects: {worldObject.Name} (0x{worldObject.Guid}) Location was null. CreationTimestamp = {worldObject.CreationTimestamp} ({Common.Time.GetDateTimeFromTimestamp(worldObject.CreationTimestamp ?? 0).ToLocalTime()}) | Location restored from world db instance.");
-                        worldObject.Location = new Position(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
+                        worldObject.Location = new InstancedPosition(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
                     }
                 }
 

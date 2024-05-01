@@ -11,6 +11,7 @@ using ACE.Server.Features.Rifts;
 using ACE.Server.Managers;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Physics.Common;
+using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
 using log4net;
 using System;
@@ -33,9 +34,9 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         public uint Instance { get; set; } = 0;
 
-        public ACE.Entity.Position DropPosition { get; set; }
+        public InstancedPosition DropPosition { get; set; }
 
-        public Dungeon(string landblock, string name, string coords, ACE.Entity.Position drop) : base(landblock, name, coords)
+        public Dungeon(string landblock, string name, string coords, InstancedPosition drop) : base(landblock, name, coords)
         {
             Landblock = landblock;
             Name = name;
@@ -227,7 +228,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
                 var dungeonLandblock = DungeonRepository.GetDungeon(currentLb);
                 if (dungeonLandblock != null)
                 {
-                    var potentialDungeon = new Dungeon(dungeonLandblock.Landblock, dungeonLandblock.Name, dungeonLandblock.Coords, new ACE.Entity.Position(damager.Location));
+                    var potentialDungeon = new Dungeon(dungeonLandblock.Landblock, dungeonLandblock.Name, dungeonLandblock.Coords, new InstancedPosition(damager.Location));
                     PotentialHotspotCandidates.TryAdd(currentLb, potentialDungeon);
                     potentialDungeon.AddTotalXp(xpOverride);
                     potentialDungeon.PlayerTouches++;
@@ -240,7 +241,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
                 {
                     potentialDungeon.AddTotalXp(xpOverride);
                     potentialDungeon.PlayerTouches++;
-                    potentialDungeon.DropPosition = new ACE.Entity.Position(damager.Location);
+                    potentialDungeon.DropPosition = new InstancedPosition(damager.Location);
                 }
             }
 

@@ -36,7 +36,7 @@ namespace ACE.Server.WorldObjects
         /// Approved vassals for adding to locked allegiances
         /// </summary>
         // TODO now that the new biota model uses a dictionary for this, see if we can remove this duplicate dictionary
-        public Dictionary<uint, PropertiesAllegiance> ApprovedVassals => Biota.PropertiesAllegiance.GetApprovedVassals(BiotaDatabaseLock);
+        public Dictionary<ulong, PropertiesAllegiance> ApprovedVassals => Biota.PropertiesAllegiance.GetApprovedVassals(BiotaDatabaseLock);
 
         /// <summary>
         /// Handles booting players from allegiance chat
@@ -48,7 +48,7 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         //public HashSet<ObjectGuid> BanList { get; set; }
         // TODO now that the new biota model uses a dictionary for this, see if we can remove this duplicate dictionary
-        public Dictionary<uint, PropertiesAllegiance> BanList => Biota.PropertiesAllegiance.GetBanList(BiotaDatabaseLock);
+        public Dictionary<ulong, PropertiesAllegiance> BanList => Biota.PropertiesAllegiance.GetBanList(BiotaDatabaseLock);
 
         /// <summary>
         /// Returns the list of allegiance members who are currently online
@@ -106,7 +106,7 @@ namespace ACE.Server.WorldObjects
         private void InitializePropertyDictionaries()
         {
             if (Biota.PropertiesAllegiance == null)
-                Biota.PropertiesAllegiance = new Dictionary<uint, PropertiesAllegiance>();
+                Biota.PropertiesAllegiance = new Dictionary<ulong, PropertiesAllegiance>();
         }
 
         /// <summary>
@@ -133,9 +133,9 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Build a mapping of patron guids => vassal guids
         /// </summary>
-        public Dictionary<uint, List<IPlayer>> BuildPatronVassals(List<IPlayer> members)
+        public Dictionary<ulong, List<IPlayer>> BuildPatronVassals(List<IPlayer> members)
         {
-            var patronVassals = new Dictionary<uint, List<IPlayer>>();
+            var patronVassals = new Dictionary<ulong, List<IPlayer>>();
 
             foreach (var member in members)
             {
@@ -282,29 +282,26 @@ namespace ACE.Server.WorldObjects
 
         public bool HasCustomTitles => AllegianceSpeakerTitle != null || AllegianceSeneschalTitle != null || AllegianceCastellanTitle != null;
 
-        public House GetHouse(Position location)
+        public House GetHouse()
         {
-            var realmId = location.RealmID;
-            var instance = location.Instance;
-
             if (Monarch.Player.HouseInstance == null)
                 return null;
 
             // is landblock loaded?
-            var houseGuid = Monarch.Player.HouseInstance.Value;
-            var landblock = (ushort)((houseGuid >> 12) & 0xFFFF);
+            var houseGuid = new ObjectGuid(Monarch.Player.HouseInstance.Value);
+            var landblock = houseGuid.StaticObjectLandblock.Value;
 
-            var landblockId = new LandblockId((uint)(landblock << 16 | 0xFFFF));
-            var isLoaded = LandblockManager.IsLoaded(landblockId, instance);
+            var landblockId = new LandblockId(landblock);
+            var isLoaded = LandblockManager.IsLoaded(landblockId, houseGuid.Instance.Value);
 
             if (isLoaded)
             {
-                var loaded = LandblockManager.GetLandblock(landblockId, instance, null, false);
-                return loaded.GetObject(new ObjectGuid(houseGuid)) as House;
+                var loaded = LandblockManager.GetLandblock(landblockId, houseGuid.Instance.Value, null, false);
+                return loaded.GetObject(houseGuid) as House;
             }
 
             // load an offline copy
-            return House.Load(Monarch.Player.HouseInstance.Value, realmId);
+            return House.Load(houseGuid);
         }
 
         /// <summary>
@@ -383,7 +380,7 @@ namespace ACE.Server.WorldObjects
             Monarch.ShowInfo();
         }
 
-        public void AddBan(uint playerGuid)
+        public void AddBan(ulong playerGuid)
         {
             var entity = Biota.PropertiesAllegiance.GetFirstOrDefaultByCharacterId(playerGuid, BiotaDatabaseLock);
 
@@ -398,7 +395,7 @@ namespace ACE.Server.WorldObjects
             SaveBiotaToDatabase();
         }
 
-        public bool RemoveBan(uint playerGuid)
+        public bool RemoveBan(ulong playerGuid)
         {
             var entity = Biota.PropertiesAllegiance.GetFirstOrDefaultByCharacterId(playerGuid, BiotaDatabaseLock);
 
@@ -420,12 +417,12 @@ namespace ACE.Server.WorldObjects
             return removed;
         }
 
-        public bool IsBanned(uint playerGuid)
+        public bool IsBanned(ulong playerGuid)
         {
             return BanList.ContainsKey(playerGuid);
         }
 
-        public void AddApprovedVassal(uint playerGuid)
+        public void AddApprovedVassal(ulong playerGuid)
         {
             var entity = Biota.PropertiesAllegiance.GetFirstOrDefaultByCharacterId(playerGuid, BiotaDatabaseLock);
 
@@ -440,7 +437,7 @@ namespace ACE.Server.WorldObjects
             SaveBiotaToDatabase();
         }
 
-        public bool RemoveApprovedVassal(uint playerGuid)
+        public bool RemoveApprovedVassal(ulong playerGuid)
         {
             var entity = Biota.PropertiesAllegiance.GetFirstOrDefaultByCharacterId(playerGuid, BiotaDatabaseLock);
 
@@ -462,7 +459,7 @@ namespace ACE.Server.WorldObjects
             return removed;
         }
 
-        public bool HasApprovedVassal(uint playerGuid)
+        public bool HasApprovedVassal(ulong playerGuid)
         {
             return ApprovedVassals.ContainsKey(playerGuid);
         }

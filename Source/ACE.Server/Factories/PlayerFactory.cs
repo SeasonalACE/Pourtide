@@ -14,6 +14,7 @@ using ACE.Entity.Models;
 using ACE.Server.WorldObjects;
 using ACE.Server.Managers;
 using ACE.Server.Features.Xp;
+using ACE.Server.Realms;
 
 namespace ACE.Server.Factories
 {
@@ -424,9 +425,9 @@ namespace ACE.Server.Factories
 
             if (!player.IsOlthoiPlayer)
             {
-                player.Location = new Position(0x8903012E, 87.738312f, -47.704556f, .005f, 0.0f, 0.0f, -0.926821f, 0.375504f, accountId);
-                player.Instantiation = new Position(player.Location);
-                player.Sanctuary = new Position(player.Location);
+                player.Location = new InstancedPosition(0x8903012E, 87.738312f, -47.704556f, .005f, 0.0f, 0.0f, -0.926821f, 0.375504f, accountId);
+                player.Instantiation = new InstancedPosition(player.Location);
+                player.Sanctuary = player.Location.AsLocalPosition();
                 player.SetProperty(PropertyBool.RecallsDisabled, true);
 
                 /*
@@ -627,8 +628,8 @@ namespace ACE.Server.Factories
 
             var iou = (Book)WorldObjectFactory.CreateNewWorldObject("parchment");
 
-            iou.SetProperties("IOU", "An IOU for a missing database object.", "Sorry about that chief...", "ACEmulator", "prewritten");
-            iou.AddPage(uint.MaxValue, "ACEmulator", "prewritten", false, $"{missingWeenieId}\n\nSorry but the database does not have a weenie for weenieClassId #{missingWeenieId} so in lieu of that here is an IOU for that item.", out _);
+            iou.SetProperties("IOU", "An IOU for a missing database object.", "Sorry about that chief...", "AC Realms", "prewritten");
+            iou.AddPage(uint.MaxValue, "AC Realms", "prewritten", false, $"{missingWeenieId}\n\nSorry but the database does not have a weenie for weenieClassId #{missingWeenieId} so in lieu of that here is an IOU for that item.", out _);
             iou.Bonded = BondedStatus.Bonded;
             iou.Attuned = AttunedStatus.Attuned;
             iou.IsSellable = false;
