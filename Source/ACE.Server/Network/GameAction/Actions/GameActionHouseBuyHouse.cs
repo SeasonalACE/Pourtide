@@ -1,5 +1,5 @@
 using System;
-
+using ACE.Server.Managers;
 using ACE.Server.Network.Structure;
 
 namespace ACE.Server.Network.GameAction.Actions
@@ -17,7 +17,8 @@ namespace ACE.Server.Network.GameAction.Actions
             var slumlord = message.Payload.ReadGuid(session);
             var items = message.Payload.ReadListUInt32();
 
-            session.Player.HandleActionBuyHouse(slumlord, items);
+            if (HouseManager.ValidatePourHousing(session.Player.Location.LandblockId.Landblock))
+                session.Player.HandleActionBuyHouse(slumlord, items);
         }
     }
 }
