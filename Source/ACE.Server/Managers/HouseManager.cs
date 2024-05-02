@@ -47,7 +47,7 @@ namespace ACE.Server.Managers
         /// </summary>
         private static readonly RateLimiter updateHouseManagerRateLimiter = new RateLimiter(1, TimeSpan.FromMinutes(1));
 
-        public static readonly uint[] PourHousing = new uint[] { 0x7200FFFF, 0xA454FFFF }; // Winthur Gate, Random Villas
+        public static readonly uint[] PourHousing = new uint[] { 0x7200FFFF, 0x912A0025 }; // Winthur Gate, Random Villas
 
         public static readonly Position PourApartmentLoc = InstancedPosition.slocToPosition("0x72000161 [83.740000 -93.750000 0.000000] 0.393140 0.000000 0.000000 -0.919479");
 
