@@ -66,21 +66,6 @@ namespace ACE.Server.Managers
                 return null;
             }
 
-            var weenieType = weenie.WeenieType;
-
-            var disableHousing = ruleset.Realm.Id != RealmManager.ServerBaseRealm.Realm.Id;
-
-            if (weenieType == WeenieType.House ||
-                weenieType == WeenieType.Storage ||
-                weenieType == WeenieType.Hook ||
-                weenieType == WeenieType.Hooker ||
-                weenieType == WeenieType.HousePortal ||
-                weenieType == WeenieType.SlumLord)
-            {
-                if (disableHousing || !HouseManager.ValidatePourHousing(location.LandblockId.Landblock))
-                    return null;
-            }
-
             return weenie;
         }
 
