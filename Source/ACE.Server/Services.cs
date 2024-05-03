@@ -53,9 +53,9 @@ namespace ACE.Server
 
         public static void ConfigureServicesForLiveEnvironment()
         {
-            var consoleTitle = $"AC Realms - v{ServerBuildInfo.FullVersion}";
+            //var consoleTitle = $"AC Realms - v{ServerBuildInfo.FullVersion}";
 
-            Console.Title = consoleTitle;
+            //Console.Title = consoleTitle;
 
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnProcessExit);
@@ -163,15 +163,15 @@ namespace ACE.Server
                 }
             }
 
-            consoleTitle = Console.Title;
+            //consoleTitle = Console.Title;
 
             log.Info("Initializing ConfigManager...");
             ConfigManager.Initialize();
 
             if (ConfigManager.Config.Server.WorldName != "AC Realms")
             {
-                consoleTitle = $"{ConfigManager.Config.Server.WorldName} | {consoleTitle}";
-                Console.Title = consoleTitle;
+                //consoleTitle = $"{ConfigManager.Config.Server.WorldName} | {consoleTitle}";
+                //Console.Title = consoleTitle;
             }
 
             // https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host?tabs=appbuilder
