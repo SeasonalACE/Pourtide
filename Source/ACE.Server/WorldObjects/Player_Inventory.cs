@@ -3525,7 +3525,7 @@ namespace ACE.Server.WorldObjects
                     {
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 60000212)
                         {
-                            var xp = PvpXpDailyMax * 0.02; // give 5% of total PvpXpDailyMax
+                            var xp = PvpXpDailyMax * 0.08; // give 8% of total PvpXpDailyMax
 
                             if (BountyGuid != null && item.BountyTrophyGuid != null)
                             {
