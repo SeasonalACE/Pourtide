@@ -1,7 +1,7 @@
 DELETE FROM `weenie` WHERE `class_Id` = 604001;
 
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
-VALUES (604001, 'ace604001-slayerskull', 38, '2024-04-16 08:32:57') /* Gem */;
+VALUES (604001, 'ace604001-slayerskull', 38, '2024-05-03 10:39:42') /* Gem */;
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES (604001,   1,       2048) /* ItemType - Gem */
@@ -11,11 +11,9 @@ VALUES (604001,   1,       2048) /* ItemType - Gem */
      , (604001,  16,     524296) /* ItemUseable - SourceContainedTargetContained */
      , (604001,  18,          4) /* UiEffects - BoostHealth */
      , (604001,  19,        500) /* Value */
-     , (604001,  33,          1) /* Bonded - Bonded */
      , (604001,  53,        101) /* PlacementPosition - Resting */
      , (604001,  93,       1044) /* PhysicsState - Ethereal, IgnoreCollisions, Gravity */
-     , (604001,  94,      33025) /* TargetType - WeaponOrCaster */
-     , (604001, 114,          1) /* Attuned - Attuned */;
+     , (604001,  94,      33025) /* TargetType - WeaponOrCaster */;
 
 INSERT INTO `weenie_properties_bool` (`object_Id`, `type`, `value`)
 VALUES (604001,  11, True ) /* IgnoreCollisions */
@@ -38,7 +36,7 @@ VALUES (604001,   1,   33556926) /* Setup */
 
 /* Lifestoned Changelog:
 {
-  "LastModified": "2023-08-09T18:22:25.4492788-07:00",
+  "LastModified": "2024-05-03T03:39:05.6579211-07:00",
   "ModifiedBy": "pourman",
   "Changelog": [],
   "UserChangeSummary": "Yotes PCAP. Adding quest line.",
