@@ -71,7 +71,7 @@ namespace ACE.Server.Managers
 
         public static WorldObject CreateOre(InstancedPosition position, uint tier = 1)
         {
-            if (ThreadSafeRandom.Next(1, 100) == 1)
+            if (ThreadSafeRandom.Next(1, 25) == 1)
             {
                 var ore = WorldObjectFactory.CreateNewWorldObject(603001);
 
