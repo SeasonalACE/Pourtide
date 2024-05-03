@@ -292,7 +292,8 @@ namespace ACE.Server.Features.Rifts
                 WorldManager.ThreadSafeTeleport((Player)player, position, false);
             }
 
-            SpawnHomeRiftPortalAsync(rift);
+            SpawnHomeToRiftPortalAsync(rift);
+            //SpawnRiftToHomePortalAsync(rift);
 
             var rifts = ActiveRifts.Values.ToList();
 
@@ -319,7 +320,7 @@ namespace ACE.Server.Features.Rifts
             return true;
         }
 
-        public static void SpawnHomeRiftPortalAsync(Rift rift)
+        private static void SpawnRiftToHomePortalAsync(Rift rift)
         {
             if (rift.DropPosition == null)
                 return;
@@ -333,13 +334,52 @@ namespace ACE.Server.Features.Rifts
 
                 var riftHomeDrop = new InstancedPosition(rift.DropPosition, RealmManager.ServerBaseRealmInstance);
 
-                var portal = WorldObjectFactory.CreateNewWorldObject(600004);
+                Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
                 portal.Name = $"Rift Portal {rift.Name}";
                 portal.Location = new InstancedPosition(riftHomeDrop);
 
                 var dest = new InstancedPosition(rift.DropPosition, rift.Instance);
 
                 portal.Destination = new InstancedPosition(dest).AsLocalPosition();
+                portal.IsEphemeralRealmPortal = true;
+                portal.EphemeralRealmPortalInstanceID = rift.Instance;
+                portal.Lifespan = int.MaxValue;
+
+                var name = "Portal to " + rift.Name;
+                portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
+                portal.ObjScale *= 0.25f;
+
+                rift.RiftPortals.Add(portal);
+
+                portal.EnterWorld();
+            });
+            chain.EnqueueChain();
+            throw new NotImplementedException();
+        }
+
+        public static void SpawnHomeToRiftPortalAsync(Rift rift)
+        {
+            if (rift.DropPosition == null)
+                return;
+
+            var landblock = LandblockManager.GetLandblock(rift.LandblockInstance.Id, RealmManager.ServerBaseRealmInstance, null, false);
+            var chain = new ActionChain();
+            chain.AddDelaySeconds(5);
+
+            chain.AddAction(landblock, () =>
+            {
+
+                var riftHomeDrop = new InstancedPosition(rift.DropPosition, RealmManager.ServerBaseRealmInstance);
+
+                Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
+                portal.Name = $"Rift Portal {rift.Name}";
+                portal.Location = new InstancedPosition(riftHomeDrop);
+
+                var dest = new InstancedPosition(rift.DropPosition, rift.Instance);
+
+                portal.Destination = new InstancedPosition(dest).AsLocalPosition();
+                portal.IsEphemeralRealmPortal = true;
+                portal.EphemeralRealmPortalInstanceID = rift.Instance;
                 portal.Lifespan = int.MaxValue;
 
                 var name = "Portal to " + rift.Name;
@@ -381,10 +421,12 @@ namespace ACE.Server.Features.Rifts
 
                     foreach (var wo in creatures)
                     {
-                        var portal = WorldObjectFactory.CreateNewWorldObject(600004);
+                        Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
                         portal.Name = $"Rift Portal {rift.Previous.Name}";
                         portal.Location = new InstancedPosition(wo.Location);
                         portal.Destination = rift.Previous.DropPosition.AsLocalPosition();
+                        portal.IsEphemeralRealmPortal = true;
+                        portal.EphemeralRealmPortalInstanceID = rift.Previous.Instance;
                         portal.Lifespan = int.MaxValue;
 
                         var name = "Portal to " + rift.Previous.Name;
@@ -429,10 +471,12 @@ namespace ACE.Server.Features.Rifts
                     log.Info($"Creatures Count {creatures.Count} in {rift.Name}");
                     foreach (var wo in creatures)
                     {
-                        var portal = WorldObjectFactory.CreateNewWorldObject(600004);
+                        Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
                         portal.Name = $"Rift Portal {rift.Next.Name}";
                         portal.Location = new InstancedPosition(wo.Location);
                         portal.Destination = rift.Next.DropPosition.AsLocalPosition();
+                        portal.IsEphemeralRealmPortal = true;
+                        portal.EphemeralRealmPortalInstanceID = rift.Next.Instance;
                         portal.Lifespan = int.MaxValue;
 
                         var name = "Portal to " + rift.Next.Name;
