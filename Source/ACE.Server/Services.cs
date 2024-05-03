@@ -27,6 +27,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Features.Xp;
+using ACE.Server.Features.Discord;
 
 namespace ACE.Server
 {
@@ -398,6 +399,8 @@ namespace ACE.Server
 
             log.Info("Initializing ModManager...");
             ModManager.Initialize();
+
+            DiscordChatBridge.Start();
 
             if (!PropertyManager.GetBool("world_closed", false).Item)
             {
