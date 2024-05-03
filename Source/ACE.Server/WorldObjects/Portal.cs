@@ -15,6 +15,7 @@ using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Features.Rifts;
 using System.Linq;
 using ACE.Server.Realms;
+using ACE.Entity.Enum.RealmProperties;
 
 namespace ACE.Server.WorldObjects
 {
@@ -59,18 +60,16 @@ namespace ACE.Server.WorldObjects
 
             if (RelativeDestination != null && Location != null && Destination == null)
             {
-                var relativeDestination = new Position(Location);
-                relativeDestination.Pos += new Vector3(RelativeDestination.PositionX, RelativeDestination.PositionY, RelativeDestination.PositionZ);
-                relativeDestination.Rotation = new Quaternion(RelativeDestination.RotationX, relativeDestination.RotationY, relativeDestination.RotationZ, relativeDestination.RotationW);
-                relativeDestination.LandblockId = new LandblockId(relativeDestination.GetCell());
-
-                UpdatePortalDestination(relativeDestination);
+                var relativeDestination = Location.AddPos(new Vector3(RelativeDestination.PositionX, RelativeDestination.PositionY, RelativeDestination.PositionZ));
+                relativeDestination = relativeDestination.SetRotation(new Quaternion(RelativeDestination.RotationX, relativeDestination.RotationY, relativeDestination.RotationZ, relativeDestination.RotationW));
+                relativeDestination = relativeDestination.SetLandblockId(new LandblockId(relativeDestination.GetCell()));
+                UpdatePortalDestination(relativeDestination.AsLocalPosition());
             }
 
             return true;
         }
 
-        public void UpdatePortalDestination(Position destination)
+        public void UpdatePortalDestination(LocalPosition destination)
         {
             Destination = destination;
 
@@ -90,7 +89,7 @@ namespace ACE.Server.WorldObjects
         public override void SetLinkProperties(WorldObject wo)
         {
             if (wo.IsLinkSpot)
-                SetPosition(PositionType.Destination, new Position(wo.Location));
+                Destination = wo.Location.AsLocalPosition();
         }
 
         public bool IsGateway { get => WeenieClassId == 1955; }
@@ -105,6 +104,10 @@ namespace ACE.Server.WorldObjects
 
         public virtual void OnCollideObject(Player player)
         {
+            // Must "use" Ephemeral Realm Portal Directly
+            if (IsEphemeralRealmPortal)
+                return;
+
             OnActivate(player);
         }
 
@@ -287,32 +290,47 @@ namespace ACE.Server.WorldObjects
 
 
 #endif
-
-            Position portalDest = null;
-
-            if (WeenieClassId == 600005) // if Rift Entry Portal
+            var portalDest = Destination.AsInstancedPosition(player, player.RealmRuleset.PortalInstanceSelectMode);
+            if (IsEphemeralRealmPortal)
             {
-                var rifts = RiftManager.ActiveRifts.Values.ToList();
-                if (rifts.Count <= 0)
+                if (EphemeralRealmPortalInstanceID.HasValue)
+                {
+                    Position.ParseInstanceID(EphemeralRealmPortalInstanceID.Value, out bool isEphemeralRealm, out ushort realmId, out _);
+                    if (!isEphemeralRealm)
+                    {
+                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Invalid Instance ID.", ChatMessageType.System));
+                        return;
+                    }
+                    if (realmId != player.HomeRealm)
+                    {
+                        // ephemeral realms may only be for the player's home realm until specifications exist for allowing cross-realm players to access to ephemeral realms
+                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"HomeRealm must be equal to summoner HomeRealm (this will be fixed eventually).", ChatMessageType.System));
+                        return;
+                    }
+
+                    var landblock = LandblockManager.GetEphemeralLandblockUnsafe(EphemeralRealmPortalInstanceID.Value);
+                    if (landblock == null)
+                    {
+                        player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Ephemeral instance not found (This may be an error).", ChatMessageType.System));
+                        return;
+                    }
+                    portalDest = new InstancedPosition(portalDest, landblock.Instance);
+                }
+                else
+                {
+                    player.Session.Network.EnqueueSend(new GameMessageSystemChat($"The instance attached to this portal no longer exists.", ChatMessageType.System));
+                    TimeToRot = 0;
                     return;
-
-                var roll = ThreadSafeRandom.Next(0, rifts.Count - 1);
-                var rift = rifts.GetRandom();
-                portalDest = new Position(rift.DropPosition);
-            } else if (WeenieClassId == 600004) // is Rift Link Portal
+                }
+            }
+            else if (this is HousePortal)
             {
-                portalDest = new Position(Destination);
-            } else
-            {
-                portalDest = new Position(Destination);
-                portalDest.SetToDefaultRealmInstance(Location.RealmID);
+                portalDest = Destination.AsInstancedPosition(player, PlayerInstanceSelectMode.Same);
             }
 
-            var isEphemeralRealm = portalDest.IsEphemeralRealm;
+            portalDest = AdjustDungeon(portalDest);
 
-            AdjustDungeon(portalDest);
-
-            WorldManager.ThreadSafeTeleport(player, portalDest, isEphemeralRealm, new ActionEventDelegate(() =>
+            WorldManager.ThreadSafeTeleport(player, portalDest, false, new ActionEventDelegate(() =>
             {
                 // If the portal just used is able to be recalled to,
                 // save the destination coordinates to the LastPortal character position save table

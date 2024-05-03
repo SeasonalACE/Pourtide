@@ -13,6 +13,7 @@ using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Network.Sequence;
 using ACE.Server.Network.Structure;
+using ACE.Server.Realms;
 
 namespace ACE.Server.WorldObjects
 {
@@ -155,7 +156,7 @@ namespace ACE.Server.WorldObjects
                 _ => 0u
             };
 
-            Session.Network.EnqueueSend(new GameEventSetTurbineChatChannels(Session, allegianceChannel, societyChannel));
+            Session.Network.EnqueueSend(new GameEventSetTurbineChatChannels(Session, new ObjectGuid(allegianceChannel).ClientGUID, societyChannel));
         }
 
         public void JoinTurbineChatChannel(string channelName)
@@ -301,10 +302,9 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Records where the client thinks we are, for use by physics engine later
         /// </summary>
-        public void SetRequestedLocation(Position pos, bool broadcast = true)
+        public void SetRequestedLocation(LocalPosition pos, bool broadcast = true)
         {
             RequestedLocation = pos;
-            RequestedLocation.Instance = Location.Instance;
             RequestedLocationBroadcast = broadcast;
         }
 

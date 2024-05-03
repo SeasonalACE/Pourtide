@@ -1,8 +1,10 @@
 using ACE.Entity;
 using ACE.Entity.Enum;
+using ACE.Entity.Enum.RealmProperties;
 using ACE.Server.Entity;
 using ACE.Server.Managers;
 using ACE.Server.Network;
+using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
 
 using System;
@@ -123,7 +125,7 @@ namespace ACE.Server.Command
             /// The resultant parsed Value (or the default value)
             /// </summary>
             public object Value { get; set; } = null;
-            public Position AsPosition => (Position)Value;
+            public LocalPosition AsPosition => (LocalPosition)Value;
             public Player AsPlayer => (Player)Value;
             public ulong AsULong => (ulong)Value;
             public long AsLong => (long)Value;
@@ -223,7 +225,7 @@ namespace ACE.Server.Command
                                 }
                                 break;
                             case ACECommandParameterType.Location:
-                                Position position = null;
+                                LocalPosition position = null;
                                 Match match = Regex.Match(parameterBlob, @"([\d\.]+[ns])[^\d\.]*([\d\.]+[ew])$", RegexOptions.IgnoreCase);
                                 if (match.Success)
                                 {
@@ -556,7 +558,7 @@ namespace ACE.Server.Command
         /// <param name="position">the resultant ACE.Entity.Position</param>
         /// <param name="startingElement">the first zero based element index of the 2 contiguous elements in the parameter array</param>
         /// <returns>the parsing was successful or not</returns>
-        public static bool TryParsePosition(Session session, string[] parameters, out string errorMessage, out Position position, int startingElement = 0)
+        public static bool TryParsePosition(Session session, string[] parameters, out string errorMessage, out LocalPosition position, int startingElement = 0)
         {
             errorMessage = string.Empty;
             position = null;
@@ -606,8 +608,10 @@ namespace ACE.Server.Command
 
             try
             {
-                position = new Position(new Vector2(coordEW, coordNS), session.Player.Location.Instance);
-                position.AdjustMapCoords();
+                position = new LocalPosition(new Position(new Vector2(coordEW, coordNS)))
+                    .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.Same)
+                    .AdjustMapCoords()
+                    .AsLocalPosition();
             }
             catch (Exception e)
             {

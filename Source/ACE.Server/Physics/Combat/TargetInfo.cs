@@ -17,11 +17,11 @@ namespace ACE.Server.Physics.Combat
     public class TargetInfo
     {
         public uint ContextID;
-        public uint ObjectID;
+        public ulong ObjectID;
         public float Radius;
         public double Quantum;
-        public Position TargetPosition;
-        public Position InterpolatedPosition;
+        public PhysicsPosition TargetPosition;
+        public PhysicsPosition InterpolatedPosition;
         public Vector3 InterpolatedHeading;
         public Vector3 Velocity;
         public TargetStatus Status;
@@ -29,7 +29,7 @@ namespace ACE.Server.Physics.Combat
 
         public TargetInfo() { }
 
-        public TargetInfo(uint contextID, uint objectID, float radius, double quantum)
+        public TargetInfo(uint contextID, ulong objectID, float radius, double quantum)
         {
             ContextID = contextID;
             ObjectID = objectID;
@@ -47,8 +47,8 @@ namespace ACE.Server.Physics.Combat
             ObjectID = info.ObjectID;
             Radius = info.Radius;
             Quantum = info.Quantum;
-            TargetPosition = new Position(info.TargetPosition);
-            InterpolatedPosition = new Position(info.InterpolatedPosition);
+            TargetPosition = new PhysicsPosition(info.TargetPosition);
+            InterpolatedPosition = new PhysicsPosition(info.InterpolatedPosition);
             InterpolatedHeading = info.InterpolatedHeading;
             Velocity = info.Velocity;
             Status = info.Status;

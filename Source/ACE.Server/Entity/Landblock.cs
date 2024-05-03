@@ -31,6 +31,7 @@ using ACE.Server.Realms;
 using ACE.Server.Mods;
 using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Features.Rifts;
+using ACE.Server.Network.GameMessages.Messages;
 
 namespace ACE.Server.Entity
 {
@@ -131,7 +132,7 @@ namespace ACE.Server.Entity
         /// <summary>
         /// Landblocks which have been inactive for this many seconds will be unloaded
         /// </summary>
-        public static readonly TimeSpan UnloadInterval = TimeSpan.FromMinutes(5);
+        public TimeSpan UnloadInterval => TimeSpan.FromMinutes(RealmRuleset.GetProperty(RealmPropertyInt.LandblockUnloadInterval));
 
 
         /// <summary>
@@ -198,7 +199,7 @@ namespace ACE.Server.Entity
             PhysicsLandblock = new Physics.Common.Landblock(cellLandblock, instance);
         }
 
-        public void Init(EphemeralRealm ephemeralRealm, bool reload = false)
+        public void Init(EphemeralRealm ephemeralRealm, bool reload = false, bool wait = false)
         {
             if (Instance == 0)
                 log.Error("Error: Loading Landblock with Instance ID = 0");
@@ -209,16 +210,41 @@ namespace ACE.Server.Entity
             if (!reload)
                 PhysicsLandblock.PostInit();
 
-            Task.Run(() =>
+            var loadAction = () =>
             {
-                CreateWorldObjects();
+                CreateWorldObjects(wait: wait);
+                SpawnDynamicShardObjects(wait: wait);
+                SpawnEncounters(wait: wait);
+            };
 
-                SpawnDynamicShardObjects();
+            // Waiting should only happen when running in tests project
+            if (wait)
+            {
+                loadAction.Invoke();
+                ProcessPendingWorldObjectAdditionsAndRemovals();
+            }
+            else
+                Task.Run(loadAction);
+        }
 
-                SpawnEncounters();
+        public void Reload()
+        {
+            var landblockId = Id.Raw | 0xFFFF;
+
+            foreach(var player in players)
+                player.Session.Network.EnqueueSend(new GameMessageSystemChat($"Reloading 0x{LongId:X16}", ChatMessageType.Broadcast));
+
+            DestroyAllNonPlayerObjects();
+            DatabaseManager.World.ClearCachedInstancesByLandblock(Id.Landblock);
+
+            // reload landblock
+            var actionChain = new ActionChain();
+            actionChain.AddDelayForOneTick();
+            actionChain.AddAction(this, () =>
+            {
+                Init(InnerRealmInfo, true);
             });
-
-            //LoadMeshes(objects);
+            actionChain.EnqueueChain();
         }
 
         private AppliedRuleset GetOrApplyRuleset(EphemeralRealm ephemeralRealm = null)
@@ -240,13 +266,13 @@ namespace ACE.Server.Entity
         /// Monster Locations, Generators<para />
         /// This will be called from a separate task from our constructor. Use thread safety when interacting with this landblock.
         /// </summary>
-        private void CreateWorldObjects()
+        private void CreateWorldObjects(bool wait = false)
         {
-            var objects = DatabaseManager.World.GetCachedInstancesByLandblock(Id.Landblock, RealmRuleset.Realm.Id);
-            var shardObjects = DatabaseManager.Shard.BaseDatabase.GetStaticObjectsByLandblock(Id.Landblock);
+            var objects = DatabaseManager.World.GetCachedInstancesByLandblock(Id.Landblock);
+            var shardObjects = DatabaseManager.Shard.BaseDatabase.GetStaticObjectsByLandblock(Id.Landblock, Instance);
             var factoryObjects = WorldObjectFactory.CreateNewWorldObjects(objects, shardObjects, null, Instance, RealmRuleset);
 
-            actionQueue.EnqueueAction(new ActionEventDelegate(() =>
+            var action = () =>
             {
                 // for mansion linking
                 var houses = new List<House>();
@@ -274,7 +300,7 @@ namespace ACE.Server.Entity
 
                     AddWorldObject(fo);
 
-                    fo.ActivateLinks(objects, shardObjects, RealmRuleset, parent);
+                    fo.ActivateLinks(objects, shardObjects, parent);
 
                     if (fo.PhysicsObj != null)
                         fo.PhysicsObj.Order = 0;
@@ -284,30 +310,39 @@ namespace ACE.Server.Entity
                 CreateWorldObjectsCompleted = true;
 
                 PhysicsLandblock.SortObjects();
-            }));
+            };
+
+            if (wait)
+                action.Invoke();
+            else
+                actionQueue.EnqueueAction(new ActionEventDelegate(action));
         }
 
         /// <summary>
         /// Corpses<para />
         /// This will be called from a separate task from our constructor. Use thread safety when interacting with this landblock.
         /// </summary>
-        private void SpawnDynamicShardObjects()
+        private void SpawnDynamicShardObjects(bool wait = false)
         {
             var dynamics = DatabaseManager.Shard.BaseDatabase.GetDynamicObjectsByLandblock(Id.Landblock, Instance);
             var factoryShardObjects = WorldObjectFactory.CreateWorldObjects(dynamics);
 
-            actionQueue.EnqueueAction(new ActionEventDelegate(() =>
+            var action = () =>
             {
                 foreach (var fso in factoryShardObjects)
                     AddWorldObject(fso);
-            }));
+            };
+            if (wait)
+                action.Invoke();
+            else
+                actionQueue.EnqueueAction(new ActionEventDelegate(action));
         }
 
         /// <summary>
         /// Spawns the semi-randomized monsters scattered around the outdoors<para />
         /// This will be called from a separate task from our constructor. Use thread safety when interacting with this landblock.
         /// </summary>
-        private void SpawnEncounters()
+        private void SpawnEncounters(bool wait = false)
         {
             // get the encounter spawns for this landblock
             var encounters = DatabaseManager.World.GetCachedEncountersByLandblock(Id.Landblock);
@@ -318,19 +353,19 @@ namespace ACE.Server.Entity
 
                 if (wo == null) continue;
 
-                actionQueue.EnqueueAction(new ActionEventDelegate(() =>
+                var action = () =>
                 {
                     var xPos = Math.Clamp(encounter.CellX * 24.0f, 0.5f, 191.5f);
                     var yPos = Math.Clamp(encounter.CellY * 24.0f, 0.5f, 191.5f);
 
-                    var pos = new Physics.Common.Position();
+                    var pos = new Physics.Common.PhysicsPosition();
                     pos.ObjCellID = (uint)(Id.Landblock << 16) | 1;
                     pos.Frame = new Physics.Animation.AFrame(new Vector3(xPos, yPos, 0), Quaternion.Identity);
                     pos.adjust_to_outside();
 
                     pos.Frame.Origin.Z = PhysicsLandblock.GetZ(pos.Frame.Origin);
 
-                    wo.Location = new Position(pos.ObjCellID, pos.Frame.Origin, pos.Frame.Orientation, Instance);
+                    wo.Location = new InstancedPosition(pos.ObjCellID, pos.Frame.Origin, pos.Frame.Orientation, Instance);
 
                     var sortCell = LScape.get_landcell(pos.ObjCellID, Instance) as SortCell;
                     if (sortCell != null && sortCell.has_building())
@@ -366,7 +401,12 @@ namespace ACE.Server.Entity
 
                     if (!AddWorldObject(wo))
                         wo.Destroy();
-                }));
+                };
+
+                if (wait)
+                    action.Invoke();
+                else
+                    actionQueue.EnqueueAction(new ActionEventDelegate(action));
             }
         }
 
@@ -917,7 +957,7 @@ namespace ACE.Server.Entity
 
             wo.CurrentLandblock = this;
 
-            wo.Location.Instance = Instance;
+            //wo.Location.Instance = Instance;
 
             if (wo.PhysicsObj == null)
                 wo.InitPhysicsObj();
@@ -1086,7 +1126,7 @@ namespace ACE.Server.Entity
             return worldObjects.Values.ToList();
         }
 
-        public WorldObject GetObject(uint objectId)
+        public WorldObject GetObject(ulong objectId)
         {
             return GetObject(new ObjectGuid(objectId));
         }
@@ -1116,10 +1156,22 @@ namespace ACE.Server.Entity
                 }
             }
 
+            if (guid.Instance == 0 && guid.IsStatic() && this.Instance != 0)
+            {
+                // ClientGUID 
+                var locatedObject = GetObject(new ObjectGuid(guid.ClientGUID, Instance));
+                if (locatedObject != null)
+                {
+                    log.Warn(@$"Landblock.GetObject was called with a static ClientGUID but found with a LongGuid ({locatedObject.Guid}).
+Object Type: {locatedObject.WeenieType}. Object Name: {locatedObject.Name}.
+Please report this to the ACRealms developer.");
+                    return locatedObject;
+                }
+            }
             return null;
         }
 
-        public WorldObject GetWieldedObject(uint objectGuid, bool searchAdjacents = true)
+        public WorldObject GetWieldedObject(ulong objectGuid, bool searchAdjacents = true)
         {
             return GetWieldedObject(new ObjectGuid(objectGuid), searchAdjacents); // todo fix
         }
@@ -1263,7 +1315,7 @@ namespace ACE.Server.Entity
         /// This is a rarely used method to broadcast network messages to all of the players within a landblock,
         /// and possibly the adjacent landblocks.
         /// </summary>
-        public void EnqueueBroadcast(ICollection<Player> excludeList, bool adjacents, Position pos = null, float? maxRangeSq = null, params GameMessage[] msgs)
+        public void EnqueueBroadcast(ICollection<Player> excludeList, bool adjacents, InstancedPosition pos = null, float? maxRangeSq = null, params GameMessage[] msgs)
         {
             var players = worldObjects.Values.OfType<Player>();
 
@@ -1416,6 +1468,42 @@ namespace ACE.Server.Entity
             else
                 SendEnvironSound(environChangeType);
         }
+
+        public bool IsEphemeral
+        {
+            get
+            {
+                Position.ParseInstanceID(Instance, out var isEphemeralRealm, out _, out _);
+                return isEphemeralRealm;
+            }
+        }
+
+        public ushort? WorldRealmID
+        {
+            get
+            {
+                if (IsEphemeral)
+                    return null;
+                Position.ParseInstanceID(Instance, out _, out var realmId, out _);
+                return realmId;
+            }
+        }
+
+        // Non-ephemeral realms may have up to 65536 instances per landblock
+        public ushort? ShortInstanceID
+        {
+            get
+            {
+                if (IsEphemeral)
+                    return null;
+                Position.ParseInstanceID(Instance, out _, out _, out var shortInstanceID);
+                return shortInstanceID;
+            }
+        }
+
+        public WorldRealm WorldRealm => WorldRealmID.HasValue ? RealmManager.GetRealm(WorldRealmID) : null;
+        public bool IsPrimaryForWorldRealm => ShortInstanceID == 0;
+        public bool IsHomeInstanceForPlayer(Player player) => IsPrimaryForWorldRealm && player.HomeRealm == WorldRealmID;
 
         public class RealmShortcuts
         {

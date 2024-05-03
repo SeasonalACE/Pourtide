@@ -24,6 +24,8 @@ using ACE.Server.Physics.Common;
 
 using Character = ACE.Database.Models.Shard.Character;
 using Position = ACE.Entity.Position;
+using ACE.Server.Realms;
+using ACE.Entity.Enum.RealmProperties;
 using ACE.Server.Factories;
 using ACE.Server.Features.Rifts;
 
@@ -162,7 +164,7 @@ namespace ACE.Server.Managers
             var loc = player.Location;
             // players should never log into an ephemeral realm
             if (loc != null && loc.IsEphemeralRealm)
-                player.Location = new Position(player.Sanctuary);
+                player.Location = player.Sanctuary.AsInstancedPosition(player, PlayerInstanceSelectMode.HomeRealm);
 
             session.SetPlayer(player);
 
@@ -219,38 +221,36 @@ namespace ACE.Server.Managers
             if (session.Player.Location == null)
             {
                 if (session.Player.Instantiation != null)
-                    session.Player.Location = new Position(session.Player.Instantiation);
+                    session.Player.Location = session.Player.Instantiation;
                 else
-                    session.Player.Location = new Position(0xA9B40019, 84, 7.1f, 94, 0, 0, -0.0784591f, 0.996917f, 0);  // ultimate fallback
+                    session.Player.Location = RealmManager.GetRealm(session.Player.HomeRealm).DefaultStartingLocation(session.Player);  // realm fallback
             }
 
-            var realm = RealmManager.GetRealm(session.Player.Location.RealmID);
-            if (realm == null)
-            {
-                var homerealm = RealmManager.GetRealm(session.Player.HomeRealm);
-                if (homerealm == null)
-                    homerealm = RealmManager.GetRealm(0);
-                var pos = new Position(session.Player.Location);
-                pos.SetToDefaultRealmInstance(homerealm.Realm.Id);
+            //var realm = RealmManager.GetRealm(session.Player.Location.RealmID);
+            //if (realm == null)
+            //{
+            //    var homerealm = RealmManager.GetRealm(session.Player.HomeRealm);
+            //    if (homerealm == null)
+            //        homerealm = RealmManager.GetRealm((ushort)ReservedRealm.@default);
+            //    var pos = new Position(session.Player.Location);
+            //    pos.SetToDefaultRealmInstance(homerealm.Realm.Id);
 
-                log.Error($"WorldManager.DoPlayerEnterWorld: failed to find realm {session.Player.Location.RealmID}, for player {session.Player.Name}, relocating to realm {homerealm.Realm.Id}.");
-                session.Player.Location = pos;
-            }
+            //    log.Error($"WorldManager.DoPlayerEnterWorld: failed to find realm {session.Player.Location.RealmID}, for player {session.Player.Name}, relocating to realm {homerealm.Realm.Id}.");
+            //    session.Player.Location = pos;
+            //}
             if (!session.Player.ValidatePlayerRealmPosition(session.Player.Location))
             {
                 var homerealm = RealmManager.GetRealm(session.Player.HomeRealm);
                 if (homerealm == null)
-                    homerealm = RealmManager.GetRealm(0);
-                var exitloc = session.Player.GetPosition(ACE.Entity.Enum.Properties.PositionType.EphemeralRealmExitTo);
-                if (exitloc != null)
+                    homerealm = RealmManager.GetRealm((ushort)ReservedRealm.@default);
+                if (session.Player.GetPosition(PositionType.EphemeralRealmExitTo) != null)
                 {
                     session.Network.EnqueueSend(new GameMessageSystemChat($"The instance you were in has expired and you have been transported outside!", ChatMessageType.System));
                     session.Player.ExitInstance();
                 }
                 else
                 {
-                    var pos = new Position(session.Player.Location);
-                    pos.SetToDefaultRealmInstance(homerealm.Realm.Id);
+                    var pos = session.Player.Location.AsLocalPosition().AsInstancedPosition(session.Player, PlayerInstanceSelectMode.HomeRealm);
                     session.Network.EnqueueSend(new GameMessageSystemChat($"You have been transported back to your home realm.", ChatMessageType.System));
                     log.Info($"WorldManager.DoPlayerEnterWorld: player {session.Player.Name} doesn't have permission to be in realm {session.Player.Location.RealmID}, relocating to realm {homerealm.Realm.Id}.");
                     session.Player.Location = pos;
@@ -259,7 +259,7 @@ namespace ACE.Server.Managers
 
             var olthoiPlayerReturnedToLifestone = session.Player.IsOlthoiPlayer && character.TotalLogins >= 1 && session.Player.LoginAtLifestone;
             if (olthoiPlayerReturnedToLifestone)
-                session.Player.Location = new Position(session.Player.Sanctuary);
+                session.Player.Location = session.Player.Sanctuary.AsInstancedPosition(session.Player, PlayerInstanceSelectMode.HomeRealm);
 
 
             session.Player.PlayerEnterWorld();
@@ -268,12 +268,12 @@ namespace ACE.Server.Managers
             if (!success)
             {
                 // send to lifestone, or fallback location
-                var fixLoc = session.Player.Sanctuary ?? new Position(0xA9B40019, 84, 7.1f, 94, 0, 0, -0.0784591f, 0.996917f, 0);
+                var fixLoc = (session.Player.Sanctuary ?? RealmManager.GetRealm(session.Player.HomeRealm).DefaultStartingLocation(session.Player).AsLocalPosition())
+                    .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.HomeRealm);
 
                 log.Error($"WorldManager.DoPlayerEnterWorld: failed to spawn {session.Player.Name}, relocating to {fixLoc.ToLOCString()}");
 
-
-                session.Player.Location = new Position(fixLoc);
+                session.Player.Location = fixLoc;
                 LandblockManager.AddObject(session.Player, true);
 
                 var actionChain = new ActionChain();
@@ -314,7 +314,7 @@ namespace ACE.Server.Managers
                 session.Network.EnqueueSend(new GameEventPopupString(session, AppendLines(popup_header, popup_motd)));
             }
 
-            var info = "Welcome to Asheron's Call\n  powered by ACEmulator\n\nFor more information on commands supported by this server, type @acehelp\n";
+            var info = "Welcome to Asheron's Call\n  powered by AC Realms\n\nFor more information on commands supported by this server, type @acehelp\n";
             session.Network.EnqueueSend(new GameMessageSystemChat(info, ChatMessageType.Broadcast));
 
             var server_motd = PropertyManager.GetString("server_motd").Item;
@@ -344,7 +344,7 @@ namespace ACE.Server.Managers
         /// Note that this work will be done on the next tick, not immediately, so be careful about your order of operations.
         /// If you must ensure order, pass your follow up work in with the argument actionToFollowUpWith. That work will be enqueued onto the Player.
         /// </summary>
-        public static void ThreadSafeTeleport(Player player, Position newPosition, bool teleportingFromInstance, IAction actionToFollowUpWith = null, bool fromPortal = false)
+        public static void ThreadSafeTeleport(Player player, InstancedPosition newPosition, bool teleportingFromInstance, IAction actionToFollowUpWith = null, bool fromPortal = false)
         {
             EnqueueAction(new ActionEventDelegate(() =>
             {

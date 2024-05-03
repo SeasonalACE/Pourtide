@@ -13,6 +13,7 @@ using ACE.Server.Factories;
 using ACE.Server.Managers;
 using ACE.Server.Physics.Common;
 using ACE.Server.WorldObjects;
+using ACE.Server.Realms;
 
 namespace ACE.Server.Entity
 {
@@ -26,9 +27,9 @@ namespace ACE.Server.Entity
         /// <summary>
         /// The id for the profile. This id will be either a GUID from Landblock_Instances or an incremental id based on profile order from biota entry. 
         /// </summary>
-        public uint Id;
+        public ulong Id;
 
-        public string LinkId => Id > 0x70000000 ? $"0x{Id:X8}" : $"{Id}";
+        public string LinkId => Id > 0x70000000 ? $"0x{Id:16}" : $"{Id}";
 
         /// <summary>
         /// The biota with all the generator profile info
@@ -39,7 +40,7 @@ namespace ACE.Server.Entity
         /// A list of objects that have been spawned by this generator
         /// Mapping of object guid => registry node, which provides a bunch of detailed info about the spawn
         /// </summary>
-        public readonly Dictionary<uint, WorldObjectInfo> Spawned = new Dictionary<uint, WorldObjectInfo>();
+        public readonly Dictionary<ulong, WorldObjectInfo> Spawned = new Dictionary<ulong, WorldObjectInfo>();
 
         /// <summary>
         /// The list of pending times awaiting respawning
@@ -344,7 +345,7 @@ namespace ACE.Server.Entity
                     log.Warn($"GeneratorProfile.AddWorldObject failed to Spawn(): failed to create wcid {Biota.WeenieClassId} Generator is null");
 
                 var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId, Generator.RealmRuleset);
-                wo.Location = new ACE.Entity.Position(Generator.Location);
+                wo.Location = new InstancedPosition(Generator.Location);
                 if (wo == null)
                 {
                     log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");
@@ -383,7 +384,7 @@ namespace ACE.Server.Entity
 
             // specific position
             if ((Biota.ObjCellId ?? 0) > 0)
-                obj.Location = new ACE.Entity.Position(Biota.ObjCellId ?? 0, Biota.OriginX ?? 0, Biota.OriginY ?? 0, Biota.OriginZ ?? 0, Biota.AnglesX ?? 0, Biota.AnglesY ?? 0, Biota.AnglesZ ?? 0, Biota.AnglesW ?? 0, Generator.Location.Instance);
+                obj.Location = new InstancedPosition(Biota.ObjCellId ?? 0, Biota.OriginX ?? 0, Biota.OriginY ?? 0, Biota.OriginZ ?? 0, Biota.AnglesX ?? 0, Biota.AnglesY ?? 0, Biota.AnglesZ ?? 0, Biota.AnglesW ?? 0, Generator.Location.Instance);
 
             // offset from generator location
             else
@@ -396,13 +397,13 @@ namespace ACE.Server.Entity
                     {
                         var rotate = new Quaternion(Biota.AnglesX ?? 0, Biota.AnglesY ?? 0, Biota.AnglesZ ?? 0, Biota.AnglesW ?? 0) * Generator.Location.Rotation;
 
-                        obj.Location = new ACE.Entity.Position(Generator.Location.Cell, Generator.Location.PositionX + offset.X, Generator.Location.PositionY + offset.Y, Generator.Location.PositionZ + offset.Z, rotate.X, rotate.Y, rotate.Z, rotate.W, Generator.Location.Instance);
+                        obj.Location = new InstancedPosition(Generator.Location.Cell, Generator.Location.PositionX + offset.X, Generator.Location.PositionY + offset.Y, Generator.Location.PositionZ + offset.Z, rotate.X, rotate.Y, rotate.Z, rotate.W, Generator.Location.Instance);
                     }
                     else
-                        obj.Location = new ACE.Entity.Position(Generator.Location.Cell, Generator.Location.PositionX + offset.X, Generator.Location.PositionY + offset.Y, Generator.Location.PositionZ + offset.Z, Biota.AnglesX ?? 0, Biota.AnglesY ?? 0, Biota.AnglesZ ?? 0, Biota.AnglesW ?? 0, Generator.Location.Instance);
+                        obj.Location = new InstancedPosition(Generator.Location.Cell, Generator.Location.PositionX + offset.X, Generator.Location.PositionY + offset.Y, Generator.Location.PositionZ + offset.Z, Biota.AnglesX ?? 0, Biota.AnglesY ?? 0, Biota.AnglesZ ?? 0, Biota.AnglesW ?? 0, Generator.Location.Instance);
                 }
                 else
-                    obj.Location = new ACE.Entity.Position(Generator.Location.Cell, Generator.Location.PositionX + Biota.OriginX ?? 0, Generator.Location.PositionY + Biota.OriginY ?? 0, Generator.Location.PositionZ + Biota.OriginZ ?? 0, Biota.AnglesX ?? 0, Biota.AnglesY ?? 0, Biota.AnglesZ ?? 0, Biota.AnglesW ?? 0, Generator.Location.Instance);
+                    obj.Location = new InstancedPosition(Generator.Location.Cell, Generator.Location.PositionX + Biota.OriginX ?? 0, Generator.Location.PositionY + Biota.OriginY ?? 0, Generator.Location.PositionZ + Biota.OriginZ ?? 0, Biota.AnglesX ?? 0, Biota.AnglesY ?? 0, Biota.AnglesZ ?? 0, Biota.AnglesW ?? 0, Generator.Location.Instance);
             }
 
             if (!VerifyLandblock(obj) || !VerifyWalkableSlope(obj))
@@ -414,7 +415,7 @@ namespace ACE.Server.Entity
         public bool Spawn_Scatter(WorldObject obj)
         {
             float genRadius = (float)(Generator.GetProperty(PropertyFloat.GeneratorRadius) ?? 0f);
-            obj.Location = new ACE.Entity.Position(Generator.Location);
+            obj.Location = new InstancedPosition(Generator.Location);
 
             // Skipping using same offset code above for offsetting scatter pos due to issues with rotation that were not expected at time content was rebuilt (Colo, others)
             // perhaps it should be same or similar but not able to spend time on verifying it out and making rotational adjustments at this time.
@@ -432,12 +433,10 @@ namespace ACE.Server.Entity
 
             if ((Biota.ObjCellId ?? 0) == 0) // if ObjCellId is specific, throw out that position (probably a linkable) and just use the generator's position else use the data as an offset. It is also possible that scatter always throws out all of it all cases.
             {
-                obj.Location.PositionX += Biota.OriginX ?? 0;
-                obj.Location.PositionY += Biota.OriginY ?? 0;
-                obj.Location.PositionZ += Biota.OriginZ ?? 0;
+                obj.Location = obj.Location.SetPositions(obj.Location.PositionX + Biota.OriginX ?? 0, obj.Location.PositionY + Biota.OriginY ?? 0, obj.Location.PositionZ + Biota.OriginZ ?? 0);
             }
 
-            obj.Location.PositionZ += 0.05f;
+            obj.Location = obj.Location.SetPositionZ(obj.Location.PositionZ + 0.05f);
 
             // we are going to delay this scatter logic until the physics engine,
             // where the remnants of this function are in the client (SetScatterPositionInternal)
@@ -445,7 +444,7 @@ namespace ACE.Server.Entity
             // this is due to each randomized position being required to go through the full InitialPlacement process, to verify success
             // if InitialPlacement fails, then we retry up to maxTries
 
-            obj.ScatterPos = new SetPosition(new Physics.Common.Position(obj.Location), SetPositionFlags.RandomScatter, genRadius, obj.Location.Instance);
+            obj.ScatterPos = new SetPosition(new Physics.Common.PhysicsPosition(obj.Location), SetPositionFlags.RandomScatter, genRadius, obj.Location.Instance);
 
             var success = obj.EnterWorld();
 
@@ -482,7 +481,7 @@ namespace ACE.Server.Entity
             // default location handler?
             //log.Debug($"{_generator.Name}.Spawn_Default({obj.Name}): default handler for RegenLocationType {RegenLocationType}");
 
-            obj.Location = new ACE.Entity.Position(Generator.Location);
+            obj.Location = new InstancedPosition(Generator.Location);
 
             return obj.EnterWorld();
         }

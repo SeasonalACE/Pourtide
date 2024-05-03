@@ -1,3 +1,4 @@
+using ACE.Entity;
 using System;
 
 namespace ACE.Server.Entity
@@ -7,15 +8,15 @@ namespace ACE.Server.Entity
     // (swapping dual wield weapons, swapping ammo types in combat)
     public class PutItemInContainerEvent
     {
-        public uint ItemGuid;
-        public uint ContainerGuid;
+        public ObjectGuid ItemGuid;
+        public ObjectGuid ContainerGuid;
         public int Placement;
 
         public DateTime Timestamp;
 
         public static TimeSpan Threshold = TimeSpan.FromSeconds(0.5f);
 
-        public PutItemInContainerEvent(uint itemGuid, uint containerGuid, int placement)
+        public PutItemInContainerEvent(ObjectGuid itemGuid, ObjectGuid containerGuid, int placement)
         {
             ItemGuid = itemGuid;
             ContainerGuid = containerGuid;

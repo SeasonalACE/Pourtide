@@ -165,7 +165,7 @@ namespace ACE.Server.WorldObjects
             landblock.DestroyAllNonPlayerObjects();
 
             // clear landblock cache
-            DatabaseManager.World.ClearCachedInstancesByLandblock(landblock.Id.Landblock, 0);
+            DatabaseManager.World.ClearCachedInstancesByLandblock(landblock.Id.Landblock);
 
             // reload landblock
             var actionChain = new ActionChain();
@@ -187,8 +187,7 @@ namespace ACE.Server.WorldObjects
             // possible acrealms related, a null reference exception is thrown sometimes?
             if (MoveToParams == null)
             {
-                log.Warn($"MoveToParams is null when it shouldn't be, investigate OnMoveComplete_MoveTo2, reloading landblock and logging location");
-                log.Warn($"AccountId = {Account.AccountId} Name = {Name} CurrentLandblock = {CurrentLandblock.Id} Location = {Location}");
+                log.Warn("MoveToParams is null when it shouldn't be, investigate OnMoveComplete_MoveTo2, reloading landblock");
                 // this is temporary fix, until it is determined why this is code block is happening
                 ReloadLandblock(Session);
                 return;

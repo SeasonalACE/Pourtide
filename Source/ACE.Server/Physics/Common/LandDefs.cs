@@ -109,15 +109,9 @@ namespace ACE.Server.Physics.Common
         public static readonly int HalfSquareLength = 12;
         public static readonly int SquareLength = 24;
 
-        public static List<float> LandHeightTable;
+        public static List<float> LandHeightTable; // Should be set immediately after DatManager initialize
 
-        static LandDefs()
-        {
-            if (DatManager.PortalDat != null)
-                LandHeightTable = DatManager.PortalDat.RegionDesc.LandDefs.LandHeightTable;
-        }
-
-        public static bool AdjustToOutside(Position pos)
+        public static bool AdjustToOutside(PhysicsPosition pos)
         {
             return AdjustToOutside(ref pos.ObjCellID, ref pos.Frame.Origin);
         }

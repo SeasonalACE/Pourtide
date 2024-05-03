@@ -48,6 +48,7 @@ namespace ACE.Entity.Enum.Properties
         /// <summary>
         /// Current Position
         /// </summary>
+        [Instanced]
         Location = 1,
 
         /// <summary>
@@ -58,6 +59,7 @@ namespace ACE.Entity.Enum.Properties
         /// <summary>
         /// Where will we pop into the world (?)
         /// </summary>
+        [Instanced]
         Instantiation = 3,
 
         /// <summary>
@@ -70,6 +72,7 @@ namespace ACE.Entity.Enum.Properties
         /// It's usually the position the object first spawned in at.
         /// </summary>
         [Ephemeral]
+        [Instanced]
         Home = 5,
 
         /// <summary>
@@ -80,6 +83,7 @@ namespace ACE.Entity.Enum.Properties
         /// <summary>
         /// The the position of target.
         /// </summary>
+        [Instanced]
         Target = 7,
 
         /// <summary>
@@ -175,6 +179,7 @@ namespace ACE.Entity.Enum.Properties
         /// <summary>
         /// Position data is relative to Location
         /// </summary>
+        [Instanced]
         RelativeDestination = 26,
 
         /// <summary>
@@ -186,6 +191,7 @@ namespace ACE.Entity.Enum.Properties
         PCAPRecordedLocation = 8040,
 
         [ServerOnly]
+        [Instanced]
         EphemeralRealmLastEnteredDrop = 42000,
 
         [ServerOnly]

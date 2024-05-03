@@ -15,6 +15,7 @@ using ACE.Server.Managers;
 using ACE.Server.Network.Structure;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Entity.Enum.RealmProperties;
 using ACE.Database;
 using ACE.Server.Features.Discord;
 using System.Text;
@@ -77,7 +78,7 @@ namespace ACE.Server.WorldObjects
                 Fellowship.OnDeath(this);
 
             // if the player's lifestone is in a different landblock, also broadcast their demise to that landblock
-            if (PropertyManager.GetBool("lifestone_broadcast_death").Item && Sanctuary != null && Location.InstancedLandblock != Sanctuary.InstancedLandblock)
+            if (PropertyManager.GetBool("lifestone_broadcast_death").Item && Sanctuary != null && Location.InstancedLandblock != SanctuaryEffective.InstancedLandblock)
             {
                 // ActionBroadcastKill might not work if other players around lifestone aren't aware of this player yet...
                 // this existing broadcast method is also based on the current visible objects to the player,
@@ -86,10 +87,10 @@ namespace ACE.Server.WorldObjects
 
                 // instead, we get all of the players in the lifestone landblock + adjacent landblocks,
                 // and possibly limit that to some radius around the landblock?
-                var lifestoneBlock = LandblockManager.GetLandblock(new LandblockId(Sanctuary.LandblockShort << 16 | 0xFFFF), Sanctuary.Instance, null, true);
+                var lifestoneBlock = LandblockManager.GetLandblock(new LandblockId(Sanctuary.LandblockShort << 16 | 0xFFFF), SanctuaryEffective.Instance, null, true);
 
                 // We enqueue the work onto the target landblock to ensure thread-safety. It's highly likely the lifestoneBlock is far away, and part of a different landblock group (and thus different thread).
-                lifestoneBlock.EnqueueAction(new ActionEventDelegate(() => lifestoneBlock.EnqueueBroadcast(excludePlayers, true, Sanctuary, LocalBroadcastRangeSq, broadcastMsg)));
+                lifestoneBlock.EnqueueAction(new ActionEventDelegate(() => lifestoneBlock.EnqueueBroadcast(excludePlayers, true, SanctuaryEffective, LocalBroadcastRangeSq, broadcastMsg)));
             }
 
             return deathMessage;
@@ -263,7 +264,7 @@ namespace ACE.Server.WorldObjects
         public void ThreadSafeTeleportOnDeath()
         {
             // teleport to sanctuary or best location
-            var newPosition = Sanctuary ?? Instantiation ?? Location;
+            var newPosition = Sanctuary.AsInstancedPosition(this, PlayerInstanceSelectMode.HomeRealm) ?? Instantiation ?? Location;
 
             WorldManager.ThreadSafeTeleport(this, newPosition, true, new ActionEventDelegate(() =>
             {
@@ -347,7 +348,7 @@ namespace ACE.Server.WorldObjects
 
             if (step < SuicideMessages.Count)
             {
-                EnqueueBroadcast(new GameMessageHearSpeech(SuicideMessages[step], GetNameWithSuffix(), Guid.Full, ChatMessageType.Speech), LocalBroadcastRange);
+                EnqueueBroadcast(new GameMessageHearSpeech(SuicideMessages[step], GetNameWithSuffix(), Guid.ClientGUID, ChatMessageType.Speech), LocalBroadcastRange);
 
                 var suicideChain = new ActionChain();
                 suicideChain.AddDelaySeconds(3.0f);
@@ -698,12 +699,12 @@ namespace ACE.Server.WorldObjects
             log.Debug(msg);
         }
 
-        public void TrackKill(uint killerId, uint victimId)
+        public void TrackKill(ulong killerId, ulong victimId)
         {
             DatabaseManager.Shard.BaseDatabase.TrackPkStatsKill(killerId, victimId);
         }
 
-        public bool UpdatePkTrophies(uint killerId, uint victimId)
+        public bool UpdatePkTrophies(ulong killerId, ulong victimId)
         {
 
             return DatabaseManager.Shard.BaseDatabase.UpdatePkTrophyCooldown(killerId, victimId);

@@ -29,7 +29,6 @@ using ACE.Server.Physics.Util;
 using ACE.Server.WorldObjects.Managers;
 
 using Landblock = ACE.Server.Entity.Landblock;
-using Position = ACE.Entity.Position;
 using ACE.Server.Realms;
 
 namespace ACE.Server.WorldObjects
@@ -201,7 +200,7 @@ namespace ACE.Server.WorldObjects
                 }
                 // TODO: REMOVE ME?
 
-                PhysicsObj = PhysicsObj.makeObject(setupTableId, Guid.Full, isDynamic);
+                PhysicsObj = PhysicsObj.makeObject(setupTableId, Guid.ClientGUID, isDynamic);
             }
             else
             {
@@ -230,7 +229,7 @@ namespace ACE.Server.WorldObjects
             if (PhysicsObj.CurCell != null)
                 return false;
 
-            AdjustDungeon(Location);
+            Location = AdjustDungeon(Location);
 
             // exclude linkspots from spawning
             if (WeenieClassId == 10762) return true;
@@ -245,7 +244,7 @@ namespace ACE.Server.WorldObjects
 
             PhysicsObj.Position.ObjCellID = cell.ID;
 
-            var location = new Physics.Common.Position();
+            var location = new Physics.Common.PhysicsPosition();
             location.ObjCellID = cell.ID;
             location.Frame.Origin = Location.Pos;
             location.Frame.Orientation = Location.Rotation;
@@ -263,22 +262,18 @@ namespace ACE.Server.WorldObjects
             //Console.WriteLine($"AddPhysicsObj: success: {Name} ({Guid})");
             SyncLocation();
 
-            SetPosition(PositionType.Home, new Position(Location));
+            Home = Location;
 
             return true;
         }
 
         public void SyncLocation()
         {
-            Location.LandblockId = new LandblockId(PhysicsObj.Position.ObjCellID);
+            Location = Location.SetLandblockId(new LandblockId(PhysicsObj.Position.ObjCellID));
 
             // skip ObjCellID check when updating from physics
             // TODO: update to newer version of ACE.Entity.Position
-            Location.PositionX = PhysicsObj.Position.Frame.Origin.X;
-            Location.PositionY = PhysicsObj.Position.Frame.Origin.Y;
-            Location.PositionZ = PhysicsObj.Position.Frame.Origin.Z;
-
-            Location.Rotation = PhysicsObj.Position.Frame.Orientation;
+            Location = Location.SetPositions(PhysicsObj.Position.Frame.Origin.X, PhysicsObj.Position.Frame.Origin.Y, PhysicsObj.Position.Frame.Origin.Z, PhysicsObj.Position.Frame.Orientation);
         }
 
         private void InitializePropertyDictionaries()
@@ -355,8 +350,8 @@ namespace ACE.Server.WorldObjects
 
             SightObj.State |= PhysicsState.Missile;
 
-            var startPos = new Physics.Common.Position(PhysicsObj.Position);
-            var targetPos = new Physics.Common.Position(wo.PhysicsObj.Position);
+            var startPos = new Physics.Common.PhysicsPosition(PhysicsObj.Position);
+            var targetPos = new Physics.Common.PhysicsPosition(wo.PhysicsObj.Position);
 
             if (PhysicsObj.GetBlockDist(startPos, targetPos) > 1)
                 return false;
@@ -384,7 +379,7 @@ namespace ACE.Server.WorldObjects
             return isVisible;
         }
 
-        public bool IsDirectVisible(Position pos)
+        public bool IsDirectVisible(InstancedPosition pos)
         {
             if (PhysicsObj == null)
                 return false;
@@ -393,8 +388,8 @@ namespace ACE.Server.WorldObjects
 
             SightObj.State |= PhysicsState.Missile;
 
-            var startPos = new Physics.Common.Position(PhysicsObj.Position);
-            var targetPos = new Physics.Common.Position(pos);
+            var startPos = new Physics.Common.PhysicsPosition(PhysicsObj.Position);
+            var targetPos = new Physics.Common.PhysicsPosition(pos);
 
             if (PhysicsObj.GetBlockDist(startPos, targetPos) > 1)
                 return false;
@@ -427,8 +422,8 @@ namespace ACE.Server.WorldObjects
             if (PhysicsObj == null || wo.PhysicsObj == null)
                 return false;
 
-            var startPos = new Physics.Common.Position(PhysicsObj.Position);
-            var targetPos = new Physics.Common.Position(wo.PhysicsObj.Position);
+            var startPos = new Physics.Common.PhysicsPosition(PhysicsObj.Position);
+            var targetPos = new Physics.Common.PhysicsPosition(wo.PhysicsObj.Position);
 
             PhysicsObj.ProjectileTarget = wo.PhysicsObj;
 
@@ -452,8 +447,8 @@ namespace ACE.Server.WorldObjects
             if (PhysicsObj == null || proj.PhysicsObj == null)
                 return false;
 
-            var startPos = new Physics.Common.Position(proj.PhysicsObj.Position);
-            var targetPos = new Physics.Common.Position(PhysicsObj.Position);
+            var startPos = new Physics.Common.PhysicsPosition(proj.PhysicsObj.Position);
+            var targetPos = new Physics.Common.PhysicsPosition(PhysicsObj.Position);
 
             // set to eye level
             targetPos.Frame.Origin.Z += PhysicsObj.GetHeight() - proj.PhysicsObj.GetHeight();
@@ -485,7 +480,7 @@ namespace ACE.Server.WorldObjects
 
         public MoveToState LastMoveToState { get; set; }
 
-        public Position RequestedLocation { get; set; }
+        public LocalPosition RequestedLocation { get; set; }
 
         /// <summary>
         /// Flag indicates if RequestedLocation should be broadcast to other players
@@ -512,8 +507,8 @@ namespace ACE.Server.WorldObjects
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine("ACE Debug Output:");
-            sb.AppendLine("ACE Class File: " + GetType().Name + ".cs");
+            sb.AppendLine("ACRealms Debug Output:");
+            sb.AppendLine("ACRealms Class File: " + GetType().Name + ".cs");
             sb.AppendLine("Guid: " + obj.Guid.Full + " (0x" + obj.Guid.Full.ToString("X") + ")");
 
             sb.AppendLine("----- Private Fields -----");
@@ -659,7 +654,7 @@ namespace ACE.Server.WorldObjects
             if (this is Creature creature)
                 healthPercentage = (float)creature.Health.Current / creature.Health.MaxValue;
 
-            var updateHealth = new GameEventUpdateHealth(examiner, Guid.Full, healthPercentage);
+            var updateHealth = new GameEventUpdateHealth(examiner, Guid.ClientGUID, healthPercentage);
             examiner.Network.EnqueueSend(updateHealth);
         }
 
@@ -677,7 +672,7 @@ namespace ACE.Server.WorldObjects
             if (success == 0) // according to retail PCAPs, if success = 0, mana = 0.
                 manaPercentage = 0;
 
-            var updateMana = new GameEventQueryItemManaResponse(examiner, Guid.Full, manaPercentage, success);
+            var updateMana = new GameEventQueryItemManaResponse(examiner, Guid.ClientGUID, manaPercentage, success);
             examiner.Network.EnqueueSend(updateMana);
         }
 
@@ -766,7 +761,7 @@ namespace ACE.Server.WorldObjects
                 return false;
 
             if (Generator != null)
-                Location.Instance = Generator.Location.Instance;
+                Location = new InstancedPosition(Location, Generator.Location.Instance);
 
             UpdateDurability(this, null);
 
@@ -785,49 +780,43 @@ namespace ACE.Server.WorldObjects
         }
 
         // todo: This should really be an extension method for Position, or a static method within Position or even AdjustPos
-        public static void AdjustDungeon(Position pos, uint? instance = null)
+        public static InstancedPosition AdjustDungeon(InstancedPosition pos)
         {
-            var iid = instance.GetValueOrDefault(pos.Instance);
-            if (iid == 0)
-                log.Error("AdjustDungeon: Instance ID is 0! Instance ID needs to be passed to this method if the position lacks an instance id.");
-
-            AdjustDungeonPos(pos, iid);
-            AdjustDungeonCells(pos, iid);
+            pos = AdjustDungeonPos(pos);
+            pos = AdjustDungeonCells(pos);
+            return pos;
         }
 
         // todo: This should really be an extension method for Position, or a static method within Position or even AdjustPos
-        public static bool AdjustDungeonCells(Position pos, uint iid)
+        public static InstancedPosition AdjustDungeonCells(InstancedPosition pos)
         {
-            if (pos == null) return false;
+            if (pos == null) return pos;
 
-            var landblock = LScape.get_landblock(pos.Cell, iid);
-            if (landblock == null || !landblock.HasDungeon) return false;
+            var landblock = LScape.get_landblock(pos.Cell, pos.Instance);
+            if (landblock == null || !landblock.HasDungeon) return pos;
 
             var dungeonID = pos.Cell >> 16;
 
-            var adjustCell = AdjustCell.Get(dungeonID, iid);
+            var adjustCell = AdjustCell.Get(dungeonID, pos.Instance);
             var cellID = adjustCell.GetCell(pos.Pos);
 
             if (cellID != null && pos.Cell != cellID.Value)
-            {
-                pos.LandblockId = new LandblockId(cellID.Value);
-                return true;
-            }
-            return false;
+                pos = pos.SetLandblockId(new LandblockId(cellID.Value));
+
+            return pos;
         }
 
         // todo: This should really be an extension method for Position, or a static method within Position, or even AdjustPos
-        public static bool AdjustDungeonPos(Position pos, uint iid)
+        public static InstancedPosition AdjustDungeonPos(InstancedPosition pos)
         {
-            if (pos == null) return false;
+            if (pos == null) return pos;
 
-            var landblock = LScape.get_landblock(pos.Cell, iid);
-            if (landblock == null || !landblock.HasDungeon) return false;
+            var landblock = LScape.get_landblock(pos.Cell, pos.Instance);
+            if (landblock == null || !landblock.HasDungeon) return pos;
 
             var dungeonID = pos.Cell >> 16;
 
-            var adjusted = AdjustPos.Adjust(dungeonID, pos);
-            return adjusted;
+            return AdjustPos.Adjust(dungeonID, pos);
         }
 
         /// <summary>

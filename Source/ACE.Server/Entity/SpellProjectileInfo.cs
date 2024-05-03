@@ -1,5 +1,6 @@
 using System.Numerics;
 using ACE.Entity;
+using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
 
 namespace ACE.Server.Entity
@@ -8,12 +9,12 @@ namespace ACE.Server.Entity
     {
         public SpellProjectile SpellProjectile;
 
-        public Position CasterPos;
-        public Position TargetPos;
+        public InstancedPosition CasterPos;
+        public InstancedPosition TargetPos;
 
         public Vector3? CachedVelocity;
 
-        public Physics.Common.Position StartPos;
+        public Physics.Common.PhysicsPosition StartPos;
 
         public SpellProjectileInfo(SpellProjectile spellProjectile)
         {
@@ -23,13 +24,13 @@ namespace ACE.Server.Entity
             SpellProjectile = spellProjectile;
 
             if (caster?.Location != null)
-                CasterPos = new Position(caster.Location);
+                CasterPos = new InstancedPosition(caster.Location);
 
             if (target?.Location != null)
-                TargetPos = new Position(target.Location);
+                TargetPos = new InstancedPosition(target.Location);
 
             if (spellProjectile.PhysicsObj.Position != null)
-                StartPos = new Physics.Common.Position(spellProjectile.PhysicsObj.Position);
+                StartPos = new Physics.Common.PhysicsPosition(spellProjectile.PhysicsObj.Position);
 
             CachedVelocity = target?.PhysicsObj.CachedVelocity;
         }

@@ -16,8 +16,6 @@ using ACE.Server.Managers;
 using ACE.Server.Network.Structure;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
-using ACE.Database.Models.Shard;
-using ACE.Database.Models.Shard;
 
 namespace ACE.Server.WorldObjects
 {
@@ -47,7 +45,7 @@ namespace ACE.Server.WorldObjects
         public HashSet<ObjectGuid> StorageAccess => Guests.Where(i => i.Value).Select(i => i.Key).ToHashSet();
         public WorldObject BootSpot => ChildLinks.FirstOrDefault(i => i.WeenieType == WeenieType.BootSpot);
 
-        public HousePortal HousePortal { get => ChildLinks.FirstOrDefault(l => l as HousePortal != null) as HousePortal;  }
+        public HousePortal HousePortal { get => ChildLinks.FirstOrDefault(l => l as HousePortal != null) as HousePortal; }
         public List<WorldObject> Linkspots => ChildLinks.Where(l => l.WeenieType == WeenieType.Generic && l.WeenieClassName.Equals("portaldestination")).ToList();
 
         /// <summary>
@@ -62,7 +60,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Restore a WorldObject from the database.
         /// </summary>
-        public House(ACE.Entity.Models.Biota biota) : base(biota)
+        public House(Biota biota) : base(biota)
         {
             InitializePropertyDictionaries();
             SetEphemeralValues();
@@ -71,7 +69,7 @@ namespace ACE.Server.WorldObjects
         private void InitializePropertyDictionaries()
         {
             if (Biota.HousePermissions == null)
-                Biota.HousePermissions = new Dictionary<uint, bool>();
+                Biota.HousePermissions = new Dictionary<ulong, bool>();
         }
 
         private void SetEphemeralValues()
@@ -90,7 +88,7 @@ namespace ACE.Server.WorldObjects
         public HouseData GetHouseData(IPlayer owner)
         {
             var houseData = new HouseData();
-            houseData.Position = Location;
+            houseData.Position = Location.GetPosition();
             houseData.Type = HouseType;
 
             if (SlumLord == null)
@@ -117,39 +115,35 @@ namespace ACE.Server.WorldObjects
             return houseData;
         }
 
-        public static House Load(uint houseGuid, ushort realmId, bool isBasement = false)
+        public static House Load(ObjectGuid houseGuid, bool isBasement = false)
         {
-            var landblock = (ushort)((houseGuid >> 12) & 0xFFFF);
-            var ruleset = RealmManager.GetRealm(realmId).StandardRules;
-            var instance = ruleset.GetDefaultInstanceID();
+            var landblock = houseGuid.StaticObjectLandblock.Value;
 
-            var biota = DatabaseManager.Shard.BaseDatabase.GetBiota(houseGuid);
-            var instances = DatabaseManager.World.GetCachedInstancesByLandblock(landblock, realmId);
+            var biota = DatabaseManager.Shard.BaseDatabase.GetBiota(houseGuid.Full);
+            var instances = DatabaseManager.World.GetCachedInstancesByLandblock(landblock);
 
             if (biota == null)
             {
                 if (instances != null)
                 {
-                    var houseInstance = instances.FirstOrDefault(h => h.Guid == houseGuid);
+                    var houseInstance = instances.FirstOrDefault(h => h.Guid == houseGuid.ClientGUID);
 
                     if (houseInstance != null)
                     {
                         var weenie = DatabaseManager.World.GetCachedWeenie(houseInstance.WeenieClassId);
-                        var objectGuid = new ObjectGuid(houseInstance.Guid);
+                        var objectGuid = new ObjectGuid(houseInstance.Guid, houseGuid.Instance.Value);
 
                         var newWorldObject = WorldObjectFactory.CreateWorldObject(weenie, objectGuid);
 
                         biota = ACE.Database.Adapter.BiotaConverter.ConvertFromEntityBiota(newWorldObject.Biota);
                     }
                 }
-            } else
-                ruleset = RealmManager.GetRealm(biota.GetPosition(PositionType.Location).RealmID).StandardRules;
+            }
 
-
-            var linkedHouses = WorldObjectFactory.CreateNewWorldObjects(instances, new List<ACE.Database.Models.Shard.Biota> { biota }, biota.WeenieClassId, instance, ruleset);
+            var linkedHouses = WorldObjectFactory.CreateNewWorldObjects(instances, new List<ACE.Database.Models.Shard.Biota> { biota }, biota.WeenieClassId, houseGuid.Instance.Value, RealmManager.DefaultRuleset);
 
             foreach (var linkedHouse in linkedHouses)
-                linkedHouse.ActivateLinks(instances, new List<ACE.Database.Models.Shard.Biota> { biota }, ruleset, linkedHouses[0]);
+                linkedHouse.ActivateLinks(instances, new List<ACE.Database.Models.Shard.Biota> { biota }, linkedHouses[0]);
 
             var house = (House)linkedHouses[0];
 
@@ -224,7 +218,12 @@ namespace ACE.Server.WorldObjects
             var house = this;
             if (CurrentLandblock != null && CurrentLandblock.HasDungeon && HouseType != HouseType.Apartment)
             {
-                var biota = DatabaseManager.Shard.BaseDatabase.GetBiotasByWcid(WeenieClassId).Where(bio => bio.BiotaPropertiesPosition.Count > 0).FirstOrDefault(b => b.BiotaPropertiesPosition.FirstOrDefault(p => p.PositionType == (ushort)PositionType.Location).ObjCellId >> 16 != Location.LandblockShort);
+                var biota = DatabaseManager.Shard.BaseDatabase.GetBiotasByWcid(WeenieClassId)
+                    .Where(bio => bio.BiotaPropertiesPosition.Count > 0)
+                    .Where(bio => bio.Id >= new ObjectGuid(0x70000000, CurrentLandblock.Instance).Full)
+                    .Where(bio => bio.Id <= new ObjectGuid(0x7FFFFFFF, CurrentLandblock.Instance).Full)
+                    .FirstOrDefault(b => b.BiotaPropertiesPosition
+                    .FirstOrDefault(p => p.PositionType == (ushort)PositionType.Location).ObjCellId >> 16 != Location.LandblockShort);
                 if (biota != null)
                 {
                     house = WorldObjectFactory.CreateWorldObject(biota) as House;
@@ -340,7 +339,7 @@ namespace ACE.Server.WorldObjects
 
             var housePermissions = Biota.CloneHousePermissions(BiotaDatabaseLock);
 
-            var deleted = new List<uint>();
+            var deleted = new List<ulong>();
 
             foreach (var kvp in housePermissions)
             {
@@ -471,25 +470,25 @@ namespace ACE.Server.WorldObjects
             }
         }
 
-        private uint? _dungeonHouseGuid;
+        private ObjectGuid? _dungeonHouseGuid;
 
-        public uint DungeonHouseGuid
+        public ObjectGuid? DungeonHouseGuid
         {
             get
             {
                 if (_dungeonHouseGuid == null)
                 {
                     if (DungeonLandblockID == 0)
-                        return 0;
+                        return null;
 
                     var landblock = (ushort)((DungeonLandblockID >> 16) & 0xFFFF);
 
                     var basementGuid = DatabaseManager.World.GetCachedBasementHouseGuid(landblock);
 
                     if (basementGuid == 0)
-                        return 0;
+                        return null;
 
-                    _dungeonHouseGuid = basementGuid;
+                    _dungeonHouseGuid = new ObjectGuid(basementGuid, Guid.Instance.Value);
 
                 }
                 return _dungeonHouseGuid.Value;
@@ -507,14 +506,13 @@ namespace ACE.Server.WorldObjects
         {
             get
             {
-
                 //if (HouseType == ACE.Entity.Enum.HouseType.Apartment || HouseType == ACE.Entity.Enum.HouseType.Cottage)
-                    //return this;
+                //return this;
 
-                var landblock = (ushort)((RootGuid.Full >> 12) & 0xFFFF);
-                var landblockId = new LandblockId((uint)(landblock << 16 | 0xFFFF));
-                var instance = Location.Instance;
-                var isLoaded = LandblockManager.IsLoaded(landblockId, instance);
+                var landblock = RootGuid.StaticObjectLandblock.Value;
+
+                var landblockId = new LandblockId(landblock);
+                var isLoaded = LandblockManager.IsLoaded(landblockId, RootGuid.Instance.Value);
 
                 if (!isLoaded)
                 {
@@ -523,10 +521,10 @@ namespace ACE.Server.WorldObjects
 
                     //return _rootHouse;  // return offline copy
                     // do not cache, in case permissions have changed
-                    return Load(RootGuid.Full, Location.RealmID);
+                    return Load(RootGuid);
                 }
-                   
-                var loaded = LandblockManager.GetLandblock(landblockId, instance, null, false);
+
+                var loaded = LandblockManager.GetLandblock(landblockId, RootGuid.Instance.Value, null, false);
                 return loaded.GetObject(RootGuid) as House;
             }
         }
@@ -539,8 +537,8 @@ namespace ACE.Server.WorldObjects
             {
                 if (_rootGuid == null)
                 {
-                    if (HouseCell.RootGuids.TryGetValue(Guid.Full, out var rootGuid))
-                        _rootGuid = new ObjectGuid(rootGuid);
+                    if (HouseCell.RootGuids.TryGetValue(Guid.ClientGUID, out var rootGuid))
+                        _rootGuid = new ObjectGuid(rootGuid, Guid.Instance.Value);
                     else
                     {
                         log.Error($"House.RootGuid - couldn't find root guid for house guid {Guid}");
@@ -562,43 +560,21 @@ namespace ACE.Server.WorldObjects
             return storage;
         }
 
-        /*public static House GetHouse(uint houseGuid)
-        {
-            var baseRealm = RealmManager.ServerBaseRealm;
-            var instance = baseRealm.StandardRules.GetDefaultInstanceID();
-
-            var landblock = (ushort)((houseGuid >> 12) & 0xFFFF);
-
-            var landblockId = new LandblockId((uint)(landblock << 16 | 0xFFFF));
-            var isLoaded = LandblockManager.IsLoaded(landblockId, instance);
-
-            if (!isLoaded)
-                return House.Load(houseGuid);
-
-            var loaded = LandblockManager.GetLandblock(landblockId, instance, null, false);
-            return loaded.GetObject(new ObjectGuid(houseGuid)) as House;
-        }*/
-
         public House GetDungeonHouse()
         {
             var landblockId = new LandblockId(DungeonLandblockID);
-            var instance = Location.Instance;
-            var realmId = Location.RealmID;
-            var isLoaded = LandblockManager.IsLoaded(landblockId, instance);
+            var isLoaded = LandblockManager.IsLoaded(landblockId, Guid.Instance.Value);
 
             if (!isLoaded)
-                return House.Load(DungeonHouseGuid, realmId, true);
+                return House.Load(DungeonHouseGuid.Value, true);
 
-            var loaded = LandblockManager.GetLandblock(landblockId, instance, null, false);
+            var loaded = LandblockManager.GetLandblock(landblockId, Guid.Instance.Value, null, false);
             var wos = loaded.GetWorldObjectsForPhysicsHandling();
             return wos.FirstOrDefault(wo => wo.WeenieClassId == WeenieClassId) as House;
         }
 
         public bool OnProperty(Player player)
         {
-            if (player.Location.RealmID != Location.RealmID)
-                return false;
-
             if (Location == null)
                 return false;
 
@@ -756,3 +732,4 @@ namespace ACE.Server.WorldObjects
         public int GetHookGroupMaxCount(HookGroupType hookGroupType) => HookGroupLimits[HouseType][hookGroupType];
     }
 }
+

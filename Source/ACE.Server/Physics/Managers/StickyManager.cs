@@ -10,9 +10,9 @@ namespace ACE.Server.Physics.Animation
 {
     public class StickyManager
     {
-        public uint TargetID;
+        public ulong TargetID;
         public float TargetRadius;
-        public Position TargetPosition;
+        public PhysicsPosition TargetPosition;
         public PhysicsObj PhysicsObj;
         public bool Initialized;
         public double StickyTimeoutTime;
@@ -70,7 +70,7 @@ namespace ACE.Server.Physics.Animation
             PhysicsObj = obj;
         }
 
-        public void StickTo(uint objectID, float targetRadius, float targetHeight)
+        public void StickTo(ulong objectID, float targetRadius, float targetHeight)
         {
             if (TargetID != 0)
                 ClearTarget();
@@ -101,7 +101,7 @@ namespace ACE.Server.Physics.Animation
             offset.Origin.Z = 0.0f;
 
             var radius = PhysicsObj.GetRadius();
-            var dist = Position.CylinderDistanceNoZ(radius, PhysicsObj.Position, TargetRadius, targetPosition) - StickyRadius;
+            var dist = PhysicsPosition.CylinderDistanceNoZ(radius, PhysicsObj.Position, TargetRadius, targetPosition) - StickyRadius;
 
             if (Vec.NormalizeCheckSmall(ref offset.Origin))
                 offset.Origin = Vector3.Zero;

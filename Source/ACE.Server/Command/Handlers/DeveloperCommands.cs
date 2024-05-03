@@ -35,6 +35,8 @@ using ACE.Server.WorldObjects.Entity;
 
 using Position = ACE.Entity.Position;
 using Spell = ACE.Server.Entity.Spell;
+using ACE.Server.Realms;
+using ACE.Entity.Enum.RealmProperties;
 
 namespace ACE.Server.Command.Handlers
 {
@@ -97,15 +99,13 @@ namespace ACE.Server.Command.Handlers
         [CommandHandler("nudge", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Correct player position cell ID after teleporting into black space.")]
         public static void HandleNudge(Session session, params string[] parameters)
         {
-            var pos = session.Player.GetPosition(PositionType.Location);
-            if (WorldObject.AdjustDungeonCells(pos, pos.Instance))
-            {
-                pos.PositionZ += 0.005000f;
-                var posReadable = PostionAsLandblocksGoogleSpreadsheetFormat(pos);
-                AdminCommands.HandleTeleportLOC(session, posReadable.Split(' '));
-                var positionMessage = new GameMessageSystemChat($"Nudge player to {posReadable}", ChatMessageType.Broadcast);
-                session.Network.EnqueueSend(positionMessage);
-            }
+            var pos = session.Player.Location;
+            pos = WorldObject.AdjustDungeonCells(pos);
+            pos = pos.SetPositionZ(pos.PositionZ + 0.005000f);
+            var posReadable = PostionAsLandblocksGoogleSpreadsheetFormat(pos);
+            AdminCommands.HandleTeleportLOC(session, posReadable.Split(' '));
+            var positionMessage = new GameMessageSystemChat($"Nudge player to {posReadable}", ChatMessageType.Broadcast);
+            session.Network.EnqueueSend(positionMessage);
         }
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace ACE.Server.Command.Handlers
         }
 
 
-        static string PostionAsLandblocksGoogleSpreadsheetFormat(Position pos)
+        static string PostionAsLandblocksGoogleSpreadsheetFormat(UsablePosition pos)
         {
             return $"0x{pos.Cell.ToString("X")} {pos.Pos.X} {pos.Pos.Y} {pos.Pos.Z} {pos.Rotation.W} {pos.Rotation.X} {pos.Rotation.Y} {pos.Rotation.Z}";
         }
@@ -254,7 +254,7 @@ namespace ACE.Server.Command.Handlers
                 if (parameters.Length > 1)
                     float.TryParse(parameters[1], out volume);
 
-                uint guid = session.Player.Guid.Full;
+                uint guid = session.Player.Guid.ClientGUID;
 
                 if (parameters.Length > 2)
                     uint.TryParse(parameters[2].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out guid);
@@ -338,11 +338,12 @@ namespace ACE.Server.Command.Handlers
 
             if (parameters.Length > 1)
             {
-                if (!uint.TryParse(parameters[1].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var guid))
+                if (!uint.TryParse(parameters[1].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var clientGuid))
                 {
                     ChatPacket.SendServerMessage(session, $"Invalid guid: {parameters[1]}", ChatMessageType.Broadcast);
                     return;
                 }
+                var guid = new ObjectGuid(clientGuid, session.Player.Location.Instance);
                 obj = session.Player.FindObject(guid, Player.SearchLocations.Everywhere);
                 if (obj == null)
                 {
@@ -395,11 +396,11 @@ namespace ACE.Server.Command.Handlers
 
             WorldObject loot = WorldObjectFactory.CreateNewWorldObject(trainingWandTarget);
             loot.Location = session.Player.Location.InFrontOf((loot.UseRadius ?? 2) > 2 ? loot.UseRadius.Value : 2);
-            loot.Location.LandblockId = new LandblockId(loot.Location.GetCell());
+            loot.Location = loot.Location.SetLandblockId(new LandblockId(loot.Location.GetCell()));
 
             loot.EnterWorld();
 
-            session.Player.HandleActionPutItemInContainer(loot.Guid.Full, session.Player.Guid.Full);
+            session.Player.HandleActionPutItemInContainer(loot.Guid, session.Player.Guid);
         }
 
         /// <summary>
@@ -483,7 +484,7 @@ namespace ACE.Server.Command.Handlers
         {
             //Not supported on AC Realms
             return;
-
+#pragma warning disable CS0162 // Unreachable code detected
             CommandHandlerHelper.WriteOutputInfo(session, "Loading landblocks. This will likely crash the server. Landblock resources will be loaded async and will continue to do work even after all landblocks have been loaded.");
 
             Task.Run(() =>
@@ -501,6 +502,7 @@ namespace ACE.Server.Command.Handlers
 
                 CommandHandlerHelper.WriteOutputInfo(session, "Loading landblocks completed. Async landblock resources are likely still loading...");
             });
+#pragma warning restore CS0162 // Unreachable code detected
         }
 
 
@@ -675,7 +677,8 @@ namespace ACE.Server.Command.Handlers
                 positionData[i] = position;
             }
 
-            session.Player.Teleport(new Position(cell, positionData[0], positionData[1], positionData[2], positionData[3], positionData[4], positionData[5], positionData[6], session.Player.Location.Instance));
+            session.Player.Teleport(new LocalPosition(cell, positionData[0], positionData[1], positionData[2], positionData[3], positionData[4], positionData[5], positionData[6])
+                .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.Same));
         }
 
         /// <summary>
@@ -733,7 +736,7 @@ namespace ACE.Server.Command.Handlers
                     if (positionType != PositionType.Undef)
                     {
                         // Create a new position from the current player location
-                        var playerPosition = new Position(session.Player.Location);
+                        var playerPosition = new InstancedPosition(session.Player.Location);
 
                         // Save the position
                         session.Player.SetPosition(positionType, playerPosition);
@@ -1615,7 +1618,7 @@ namespace ACE.Server.Command.Handlers
 
             newPos.SetPosition(newPos.Pos + offset);
 
-            session.Player.Teleport(newPos);
+            session.Player.Teleport(new LocalPosition(newPos).AsInstancedPosition(session.Player, PlayerInstanceSelectMode.Same));
 
             var globLastSpawnPos = lastSpawnPos.ToGlobal();
             var globNewPos = newPos.ToGlobal();
@@ -2122,7 +2125,7 @@ namespace ACE.Server.Command.Handlers
 
         public static void HandleTeleDungeonBlock(Session session, uint landblock)
         {
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join wpos in ctx.WeeniePropertiesPosition on weenie.ClassId equals wpos.ObjectId
@@ -2143,9 +2146,9 @@ namespace ACE.Server.Command.Handlers
                     return;
                 }
 
-                var pos = new Position(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW, session.Player.Location.Instance);
-                pos.SetToDefaultRealmInstance(session.Player.Location.RealmID);
-                WorldObject.AdjustDungeon(pos);
+                var pos = new LocalPosition(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW)
+                    .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.RealmDefaultInstanceID);
+                pos = WorldObject.AdjustDungeon(pos);
 
                 session.Player.Teleport(pos);
             }
@@ -2155,7 +2158,7 @@ namespace ACE.Server.Command.Handlers
         {
             var searchName = string.Join(" ", parameters);
 
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join wstr in ctx.WeeniePropertiesString on weenie.ClassId equals wstr.ObjectId
@@ -2178,9 +2181,9 @@ namespace ACE.Server.Command.Handlers
                     return;
                 }
 
-                var pos = new Position(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW, session.Player.Location.Instance);
-                pos.SetToDefaultRealmInstance(session.Player.Location.RealmID);
-                WorldObject.AdjustDungeon(pos);
+                var pos = new LocalPosition(dest.ObjCellId, dest.OriginX, dest.OriginY, dest.OriginZ, dest.AnglesX, dest.AnglesY, dest.AnglesZ, dest.AnglesW)
+                    .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.RealmDefaultInstanceID);
+                pos = WorldObject.AdjustDungeon(pos);
 
                 session.Player.Teleport(pos);
             }
@@ -2197,7 +2200,7 @@ namespace ACE.Server.Command.Handlers
             var blockStart = landblock << 16;
             var blockEnd = blockStart | 0xFFFF;
 
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join wstr in ctx.WeeniePropertiesString on weenie.ClassId equals wstr.ObjectId
@@ -3105,9 +3108,9 @@ namespace ACE.Server.Command.Handlers
             var angle = motionCommand.GetAimAngle().ToRadians();
             var zRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitX, angle);
 
-            wo.Location = new Position(session.Player.Location);
-            wo.Location.Pos = globalOrigin;
-            wo.Location.Rotation *= zRotation;
+            wo.Location = new InstancedPosition(session.Player.Location);
+            wo.Location = wo.Location.SetPos(globalOrigin);
+            wo.Location = wo.Location.SetRotation(wo.Location.Rotation * zRotation);
 
             session.Player.CurrentLandblock.AddWorldObject(wo);
 
@@ -3127,7 +3130,7 @@ namespace ACE.Server.Command.Handlers
             landblock.DestroyAllNonPlayerObjects();
 
             // clear landblock cache
-            DatabaseManager.World.ClearCachedInstancesByLandblock(landblock.Id.Landblock, 0);
+            DatabaseManager.World.ClearCachedInstancesByLandblock(landblock.Id.Landblock);
 
             // reload landblock
             var actionChain = new ActionChain();
@@ -3375,7 +3378,7 @@ namespace ACE.Server.Command.Handlers
                 CommandHandlerHelper.WriteOutputInfo(session, "Please enter a tier between 1-8");
                 return;
             }
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join deathTreasure in ctx.WeeniePropertiesDID on weenie.ClassId equals deathTreasure.ObjectId
@@ -3489,12 +3492,12 @@ namespace ACE.Server.Command.Handlers
 
             if (parameters.Length > 1)
             {
-                if (!uint.TryParse(parameters[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var targetGuid))
+                if (!uint.TryParse(parameters[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var targetClientGuid))
                 {
                     CommandHandlerHelper.WriteOutputInfo(session, $"Invalid target guid: {parameters[1]}");
                     return;
                 }
-
+                var targetGuid = new ObjectGuid(targetClientGuid, session.Player.Location.Instance);
                 attackTarget = session.Player.FindObject(targetGuid, Player.SearchLocations.Landblock) as Creature;
 
                 if (attackTarget == null)
@@ -3535,11 +3538,13 @@ namespace ACE.Server.Command.Handlers
         [CommandHandler("trywield", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 2)]
         public static void HandleTryWield(Session session, params string[] parameters)
         {
-            if (!uint.TryParse(parameters[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var itemGuid))
+            if (!uint.TryParse(parameters[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var itemClientGuid))
             {
                 CommandHandlerHelper.WriteOutputInfo(session, $"Invalid item guid {parameters[0]}", ChatMessageType.Broadcast);
                 return;
             }
+
+            var itemGuid = new ObjectGuid(itemClientGuid, session.Player.Location.Instance);
 
             var item = session.Player.FindObject(itemGuid, Player.SearchLocations.MyInventory);
 
@@ -3926,7 +3931,7 @@ namespace ACE.Server.Command.Handlers
 
             //session.Player.TryCastSpell(spell, target, tryResist: false);
 
-            session.Player.HandleActionUseWithTarget(guid, target.Guid.Full);
+            session.Player.HandleActionUseWithTarget(new ObjectGuid(guid, session.Player.Location.Instance), target.Guid);
         }
 
         [CommandHandler("portalstorm", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 1, "Tests starting a portal storm on yourself", "storm_level [0=Brewing, 1=Imminent, 2=Stormed, 3=Subsided]")]
@@ -3951,7 +3956,7 @@ namespace ACE.Server.Command.Handlers
                     session.Network.EnqueueSend(new GameEventPortalStorm(session));
 
                     // We're going to move the player to 0,0
-                    Position newPos = new Position(0x7F7F001C, 84, 84, 80, 0, 0, 0, 1, session.Player.Location.Instance);
+                    var newPos = new InstancedPosition(0x7F7F001C, 84, 84, 80, 0, 0, 0, 1, session.Player.Location.Instance);
                     session.Player.Teleport(newPos);
                     break;
                 case 3:

@@ -1,6 +1,5 @@
 using ACE.Common;
 using ACE.Database;
-using ACE.DatLoader.FileTypes;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Models;
@@ -9,24 +8,18 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
 using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Managers;
-using ACE.Server.Network;
-using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
 using log4net;
-using Microsoft.Cci.Pdb;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ACE.Server.Features.Rifts
 {
     internal class Rift : DungeonBase
     {
-        public Position DropPosition = null;
+        public InstancedPosition DropPosition = null;
         public double BonuxXp
         {
             get
@@ -55,7 +48,7 @@ namespace ACE.Server.Features.Rifts
 
         public uint Instance { get; set; } = 0;
 
-        public Rift(string landblock, string name, string coords, Position dropPosition, uint instance, Landblock ephemeralRealm, List<uint> creatureIds, uint tier) : base(landblock, name, coords)
+        public Rift(string landblock, string name, string coords, InstancedPosition dropPosition, uint instance, Landblock ephemeralRealm, List<uint> creatureIds, uint tier) : base(landblock, name, coords)
         {
             Landblock = landblock;
             Name = name;
@@ -110,7 +103,7 @@ namespace ACE.Server.Features.Rifts
 
         public static Dictionary<string, Rift> ActiveRifts = new Dictionary<string, Rift>();
 
-        public static Position RiftEntryPortal = Position.slocToPosition("0x00070104 [70.125999 -169.860001 -5.995000] 0.999909 0.000000 0.000000 0.013459 393216");
+        public static Position RiftEntryPortal = InstancedPosition.slocToPosition("0x00070104 [70.125999 -169.860001 -5.995000] 0.999909 0.000000 0.000000 0.013459 393216");
 
         public static void Close()
         {
@@ -187,11 +180,11 @@ namespace ACE.Server.Features.Rifts
             }
         }
 
-        public static List<WorldObject> GetDungeonObjectsFromPosition(Position position, ushort realmId)
+        public static List<WorldObject> GetDungeonObjectsFromPosition(InstancedPosition position)
         {
             var Id = new LandblockId(position.LandblockId.Raw);
 
-            var objects = DatabaseManager.World.GetCachedInstancesByLandblock(Id.Landblock, realmId);
+            var objects = DatabaseManager.World.GetCachedInstancesByLandblock(Id.Landblock);
             return objects.Select(link => WorldObjectFactory.CreateNewWorldObject(link.WeenieClassId)).ToList();
         }
 
@@ -205,9 +198,9 @@ namespace ACE.Server.Features.Rifts
                 .ToList();
         }
 
-        public static (uint, List<uint>) GetRiftCreatureIds(Position dropPosition, ushort realmId)
+        public static (uint, List<uint>) GetRiftCreatureIds(InstancedPosition dropPosition)
         {
-            var dungeonObjects = GetDungeonObjectsFromPosition(dropPosition, realmId);
+            var dungeonObjects = GetDungeonObjectsFromPosition(dropPosition);
 
             var generatorCreatureObjects = GetGeneratorCreaturesObjectsFromDungeon(dungeonObjects);
 
@@ -240,12 +233,9 @@ namespace ACE.Server.Features.Rifts
 
             var instance = ephemeralRealm.Instance;
 
-            var dropPosition = new Position(dungeon.DropPosition)
-            {
-                Instance = instance,
-            };
+            var dropPosition = new InstancedPosition(dungeon.DropPosition, instance);
 
-            var (tier, creatureIds) = GetRiftCreatureIds(dropPosition, 1016);
+            var (tier, creatureIds) = GetRiftCreatureIds(dropPosition);
 
             var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureIds, tier);
 
@@ -270,8 +260,8 @@ namespace ACE.Server.Features.Rifts
 
         private class DistanceComparer : IComparer<WorldObject>
         {
-            private Position Location;
-            public DistanceComparer(Position location)
+            private InstancedPosition Location;
+            public DistanceComparer(InstancedPosition location)
             {
                 Location = location;
             }
@@ -298,8 +288,7 @@ namespace ACE.Server.Features.Rifts
 
             foreach (var player in players)
             {
-                var position = new Position(player.Location);
-                position.Instance = rift.Instance;
+                var position = new InstancedPosition(player.Location, rift.Instance);
                 WorldManager.ThreadSafeTeleport((Player)player, position, false);
             }
 
@@ -342,17 +331,15 @@ namespace ACE.Server.Features.Rifts
             chain.AddAction(landblock, () =>
             {
 
-                var riftHomeDrop = new Position(rift.DropPosition);
-                riftHomeDrop.Instance = RealmManager.ServerBaseRealmInstance;
+                var riftHomeDrop = new InstancedPosition(rift.DropPosition, RealmManager.ServerBaseRealmInstance);
 
                 var portal = WorldObjectFactory.CreateNewWorldObject(600004);
                 portal.Name = $"Rift Portal {rift.Name}";
-                portal.Location = new Position(riftHomeDrop);
+                portal.Location = new InstancedPosition(riftHomeDrop);
 
-                var dest = new Position(rift.DropPosition);
-                dest.Instance = rift.Instance;
+                var dest = new InstancedPosition(rift.DropPosition, rift.Instance);
 
-                portal.Destination = new Position(dest);
+                portal.Destination = new InstancedPosition(dest).AsLocalPosition();
                 portal.Lifespan = int.MaxValue;
 
                 var name = "Portal to " + rift.Name;
@@ -396,8 +383,8 @@ namespace ACE.Server.Features.Rifts
                     {
                         var portal = WorldObjectFactory.CreateNewWorldObject(600004);
                         portal.Name = $"Rift Portal {rift.Previous.Name}";
-                        portal.Location = new Position(wo.Location);
-                        portal.Destination = rift.Previous.DropPosition;
+                        portal.Location = new InstancedPosition(wo.Location);
+                        portal.Destination = rift.Previous.DropPosition.AsLocalPosition();
                         portal.Lifespan = int.MaxValue;
 
                         var name = "Portal to " + rift.Previous.Name;
@@ -444,8 +431,8 @@ namespace ACE.Server.Features.Rifts
                     {
                         var portal = WorldObjectFactory.CreateNewWorldObject(600004);
                         portal.Name = $"Rift Portal {rift.Next.Name}";
-                        portal.Location = new Position(wo.Location);
-                        portal.Destination = rift.Next.DropPosition;
+                        portal.Location = new InstancedPosition(wo.Location);
+                        portal.Destination = rift.Next.DropPosition.AsLocalPosition();
                         portal.Lifespan = int.MaxValue;
 
                         var name = "Portal to " + rift.Next.Name;

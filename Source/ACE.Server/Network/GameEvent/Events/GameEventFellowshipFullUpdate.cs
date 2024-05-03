@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ACE.Server.Entity;
 using ACE.Server.Network.Structure;
 using ACE.Server.WorldObjects;
@@ -15,7 +16,7 @@ namespace ACE.Server.Network.GameEvent.Events
         {
             var fellowship = session.Player.Fellowship;
 
-            var fellows = fellowship.GetFellowshipMembers();
+            var fellows = fellowship.GetFellowshipMembers().ToDictionary(x => (uint)x.Key, x => x.Value);
 
             PackableHashTable.WriteHeader(Writer, fellows.Count, FellowComparer.NumBuckets);
 
@@ -27,7 +28,7 @@ namespace ACE.Server.Network.GameEvent.Events
             }
 
             Writer.WriteString16L(fellowship.FellowshipName);
-            Writer.Write(fellowship.FellowshipLeaderGuid);
+            Writer.WriteGuid(new ACE.Entity.ObjectGuid(fellowship.FellowshipLeaderGuid));
             Writer.Write(Convert.ToUInt32(fellowship.ShareXP));
             Writer.Write(Convert.ToUInt32(fellowship.EvenShare));
             Writer.Write(Convert.ToUInt32(fellowship.Open));

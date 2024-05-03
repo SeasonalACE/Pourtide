@@ -9,8 +9,8 @@ namespace ACE.Database.Models.Shard
     public class PkTrophyCooldown
     {
         public uint TrophyCooldownId { get; set; }
-        public uint KillerId { get; set; }
-        public uint VictimId { get; set; }
+        public ulong KillerId { get; set; }
+        public ulong VictimId { get; set; }
         public DateTime CooldownEndTime { get; set; }
     }
 }

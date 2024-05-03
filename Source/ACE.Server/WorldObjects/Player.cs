@@ -69,8 +69,8 @@ namespace ACE.Server.WorldObjects
 
         public DateTime LastJumpTime;
 
-        public ACE.Entity.Position LastGroundPos;
-        public ACE.Entity.Position SnapPos;
+        public InstancedPosition LastGroundPos;
+        public InstancedPosition SnapPos;
 
         public ConfirmationManager ConfirmationManager;
 
@@ -281,11 +281,11 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Called when player presses the 'e' key to appraise an object
         /// </summary>
-        public void HandleActionIdentifyObject(uint objectGuid)
+        public void HandleActionIdentifyObject(ObjectGuid objectGuid)
         {
             //Console.WriteLine($"{Name}.HandleActionIdentifyObject({objectGuid:X8})");
 
-            if (objectGuid == 0)
+            if (objectGuid.ClientGUID == 0)
             {
                 // Deselect the formerly selected Target
                 //selectedTarget = ObjectGuid.Invalid;
@@ -299,16 +299,16 @@ namespace ACE.Server.WorldObjects
             if (wo == null)
             {
                 //log.Debug($"{Name}.HandleActionIdentifyObject({objectGuid:X8}): couldn't find object");
-                Session.Network.EnqueueSend(new GameEventIdentifyObjectResponse(Session, objectGuid));
+                Session.Network.EnqueueSend(new GameEventIdentifyObjectResponse(Session, objectGuid.ClientGUID));
                 return;
             }
 
             var currentTime = Time.GetUnixTime();
 
             // compare with previously requested appraisal target
-            if (objectGuid == RequestedAppraisalTarget)
+            if (objectGuid.Full == RequestedAppraisalTarget)
             {
-                if (objectGuid == CurrentAppraisalTarget)
+                if (objectGuid.Full == CurrentAppraisalTarget)
                 {
                     // continued success, rng roll no longer needed
                     Session.Network.EnqueueSend(new GameEventIdentifyObjectResponse(Session, wo, true));
@@ -325,7 +325,7 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
-            RequestedAppraisalTarget = objectGuid;
+            RequestedAppraisalTarget = objectGuid.Full;
             AppraisalRequestedTimestamp = currentTime;
 
             Examine(wo);
@@ -430,9 +430,9 @@ namespace ACE.Server.WorldObjects
                 hotspot.OnCollideObjectEnd(this);
         }
 
-        public void HandleActionQueryHealth(uint objectGuid)
+        public void HandleActionQueryHealth(ObjectGuid objectGuid)
         {
-            if (objectGuid == 0)
+            if (objectGuid.ClientGUID == 0)
             {
                 // Deselect the formerly selected Target
                 UpdateSelectedTarget(null);
@@ -477,9 +477,9 @@ namespace ACE.Server.WorldObjects
             }
         }
 
-        public void HandleActionQueryItemMana(uint itemGuid)
+        public void HandleActionQueryItemMana(ObjectGuid itemGuid)
         {
-            if (itemGuid == 0)
+            if (itemGuid.ClientGUID == 0)
             {
                 ManaQueryTarget = null;
                 return;
@@ -491,7 +491,7 @@ namespace ACE.Server.WorldObjects
             if (item != null)
                 item.QueryItemMana(Session);
 
-            ManaQueryTarget = itemGuid;
+            ManaQueryTarget = itemGuid.Full;
         }
 
 
@@ -815,7 +815,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         ///  Sends object description if the client requests it
         /// </summary>
-        public void HandleActionForceObjDescSend(uint itemGuid)
+        public void HandleActionForceObjDescSend(ObjectGuid itemGuid)
         {
             var wo = FindObject(itemGuid, SearchLocations.Everywhere);
             if (wo == null)
@@ -918,7 +918,7 @@ namespace ACE.Server.WorldObjects
         {
             if (!IsGagged)
             {
-                EnqueueBroadcast(new GameMessageHearSpeech(message, GetNameWithSuffix(), Guid.Full, ChatMessageType.Speech), LocalBroadcastRange, ChatMessageType.Speech);
+                EnqueueBroadcast(new GameMessageHearSpeech(message, GetNameWithSuffix(), Guid.ClientGUID, ChatMessageType.Speech), LocalBroadcastRange, ChatMessageType.Speech);
 
                 OnTalk(message);
             }
@@ -948,7 +948,7 @@ namespace ACE.Server.WorldObjects
         {
             if (!IsGagged)
             {
-                EnqueueBroadcast(new GameMessageEmoteText(Guid.Full, GetNameWithSuffix(), message), LocalBroadcastRange);
+                EnqueueBroadcast(new GameMessageEmoteText(Guid.ClientGUID, GetNameWithSuffix(), message), LocalBroadcastRange);
 
                 OnTalk(message);
             }
@@ -961,7 +961,7 @@ namespace ACE.Server.WorldObjects
             if (!IsGagged)
             {
                 if (!IsOlthoiPlayer || (IsOlthoiPlayer && NoOlthoiTalk))
-                    EnqueueBroadcast(new GameMessageSoulEmote(Guid.Full, Name, message), LocalBroadcastRange);
+                    EnqueueBroadcast(new GameMessageSoulEmote(Guid.ClientGUID, Name, message), LocalBroadcastRange);
 
                 OnTalk(message);
             }
@@ -990,7 +990,7 @@ namespace ACE.Server.WorldObjects
 
         public void HandleActionJump(JumpPack jump)
         {
-            StartJump = new ACE.Entity.Position(Location);
+            StartJump = new InstancedPosition(Location);
             //Console.WriteLine($"JumpPack: Velocity: {jump.Velocity}, Extent: {jump.Extent}");
 
             var strength = Strength.Current;

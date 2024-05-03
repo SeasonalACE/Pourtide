@@ -64,13 +64,13 @@ namespace ACE.Server.Managers
         public static AppliedRuleset DefaultRuleset { get; private set; }
 
 
-        public static void Initialize()
+        public static void Initialize(bool liveEnvironment = true)
         {
             RealmConverter.Initialize();
 
 
             SetupReservedRealms();
-           
+
             /* var results = DatabaseManager.World.GetAllRealms();
 
              foreach(var realm in results)
@@ -82,14 +82,18 @@ namespace ACE.Server.Managers
              }*/
 
             //Import-realms
-            DeveloperContentCommands.HandleImportRealms(null, null);
-            if (!ImportComplete)
-                throw new Exception("Import of realms.jsonc did not complete successfully.");
+            if (liveEnvironment)
+            {
+                DeveloperContentCommands.HandleImportRealms(null, null);
+                if (!ImportComplete)
+                    throw new Exception("Import of realms.jsonc did not complete successfully.");
 
-            HandleUpdateServerBaseRealm();
+                HandleUpdateServerBaseRealm();
 
-            log.Info($"The current ServerBaseRealm is {ServerBaseRealm.Realm.Id} - {ServerBaseRealm.Realm.Id}");
-            log.Info($"The current ServerBaseRealmInstance is {ServerBaseRealmInstance}");
+                log.Info($"The current ServerBaseRealm is {ServerBaseRealm.Realm.Id} - {ServerBaseRealm.Realm.Id}");
+                log.Info($"The current ServerBaseRealmInstance is {ServerBaseRealmInstance}");
+            }
+
         }
 
         public static void HandleUpdateServerBaseRealm()
@@ -212,6 +216,9 @@ namespace ACE.Server.Managers
         /// <returns></returns>
         internal static WorldRealm GetBaseRealm(Player player)
         {
+            // Always use the home realm for now
+            return GetRealm(player.HomeRealm);
+            /*
             //Hideouts will use the player's home realm
             if (player.Location.RealmID == (ushort)ReservedRealm.hideout)
                 return GetRealm(player.HomeRealm);
@@ -220,17 +227,17 @@ namespace ACE.Server.Managers
             if (!player.Location.IsEphemeralRealm)
                 return GetRealm(player.Location.RealmID);
 
-            return GetRealm(player.GetPosition(PositionType.EphemeralRealmExitTo)?.RealmID ?? player.HomeRealm);
+            return GetRealm(player.EphemeralRealmExitTo?.RealmID ?? player.HomeRealm);*/
         }
 
-        internal static Landblock GetNewEphemeralLandblock(ACE.Entity.LandblockId landblockId, List<ACE.Entity.Models.Realm> realmTemplates, bool permaload = false)
+        internal static Landblock GetNewEphemeralLandblock(ACE.Entity.LandblockId physicalLandblockId, List<ACE.Entity.Models.Realm> realmTemplates, bool permaload = false)
         {
             var baseRealm = RealmManager.ServerBaseRealm;
             EphemeralRealm ephemeralRealm;
             lock (realmsLock)
                 ephemeralRealm = EphemeralRealm.Initialize(baseRealm, realmTemplates);
-            var iid = LandblockManager.RequestNewInstanceID(true, ephemeralRealm.RulesetTemplate.Realm.Id, landblockId);
-            var landblock = LandblockManager.GetLandblock(landblockId, iid, ephemeralRealm, false, permaload);
+            var iid = LandblockManager.RequestNewEphemeralInstanceIDv1(ephemeralRealm.RulesetTemplate.Realm.Id);
+            var landblock = LandblockManager.GetLandblock(physicalLandblockId, iid, ephemeralRealm, false, permaload);
 
             log.Info($"GetNewEphemeralLandblock created for base realm {baseRealm.Realm.Name}, realm ruleset {ephemeralRealm.RulesetTemplate.Realm.Id}, landcell {landblock.Id.Raw}, instance {iid}.");
             return landblock;
@@ -627,9 +634,17 @@ namespace ACE.Server.Managers
             player.SetProperty(PropertyInt.HomeRealm, realm.Realm.Id);
             player.SetProperty(PropertyBool.RecallsDisabled, false);
             var loc = realm.DefaultStartingLocation(player);
-            player.SetPosition(PositionType.Sanctuary, new ACE.Entity.Position(loc));
+            player.Sanctuary = loc.AsLocalPosition();
+            /*WorldManager.ThreadSafeTeleport(player, loc, false, new Entity.Actions.ActionEventDelegate(() =>
+            {
+                if (realm.StandardRules.GetProperty(RealmPropertyBool.IsDuelingRealm))
+                {
+                    DuelRealmHelpers.SetupNewCharacter(player);
+                }
+            }));*/
+            player.SetPosition(PositionType.Sanctuary, new InstancedPosition(loc));
             WorldManager.ThreadSafeTeleport(player, loc, false);
-            // Setting Home Realm End
+            //player.GrantXP((long)player.GetXPToNextLevel(10), XpType.Emote, ShareType.None);
         }
     }
 }

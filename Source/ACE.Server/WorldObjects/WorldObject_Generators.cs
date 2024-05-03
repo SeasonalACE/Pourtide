@@ -588,7 +588,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Called by ActivateLinks in WorldObject_Links for generators
         /// </summary>
-        public void AddGeneratorLinks(AppliedRuleset ruleset)
+        public void AddGeneratorLinks()
         {
             if (GeneratorProfiles == null || GeneratorProfiles.Count == 0)
             {
@@ -620,9 +620,8 @@ namespace ACE.Server.WorldObjects
                 GeneratorProfiles.Add(new GeneratorProfile(this, profile, link.Guid));
                 if (profile.Probability == -1)
                 {
-                    var creatureSpawnMultiplier = Convert.ToInt32(ruleset.GetProperty(RealmPropertyFloat.CreatureSpawnMultiplier));
                     InitCreate += profile.InitCreate;
-                    MaxCreate += profile.MaxCreate * (int)(creatureSpawnMultiplier);
+                    MaxCreate += profile.MaxCreate;
                 }
             }
         }
@@ -697,7 +696,7 @@ namespace ACE.Server.WorldObjects
             }
         }
 
-        public uint? GetStaticGuid(uint dynamicGuid)
+        public ulong? GetStaticGuid(ulong dynamicGuid)
         {
             foreach (var profile in GeneratorProfiles)
             {

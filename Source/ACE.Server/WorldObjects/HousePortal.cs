@@ -10,6 +10,7 @@ using ACE.Entity.Models;
 using ACE.Server.Entity;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Managers;
+using ACE.Server.Realms;
 
 namespace ACE.Server.WorldObjects
 {
@@ -83,12 +84,12 @@ namespace ACE.Server.WorldObjects
                     }
                 }
 
-                var destination = new Position(i.ObjCellId, new Vector3(i.OriginX, i.OriginY, i.OriginZ), new Quaternion(i.AnglesX, i.AnglesY, i.AnglesZ, i.AnglesW), instance);
+                var destination = new LocalPosition(i.ObjCellId, new Vector3(i.OriginX, i.OriginY, i.OriginZ), new Quaternion(i.AnglesX, i.AnglesY, i.AnglesZ, i.AnglesW));
 
-                wo.SetPosition(PositionType.Destination, destination);
+                wo.Destination = destination;
 
                 // set portal destination directly?
-                SetPosition(PositionType.Destination, destination);
+                Destination = destination;
             }
         }
 
@@ -140,7 +141,7 @@ namespace ACE.Server.WorldObjects
             // if house portal in dungeon,
             // set destination to outdoor house slumlord
             if (CurrentLandblock != null && CurrentLandblock.IsDungeon && Destination.LandblockId == CurrentLandblock.Id)
-                SetPosition(PositionType.Destination, new Position(House.RootHouse.SlumLord.Location));
+                Destination = House.RootHouse.SlumLord.Location.AsLocalPosition();
 
             base.ActOnUse(worldObject);
         }
