@@ -108,42 +108,50 @@ namespace ACE.Server.WorldObjects
             // Time to rot has elapsed, time to disappear...
             decayCompleted = true;
 
-            // If this is a player corpse, puke out the corpses contents onto the landblock
-            if (corpse != null && !corpse.IsMonster)
+            try
             {
-                var inventoryGUIDs = corpse.Inventory.Keys.ToList();
-
-                var pukedItems = "";
-
-                foreach (var guid in inventoryGUIDs)
+                // If this is a player corpse, puke out the corpses contents onto the landblock
+                if (corpse != null && !corpse.IsMonster)
                 {
-                    if (corpse.TryRemoveFromInventory(guid, out var item))
+                    var inventoryGUIDs = corpse.Inventory.Keys.ToList();
+
+                    var pukedItems = "";
+
+                    foreach (var guid in inventoryGUIDs)
                     {
-                        item.Location = corpse.Location.SetPositionZ(item.Location.PositionZ + 0.05f * (item.ObjScale ?? 1.0f));
-                        item.Placement = ACE.Entity.Enum.Placement.Resting; // This is needed to make items lay flat on the ground.
-                        CurrentLandblock.AddWorldObject(item);
-                        item.SaveBiotaToDatabase();
-                        pukedItems += $"{item.Name} (0x{item.Guid.Full.ToString("X8")}), ";
+                        if (corpse.TryRemoveFromInventory(guid, out var item))
+                        {
+                            item.Location = corpse.Location.SetPositionZ(item.Location.PositionZ + 0.05f * (item.ObjScale ?? 1.0f));
+                            item.Placement = ACE.Entity.Enum.Placement.Resting; // This is needed to make items lay flat on the ground.
+                            CurrentLandblock.AddWorldObject(item);
+                            item.SaveBiotaToDatabase();
+                            pukedItems += $"{item.Name} (0x{item.Guid.Full.ToString("X8")}), ";
+                        }
                     }
+
+                    if (pukedItems.EndsWith(", "))
+                        pukedItems = pukedItems.Substring(0, pukedItems.Length - 2);
+
+                    log.Debug($"[CORPSE] {corpse.Name} (0x{corpse.Guid.ToString()}) at {corpse.Location.ToLOCString()} has decayed{((pukedItems == "") ? "" : $" and placed the following items on the landblock: {pukedItems}")}.");
                 }
 
-                if (pukedItems.EndsWith(", "))
-                    pukedItems = pukedItems.Substring(0, pukedItems.Length - 2);
+                if (corpse != null)
+                {
+                    EnqueueBroadcast(new GameMessageScript(Guid, PlayScript.Destroy));
 
-                log.Debug($"[CORPSE] {corpse.Name} (0x{corpse.Guid.ToString()}) at {corpse.Location.ToLOCString()} has decayed{((pukedItems == "") ? "" : $" and placed the following items on the landblock: {pukedItems}")}.");
-            }
-
-            if (corpse != null)
+                    var actionChain = new ActionChain();
+                    actionChain.AddDelaySeconds(1.0f);
+                    actionChain.AddAction(this, () => Destroy());
+                    actionChain.EnqueueChain();
+                }
+                else
+                    Destroy();
+            } catch (Exception ex)
             {
-                EnqueueBroadcast(new GameMessageScript(Guid, PlayScript.Destroy));
-
-                var actionChain = new ActionChain();
-                actionChain.AddDelaySeconds(1.0f);
-                actionChain.AddAction(this, () => Destroy());
-                actionChain.EnqueueChain();
+                log.Error($"Error: corpse decay error");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
             }
-            else
-                Destroy();
         }
 
         public void DeleteObject(Container rootOwner = null)
