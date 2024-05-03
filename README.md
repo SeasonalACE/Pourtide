@@ -37,7 +37,53 @@ This realm inherits from the `Modern Realm`.
 
 * The `Custom\json\realms\rulesets` directory contains rulesets config files. Rulesets should be used for dungeon landblock instancing only. Rulesets are unique as they can be composed with other rulesets, and the values for certain rules can be applied with RNG values.
 
-Here is a `random-test` ruleset example:
+#### RealmProperty Enums
+
+These are shared by all realms, application-wide, and list the possible realm properties that can be used. If the property is in this list, it can be used in a realm definition.
+```C#
+    public enum RealmPropertyFloat : ushort
+    {
+        [RealmPropertyFloat(defaultValue: 0f, minValue: 0f, maxValue: 0f)]
+        Undef                          = 0,
+
+        // First param is the default, second is the min, third is the max.
+        [RealmPropertyFloat(1f, 0.1f, 5f)]
+        SpellCasting_MoveToState_UpdatePosition_Threshold = 1,
+
+        // If defaultFromServerProperty is defined, the corresponding property from PropertyManager (/fetchdouble in this case) will used in place of the default.
+        // If the server property with the given name is missing from the database, the defaultValue parameter will be used as a fallback. 
+        [RealmPropertyFloat(defaultFromServerProperty: "spellcast_max_angle", 20f, 0f, 360f)]
+        Spellcasting_Max_Angle = 2,
+        ...
+    }
+```
+
+## Known Issues
+
+- Housing is working, but not tested in full yet. Purchasing houses, abandoning houses, villa portals, villa storage have been tested. I haven't tried mansions, apartments, allegiance housing, booting, or permissions yet. I'm sure not everything works yet but it is just a matter of fixing minor things. The hard technical problems related to housing have already been solved, however.
+- Ruleset and realm files were originally intended to be updatable without a restart of the server, and a very early version of this project allowed it, but there were issues with caching. I still want to fix that because restarting the server is not convenient when experimenting with ideas for new rulesets.
+- The ruleset specification is complex and not covered by any unit tests. If you notice any unexpected behavior with rulesets, please report it!
+- landblock content files are global and cannot be defined on a realm by realm basis yet. This is something I've wanted to address for a very long time now but it hasn't been done yet because of priorities.
+
+## Developer notes
+
+Property IDs (ACE.Entity.Enum.Properties.PropertyXXX) from 42000-42999 are reserved by AC Realms Core. 
+
+Realm Property IDs (ACE.Entity.Enum.Properties.RealmPropertyXXX) from 0-9999 are reserved by AC Realms Core in a similar manner.
+
+If using this project in your own server, please do not add new properties with IDs in this range.
+
+## Contact
+
+`russellfannin0@gmail.com`
+
+Discord Link: https://discord.gg/pN65pYqZeS
+
+## License
+
+AGPL v3
+
+## Server Operator Guidelines
 
 ```json
 {

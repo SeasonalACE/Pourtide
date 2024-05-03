@@ -64,13 +64,13 @@ namespace ACE.Server.Managers
         public static AppliedRuleset DefaultRuleset { get; private set; }
 
 
-        public static void Initialize()
+        public static void Initialize(bool liveEnvironment = true)
         {
             RealmConverter.Initialize();
 
 
             SetupReservedRealms();
-           
+
             /* var results = DatabaseManager.World.GetAllRealms();
 
              foreach(var realm in results)
@@ -82,14 +82,18 @@ namespace ACE.Server.Managers
              }*/
 
             //Import-realms
-            DeveloperContentCommands.HandleImportRealms(null, null);
-            if (!ImportComplete)
-                throw new Exception("Import of realms.jsonc did not complete successfully.");
+            if (liveEnvironment)
+            {
+                DeveloperContentCommands.HandleImportRealms(null, null);
+                if (!ImportComplete)
+                    throw new Exception("Import of realms.jsonc did not complete successfully.");
 
-            HandleUpdateServerBaseRealm();
+                HandleUpdateServerBaseRealm();
 
-            log.Info($"The current ServerBaseRealm is {ServerBaseRealm.Realm.Id} - {ServerBaseRealm.Realm.Id}");
-            log.Info($"The current ServerBaseRealmInstance is {ServerBaseRealmInstance}");
+                log.Info($"The current ServerBaseRealm is {ServerBaseRealm.Realm.Id} - {ServerBaseRealm.Realm.Id}");
+                log.Info($"The current ServerBaseRealmInstance is {ServerBaseRealmInstance}");
+            }
+
         }
 
         public static void HandleUpdateServerBaseRealm()

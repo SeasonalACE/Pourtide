@@ -7,67 +7,71 @@ using System.Text.Json;
 using System.Threading;
 
 using ACE.Common;
+using ACE.Database;
 
 namespace ACE.Server
 {
-    partial class Program
+    partial class Services
     {
         private static void CheckForWorldDatabaseUpdate()
         {
             log.Info($"Automatic World Database Update not available for AC Realms.");
             return;
 
-            //log.Info($"Automatic World Database Update started...");
-            //try
-            //{
-            //    var worldDb = new Database.WorldDatabase();
-            //    var currentVersion = worldDb.GetVersion();
-            //    log.Info($"Current World Database version: Base - {currentVersion.BaseVersion} | Patch - {currentVersion.PatchVersion}");
+#pragma warning disable CS0162 // Unreachable code detected
+            log.Info($"Automatic World Database Update started...");
 
-            //    var url = "https://api.github.com/repos/ACEmulator/ACE-World-16PY-Patches/releases/latest";
+            try
+            {
+                var worldDb = DatabaseManager.World;
+                var currentVersion = worldDb.GetVersion();
+                log.Info($"Current World Database version: Base - {currentVersion.BaseVersion} | Patch - {currentVersion.PatchVersion}");
 
-            //    using var client = new WebClient();
-            //    var html = client.GetStringFromURL(url).Result;
-            //    var json = JsonSerializer.Deserialize<JsonElement>(html);
-            //    string tag = json.GetProperty("tag_name").GetString();
-            //    string dbURL = json.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
-            //    string dbFileName = json.GetProperty("assets")[0].GetProperty("name").GetString();
+                var url = "https://api.github.com/repos/ACEmulator/ACE-World-16PY-Patches/releases/latest";
 
-            //    if (currentVersion.PatchVersion != tag)
-            //    {
-            //        var patchVersionSplit = currentVersion.PatchVersion.Split(".");
-            //        var tagSplit = tag.Split(".");
+                using var client = new WebClient();
+                var html = client.GetStringFromURL(url).Result;
+                var json = JsonSerializer.Deserialize<JsonElement>(html);
+                string tag = json.GetProperty("tag_name").GetString();
+                string dbURL = json.GetProperty("assets")[0].GetProperty("browser_download_url").GetString();
+                string dbFileName = json.GetProperty("assets")[0].GetProperty("name").GetString();
 
-            //        int.TryParse(patchVersionSplit[0], out var patchMajor);
-            //        int.TryParse(patchVersionSplit[1], out var patchMinor);
-            //        int.TryParse(patchVersionSplit[2], out var patchBuild);
+                if (currentVersion.PatchVersion != tag)
+                {
+                    var patchVersionSplit = currentVersion.PatchVersion.Split(".");
+                    var tagSplit = tag.Split(".");
 
-            //        int.TryParse(tagSplit[0], out var tagMajor);
-            //        int.TryParse(tagSplit[1], out var tagMinor);
-            //        int.TryParse(tagSplit[2], out var tagBuild);
+                    int.TryParse(patchVersionSplit[0], out var patchMajor);
+                    int.TryParse(patchVersionSplit[1], out var patchMinor);
+                    int.TryParse(patchVersionSplit[2], out var patchBuild);
 
-            //        if (tagMajor > patchMajor || tagMinor > patchMinor || (tagBuild > patchBuild && patchBuild != 0))
-            //        {
-            //            log.Info($"Latest patch version is {tag} -- Update Required!");
-            //            UpdateToLatestWorldDatabase(dbURL, dbFileName);
-            //            var newVersion = worldDb.GetVersion();
-            //            log.Info($"Updated World Database version: Base - {newVersion.BaseVersion} | Patch - {newVersion.PatchVersion}");
-            //        }
-            //        else
-            //        {
-            //            log.Info($"Latest patch version is {tag} -- No Update Required!");
-            //        }
-            //    }
-            //    else
-            //    {
-            //        log.Info($"Latest patch version is {tag} -- No Update Required!");
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    log.Info($"Unable to continue with Automatic World Database Update due to the following error: {ex}");
-            //}
-            //log.Info($"Automatic World Database Update complete.");
+                    int.TryParse(tagSplit[0], out var tagMajor);
+                    int.TryParse(tagSplit[1], out var tagMinor);
+                    int.TryParse(tagSplit[2], out var tagBuild);
+
+                    if (tagMajor > patchMajor || tagMinor > patchMinor || (tagBuild > patchBuild && patchBuild != 0))
+                    {
+                        log.Info($"Latest patch version is {tag} -- Update Required!");
+                        UpdateToLatestWorldDatabase(dbURL, dbFileName);
+                        var newVersion = worldDb.GetVersion();
+                        log.Info($"Updated World Database version: Base - {newVersion.BaseVersion} | Patch - {newVersion.PatchVersion}");
+                    }
+                    else
+                    {
+                        log.Info($"Latest patch version is {tag} -- No Update Required!");
+                    }
+                }
+                else
+                {
+                    log.Info($"Latest patch version is {tag} -- No Update Required!");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Info($"Unable to continue with Automatic World Database Update due to the following error: {ex}");
+            }
+            log.Info($"Automatic World Database Update complete.");
+#pragma warning restore CS0162 // Unreachable code detected
         }
 
         private static void UpdateToLatestWorldDatabase(string dbURL, string dbFileName)

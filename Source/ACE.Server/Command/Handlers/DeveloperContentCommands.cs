@@ -128,7 +128,7 @@ namespace ACE.Server.Command.Handlers.Processors
             if (realms != null)
                 ImportJsonRealmsIndex(session, realms_index, realms);
 
-            session?.Network.EnqueueSend(new GameMessageSystemChat($"Synced {realms.Count} realms in {(DateTime.Now - now)}.", ChatMessageType.Broadcast));
+            session?.Network.EnqueueSend(new GameMessageSystemChat($"Synced {realms.Count} realms in {(DateTime.Now - now).TotalSeconds} seconds.", ChatMessageType.Broadcast));
         }
 
         private static List<RealmToImport> ImportJsonRealmsFromSubFolder(Session session, string json_folder)
@@ -155,9 +155,7 @@ namespace ACE.Server.Command.Handlers.Processors
             return list;
         }
 
-
-
-        private static List<RealmToImport> ImportJsonRealmsFolder(Session session, string json_folder)
+        public static List<RealmToImport> ImportJsonRealmsFolder(Session session, string json_folder)
         {
             var sep = Path.DirectorySeparatorChar;
             var json_folder_realm = $"{json_folder}{sep}realm{sep}";
@@ -169,14 +167,11 @@ namespace ACE.Server.Command.Handlers.Processors
 
             var list2 = ImportJsonRealmsFromSubFolder(session, json_folder_ruleset);
             if (list2 != null)
-            {
                 list.AddRange(list2);
-                return list;
-            }
-            return null;
+            return list;
         }
 
-        private static void ImportJsonRealmsIndex(Session session, string realmsIndexJsonFile, List<RealmToImport> realms)
+        public static void ImportJsonRealmsIndex(Session session, string realmsIndexJsonFile, List<RealmToImport> realms)
         {
             Dictionary<string, RealmToImport> realmsDict = null;
             Dictionary<ushort, RealmToImport> realmsById = new Dictionary<ushort, RealmToImport>();
@@ -1302,7 +1297,7 @@ namespace ACE.Server.Command.Handlers.Processors
             if (idx != -1)
                 sqlCommands = sqlCommands.Substring(0, idx);
 
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
                 ctx.Database.ExecuteSqlRaw(sqlCommands);
         }
 
@@ -1553,7 +1548,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 // handle special case: deleting the last instance from landblock
                 File.Delete(sqlFilename);
 
-                using (var ctx = new WorldDbContext())
+                using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
                     ctx.Database.ExecuteSqlRaw($"DELETE FROM landblock_instance WHERE landblock={landblock};");
             }
 
@@ -1795,7 +1790,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 // handle special case: deleting the last encounter from landblock
                 File.Delete(sqlFilename);
 
-                using (var ctx = new WorldDbContext())
+                using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
                     ctx.Database.ExecuteSqlRaw($"DELETE FROM encounter WHERE landblock={landblock};");
             }
 
@@ -2682,11 +2677,12 @@ namespace ACE.Server.Command.Handlers.Processors
 
             if (parameters.Length == 3)
             {
-                if (!uint.TryParse(parameters[curParam++].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var guid))
+                if (!uint.TryParse(parameters[curParam++].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var clientGuid))
                 {
                     session.Network.EnqueueSend(new GameMessageSystemChat($"Invalid guid: {parameters[0]}", ChatMessageType.Broadcast));
                     return;
                 }
+                var guid = new ObjectGuid(clientGuid, session.Player.Location.Instance);
 
                 obj = session.Player.FindObject(guid, Player.SearchLocations.Landblock);
 
@@ -2892,12 +2888,12 @@ namespace ACE.Server.Command.Handlers.Processors
 
             if (parameters.Length == 2)
             {
-                if (!uint.TryParse(parameters[curParam++].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var guid))
+                if (!uint.TryParse(parameters[curParam++].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var clientGuid))
                 {
                     session.Network.EnqueueSend(new GameMessageSystemChat($"Invalid guid: {parameters[0]}", ChatMessageType.Broadcast));
                     return;
                 }
-
+                var guid = new ObjectGuid(clientGuid, session.Player.Location.Instance);
                 obj = session.Player.FindObject(guid, Player.SearchLocations.Landblock);
 
                 if (obj == null)
@@ -3024,11 +3020,12 @@ namespace ACE.Server.Command.Handlers.Processors
 
             if (parameters.Length == 2)
             {
-                if (!uint.TryParse(parameters[curParam++].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var guid))
+                if (!uint.TryParse(parameters[curParam++].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var clientGuid))
                 {
                     session.Network.EnqueueSend(new GameMessageSystemChat($"Invalid guid: {parameters[0]}", ChatMessageType.Broadcast));
                     return;
                 }
+                var guid = new ObjectGuid(clientGuid, session.Player.Location.Instance);
 
                 obj = session.Player.FindObject(guid, Player.SearchLocations.Landblock);
 
@@ -3117,7 +3114,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 { "?", "" },
             };
 
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var weenies = ctx.Weenie.OrderBy(i => i.ClassId);
 

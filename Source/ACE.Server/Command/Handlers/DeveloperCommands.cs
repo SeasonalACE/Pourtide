@@ -338,11 +338,12 @@ namespace ACE.Server.Command.Handlers
 
             if (parameters.Length > 1)
             {
-                if (!uint.TryParse(parameters[1].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var guid))
+                if (!uint.TryParse(parameters[1].TrimStart("0x"), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var clientGuid))
                 {
                     ChatPacket.SendServerMessage(session, $"Invalid guid: {parameters[1]}", ChatMessageType.Broadcast);
                     return;
                 }
+                var guid = new ObjectGuid(clientGuid, session.Player.Location.Instance);
                 obj = session.Player.FindObject(guid, Player.SearchLocations.Everywhere);
                 if (obj == null)
                 {
@@ -483,7 +484,7 @@ namespace ACE.Server.Command.Handlers
         {
             //Not supported on AC Realms
             return;
-
+#pragma warning disable CS0162 // Unreachable code detected
             CommandHandlerHelper.WriteOutputInfo(session, "Loading landblocks. This will likely crash the server. Landblock resources will be loaded async and will continue to do work even after all landblocks have been loaded.");
 
             Task.Run(() =>
@@ -501,6 +502,7 @@ namespace ACE.Server.Command.Handlers
 
                 CommandHandlerHelper.WriteOutputInfo(session, "Loading landblocks completed. Async landblock resources are likely still loading...");
             });
+#pragma warning restore CS0162 // Unreachable code detected
         }
 
 
@@ -2123,7 +2125,7 @@ namespace ACE.Server.Command.Handlers
 
         public static void HandleTeleDungeonBlock(Session session, uint landblock)
         {
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join wpos in ctx.WeeniePropertiesPosition on weenie.ClassId equals wpos.ObjectId
@@ -2156,7 +2158,7 @@ namespace ACE.Server.Command.Handlers
         {
             var searchName = string.Join(" ", parameters);
 
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join wstr in ctx.WeeniePropertiesString on weenie.ClassId equals wstr.ObjectId
@@ -2198,7 +2200,7 @@ namespace ACE.Server.Command.Handlers
             var blockStart = landblock << 16;
             var blockEnd = blockStart | 0xFFFF;
 
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join wstr in ctx.WeeniePropertiesString on weenie.ClassId equals wstr.ObjectId
@@ -3376,7 +3378,7 @@ namespace ACE.Server.Command.Handlers
                 CommandHandlerHelper.WriteOutputInfo(session, "Please enter a tier between 1-8");
                 return;
             }
-            using (var ctx = new WorldDbContext())
+            using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
             {
                 var query = from weenie in ctx.Weenie
                             join deathTreasure in ctx.WeeniePropertiesDID on weenie.ClassId equals deathTreasure.ObjectId
@@ -3490,12 +3492,12 @@ namespace ACE.Server.Command.Handlers
 
             if (parameters.Length > 1)
             {
-                if (!uint.TryParse(parameters[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var targetGuid))
+                if (!uint.TryParse(parameters[1], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var targetClientGuid))
                 {
                     CommandHandlerHelper.WriteOutputInfo(session, $"Invalid target guid: {parameters[1]}");
                     return;
                 }
-
+                var targetGuid = new ObjectGuid(targetClientGuid, session.Player.Location.Instance);
                 attackTarget = session.Player.FindObject(targetGuid, Player.SearchLocations.Landblock) as Creature;
 
                 if (attackTarget == null)
@@ -3536,11 +3538,13 @@ namespace ACE.Server.Command.Handlers
         [CommandHandler("trywield", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 2)]
         public static void HandleTryWield(Session session, params string[] parameters)
         {
-            if (!uint.TryParse(parameters[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var itemGuid))
+            if (!uint.TryParse(parameters[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var itemClientGuid))
             {
                 CommandHandlerHelper.WriteOutputInfo(session, $"Invalid item guid {parameters[0]}", ChatMessageType.Broadcast);
                 return;
             }
+
+            var itemGuid = new ObjectGuid(itemClientGuid, session.Player.Location.Instance);
 
             var item = session.Player.FindObject(itemGuid, Player.SearchLocations.MyInventory);
 

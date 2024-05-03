@@ -12,7 +12,8 @@ using ACE.Entity.Enum;
 using System.Collections.Generic;
 using System;
 using System.Net;
-using ACE.Database.Models.Shard;
+using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ACE.Database
 {
@@ -20,13 +21,20 @@ namespace ACE.Database
     {
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+        protected IDbContextFactory<AuthDbContext> ContextFactory { get; }
+
+        public AuthenticationDatabase(IServiceProvider services)
+        {
+            ContextFactory = services.GetRequiredService<IDbContextFactory<AuthDbContext>>();
+        }
+
         public bool Exists(bool retryUntilFound)
         {
             var config = Common.ConfigManager.Config.MySql.Authentication;
 
             for (; ; )
             {
-                using (var context = new AuthDbContext())
+                using (var context = ContextFactory.CreateDbContext())
                 {
                     if (((RelationalDatabaseCreator)context.Database.GetService<IDatabaseCreator>()).Exists())
                     {
@@ -47,7 +55,7 @@ namespace ACE.Database
 
         public int GetAccountCount()
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
                 return context.Account.Count();
         }
 
@@ -64,7 +72,7 @@ namespace ACE.Database
             account.CreateTime = DateTime.UtcNow;
             account.CreateIP = address.GetAddressBytes();
 
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 context.Account.Add(account);
 
@@ -79,7 +87,7 @@ namespace ACE.Database
         /// </summary>
         public Account GetAccountById(uint accountId)
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 return context.Account
                     .AsNoTracking()
@@ -92,7 +100,7 @@ namespace ACE.Database
         /// </summary>
         public Account GetAccountByName(string accountName)
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 return context.Account
                     .AsNoTracking()
@@ -105,7 +113,7 @@ namespace ACE.Database
         /// </summary>
         public uint GetAccountIdByName(string accountName)
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 var result = context.Account
                     .AsNoTracking()
@@ -117,7 +125,7 @@ namespace ACE.Database
 
         public void UpdateAccount(Account account)
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 context.Entry(account).State = EntityState.Modified;
 
@@ -125,9 +133,18 @@ namespace ACE.Database
             }
         }
 
+        public void DeleteAccount(Account account)
+        {
+            using (var context = ContextFactory.CreateDbContext())
+            {
+                context.Entry(account).State = EntityState.Deleted;
+                context.SaveChanges();
+            }
+        }
+
         public bool UpdateAccountAccessLevel(uint accountId, AccessLevel accessLevel)
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 var account = context.Account
                     .First(r => r.AccountId == accountId);
@@ -145,7 +162,7 @@ namespace ACE.Database
 
         public List<string> GetListofAccountsByAccessLevel(AccessLevel accessLevel)
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 var results = context.Account
                     .AsNoTracking()
@@ -161,7 +178,7 @@ namespace ACE.Database
 
         public List<string> GetListofBannedAccounts()
         {
-            using (var context = new AuthDbContext())
+            using (var context = ContextFactory.CreateDbContext())
             {
                 var results = context.Account
                     .AsNoTracking()
