@@ -3,7 +3,7 @@
   "type": "Realm",
   "properties": {
     "Description": "The Customized Realm with the latest and greatest features.",
-    "CanBeHomeworld": true,
+    "CanBeHomeworld": false,
     "CanInteractWithNeutralZone": true,
     "HideoutEnabled": false
   }
