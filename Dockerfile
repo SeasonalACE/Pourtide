@@ -15,7 +15,7 @@ COPY ./Source/ACE.Entity/*.csproj ./ACE.Entity/
 COPY ./Source/ACE.Server/*.csproj ./ACE.Server/
 COPY ./Source/ACE.Server.Tests/*.csproj ./ACE.Server.Tests/
 
-RUN dotnet restore
+RUN dotnet restore ACE.sln
 
 # copy and publish app and libraries
 COPY . ../.
