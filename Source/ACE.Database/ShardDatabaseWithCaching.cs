@@ -117,7 +117,7 @@ namespace ACE.Database
             {
                 if (PlayerBiotaRetentionTime > TimeSpan.Zero)
                 {
-                    var context = new ShardDbContext();
+                    var context = ContextFactory.CreateDbContext();
 
                     var biota = GetBiota(context, id, doNotAddToCache); // This will add the result into the caches
 
@@ -126,7 +126,7 @@ namespace ACE.Database
             }
             else if (NonPlayerBiotaRetentionTime > TimeSpan.Zero)
             {
-                var context = new ShardDbContext();
+                var context = ContextFactory.CreateDbContext();
 
                 var biota = GetBiota(context, id, doNotAddToCache); // This will add the result into the caches
 
@@ -162,7 +162,7 @@ namespace ACE.Database
 
             // Biota does not exist in the cache
 
-            var context = new ShardDbContext();
+            var context = ContextFactory.CreateDbContext();
 
             var existingBiota = base.GetBiota(context, biota.Id);
 
