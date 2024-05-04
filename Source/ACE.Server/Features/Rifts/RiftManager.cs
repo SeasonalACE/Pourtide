@@ -281,19 +281,8 @@ namespace ACE.Server.Features.Rifts
 
             var rift = CreateRiftInstance(dungeon);
 
-            var lb = LandblockManager.GetLandblock(rift.LandblockInstance.Id, RealmManager.ServerBaseRealmInstance, null, false);
-            var objects = lb.GetAllWorldObjectsForDiagnostics();
-            var players = objects.Where(wo => wo is Player).ToList();
-
-
-            foreach (var player in players)
-            {
-                var position = new InstancedPosition(player.Location, rift.Instance);
-                WorldManager.ThreadSafeTeleport((Player)player, position, false);
-            }
-
             SpawnHomeToRiftPortalAsync(rift);
-            //SpawnRiftToHomePortalAsync(rift);
+            SpawnRiftToHomePortalAsync(rift);
 
             var rifts = ActiveRifts.Values.ToList();
 
@@ -320,42 +309,51 @@ namespace ACE.Server.Features.Rifts
             return true;
         }
 
-        private static void SpawnRiftToHomePortalAsync(Rift rift)
+        internal static void SpawnRiftToHomePortalAsync(Rift rift)
         {
             if (rift.DropPosition == null)
                 return;
 
-            var landblock = LandblockManager.GetLandblock(rift.LandblockInstance.Id, RealmManager.ServerBaseRealmInstance, null, false);
+            var landblock = rift.LandblockInstance;
             var chain = new ActionChain();
             chain.AddDelaySeconds(5);
 
             chain.AddAction(landblock, () =>
             {
 
-                var riftHomeDrop = new InstancedPosition(rift.DropPosition, RealmManager.ServerBaseRealmInstance);
+                if (!landblock.CreateWorldObjectsCompleted)
+                {
+                    SpawnRiftToHomePortalAsync(rift);
+                    return;
+                }
 
-                Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
-                portal.Name = $"Rift Portal {rift.Name}";
-                portal.Location = new InstancedPosition(riftHomeDrop);
+                List<WorldObject> creatures;
 
-                var dest = new InstancedPosition(rift.DropPosition, rift.Instance);
+                creatures = FindRandomCreatures(rift);
 
-                portal.Destination = new InstancedPosition(dest).AsLocalPosition();
-                portal.IsEphemeralRealmPortal = true;
-                portal.EphemeralRealmPortalInstanceID = rift.Instance;
-                portal.Lifespan = int.MaxValue;
+                foreach (var wo in creatures.Skip(3).ToList())
+                {
+                    Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
+                    portal.Name = $"Dungeon Portal {rift.Name}";
+                    portal.Location = new InstancedPosition(wo.Location);
+                    portal.Destination = new InstancedPosition(wo.Location, wo.Location.Instance).AsLocalPosition();
+                    portal.Lifespan = int.MaxValue;
 
-                var name = "Portal to " + rift.Name;
-                portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
-                portal.ObjScale *= 0.25f;
+                    var name = "Portal to " + rift.Name;
+                    portal.SetProperty(ACE.Entity.Enum.Properties.PropertyString.AppraisalPortalDestination, name);
+                    portal.ObjScale *= 0.25f;
 
-                rift.RiftPortals.Add(portal);
-
-                portal.EnterWorld();
+                    log.Info($"Attempting to link dungeon in rift {rift.Name}");
+                    if (portal.EnterWorld())
+                    {
+                        log.Info($"Added dungeon portal for rift {rift.Name}");
+                        return;
+                    }
+                }
             });
             chain.EnqueueChain();
-            throw new NotImplementedException();
         }
+
 
         public static void SpawnHomeToRiftPortalAsync(Rift rift)
         {
@@ -369,11 +367,11 @@ namespace ACE.Server.Features.Rifts
             chain.AddAction(landblock, () =>
             {
 
-                var riftHomeDrop = new InstancedPosition(rift.DropPosition, RealmManager.ServerBaseRealmInstance);
+                var toRiftDrop = new InstancedPosition(rift.DropPosition, RealmManager.ServerBaseRealmInstance);
 
                 Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
                 portal.Name = $"Rift Portal {rift.Name}";
-                portal.Location = new InstancedPosition(riftHomeDrop);
+                portal.Location = new InstancedPosition(toRiftDrop);
 
                 var dest = new InstancedPosition(rift.DropPosition, rift.Instance);
 
