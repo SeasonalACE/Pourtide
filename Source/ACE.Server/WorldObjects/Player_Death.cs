@@ -19,6 +19,7 @@ using ACE.Entity.Enum.RealmProperties;
 using ACE.Database;
 using ACE.Server.Features.Discord;
 using System.Text;
+using log4net;
 
 namespace ACE.Server.WorldObjects
 {
@@ -77,20 +78,28 @@ namespace ACE.Server.WorldObjects
             if (Fellowship != null)
                 Fellowship.OnDeath(this);
 
-            // if the player's lifestone is in a different landblock, also broadcast their demise to that landblock
-            if (PropertyManager.GetBool("lifestone_broadcast_death").Item && Sanctuary != null && Location.InstancedLandblock != SanctuaryEffective.InstancedLandblock)
+            try
             {
-                // ActionBroadcastKill might not work if other players around lifestone aren't aware of this player yet...
-                // this existing broadcast method is also based on the current visible objects to the player,
-                // and the player hasn't entered portal space or teleported back to the lifestone yet, so this doesn't work
-                //ActionBroadcastKill(nearbyMsg, Guid, lastDamager.Guid);
+                // if the player's lifestone is in a different landblock, also broadcast their demise to that landblock
+                if (PropertyManager.GetBool("lifestone_broadcast_death").Item && Sanctuary != null && Location.InstancedLandblock != SanctuaryEffective.InstancedLandblock)
+                {
+                    // ActionBroadcastKill might not work if other players around lifestone aren't aware of this player yet...
+                    // this existing broadcast method is also based on the current visible objects to the player,
+                    // and the player hasn't entered portal space or teleported back to the lifestone yet, so this doesn't work
+                    //ActionBroadcastKill(nearbyMsg, Guid, lastDamager.Guid);
 
-                // instead, we get all of the players in the lifestone landblock + adjacent landblocks,
-                // and possibly limit that to some radius around the landblock?
-                var lifestoneBlock = LandblockManager.GetLandblock(new LandblockId(Sanctuary.LandblockShort << 16 | 0xFFFF), SanctuaryEffective.Instance, null, true);
+                    // instead, we get all of the players in the lifestone landblock + adjacent landblocks,
+                    // and possibly limit that to some radius around the landblock?
+                    var lifestoneBlock = LandblockManager.GetLandblock(new LandblockId(Sanctuary.LandblockShort << 16 | 0xFFFF), SanctuaryEffective.Instance, null, true);
 
-                // We enqueue the work onto the target landblock to ensure thread-safety. It's highly likely the lifestoneBlock is far away, and part of a different landblock group (and thus different thread).
-                lifestoneBlock.EnqueueAction(new ActionEventDelegate(() => lifestoneBlock.EnqueueBroadcast(excludePlayers, true, SanctuaryEffective, LocalBroadcastRangeSq, broadcastMsg)));
+                    // We enqueue the work onto the target landblock to ensure thread-safety. It's highly likely the lifestoneBlock is far away, and part of a different landblock group (and thus different thread).
+                    lifestoneBlock.EnqueueAction(new ActionEventDelegate(() => lifestoneBlock.EnqueueBroadcast(excludePlayers, true, SanctuaryEffective, LocalBroadcastRangeSq, broadcastMsg)));
+                }
+            } catch (Exception ex)
+            {
+                log.Error($"Error: error OnPlayerDeath");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
             }
 
             return deathMessage;
