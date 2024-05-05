@@ -385,7 +385,8 @@ namespace ACE.Server.Command.Handlers
         /** Leadearboards/Stats End **/
 
         /** Player Utility Commands Start **/
-        [CommandHandler("ForceLogoffStuckCharacter", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Force log off of character that's stuck in game.  Is only allowed when initiated from a character that is on the same account as the target character.")]
+        [CommandHandler("fl", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Force log off of a character that's stuck in game. Is only allowed when initiated from a character that is on the same account as the target character.")]
+        [CommandHandler("ForceLogoffStuckCharacter", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Force log off of character that's stuck in game. Is only allowed when initiated from a character that is on the same account as the target character.")]
         public static void HandleForceLogoffStuckCharacter(Session session, params string[] parameters)
         {
             var playerName = "";
