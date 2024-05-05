@@ -647,6 +647,11 @@ namespace ACE.Entity.Enum.Properties
         [ServerOnly]
         CrossRealmPortalRealmID                 = 42006,
 
+        ItemGeneratedAtRealmID                  = 42007,
+        ItemLootedHomeRealmID                   = 42008,
+
+
+
 
         // Pourtide property IDs are reserved start with 60000-69999
 
@@ -663,7 +668,7 @@ namespace ACE.Entity.Enum.Properties
         CorpsePermitOpenTimestamp               = 60003,
 
         [ServerOnly]
-        ForgottenOreTier               = 60004
+        ForgottenOreTier                        = 60004
 
     }
 
