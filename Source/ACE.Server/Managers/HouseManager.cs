@@ -19,6 +19,7 @@ using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Network.Structure;
 using ACE.Server.WorldObjects;
 using ACE.Server.Realms;
+using ACE.Server.Features.Xp;
 
 namespace ACE.Server.Managers
 {
@@ -331,6 +332,8 @@ namespace ACE.Server.Managers
         /// </summary>
         public static void Tick()
         {
+            XpManager.Tick();
+
             if (updateHouseManagerRateLimiter.GetSecondsToWaitBeforeNextEvent() > 0)
                 return;
 
