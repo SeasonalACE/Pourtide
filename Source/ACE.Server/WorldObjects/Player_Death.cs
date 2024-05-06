@@ -20,6 +20,8 @@ using ACE.Database;
 using ACE.Server.Features.Discord;
 using System.Text;
 using log4net;
+using ACE.Server.Features.HotDungeons.Managers;
+using ACE.Server.Features.Rifts;
 
 namespace ACE.Server.WorldObjects
 {
@@ -125,7 +127,11 @@ namespace ACE.Server.WorldObjects
                 else
                 {
                     globalPKDe = $"{lastDamager.Name} has defeated {Name}!";
-                    if (!Location.Indoors)
+                    if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift ActiveRift))
+                        globalPKDe += $" The kill occured at Rift {ActiveRift.Name}";
+                    else if (DungeonManager.TryGetDungeonLandblock(Location.LandblockHex, out DungeonLandblock landblock))
+                        globalPKDe += $" The kill occured at Dungeon {landblock.Name}";
+                    else if (!Location.Indoors)
                         globalPKDe += $" The kill occured at {Location.GetMapCoordStr()}";
                 }
 
