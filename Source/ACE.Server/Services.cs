@@ -328,12 +328,9 @@ namespace ACE.Server
 
             if (ConfigManager.Config.Server.WorldDatabasePrecaching)
             {
-                for (var i = 0; i <= 6; i++)
-                {
-                    // load cache of mob ids
-                    DatabaseManager.World.GetDungeonCreatureWeenieIds((uint)i);
-                }
 
+                log.Info("Precaching Dungeon Creatures...");
+                DatabaseManager.World.CacheDungeonCreatures();
                 log.Info("Precaching Weenies...");
                 DatabaseManager.World.CacheAllWeenies();
                 log.Info("Precaching Cookbooks...");

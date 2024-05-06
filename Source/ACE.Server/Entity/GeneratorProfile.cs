@@ -14,6 +14,8 @@ using ACE.Server.Managers;
 using ACE.Server.Physics.Common;
 using ACE.Server.WorldObjects;
 using ACE.Server.Realms;
+using ACE.Server.Features.Rifts;
+using ACE.Common;
 
 namespace ACE.Server.Entity
 {
@@ -346,10 +348,20 @@ namespace ACE.Server.Entity
 
                 var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId, Generator.RealmRuleset);
                 wo.Location = new InstancedPosition(Generator.Location);
+
                 if (wo == null)
                 {
                     log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");
                     return null;
+                }
+
+                if (
+                    Generator.Location.RealmID == 1016 &&
+                    RiftManager.TryGetActiveRift(Generator.Location.LandblockHex, out Rift activeRift) &&
+                    wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator
+                    )
+                {
+                    wo = MutationsManager.ProcessRiftCreature(wo, activeRift);
                 }
 
                 if (Biota.PaletteId.HasValue && Biota.PaletteId > 0)

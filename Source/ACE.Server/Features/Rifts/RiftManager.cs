@@ -63,7 +63,7 @@ namespace ACE.Server.Features.Rifts
         public uint GetRandomCreature()
         {
             if (CreatureIds.Count == 0)
-                throw new Exception($"Errror: rift {Name} does not have any creatureIds assigned to it");
+                return 0;
 
             var randomIndex = ThreadSafeRandom.Next(0, CreatureIds.Count - 1);
             return CreatureIds[randomIndex];
@@ -216,7 +216,7 @@ namespace ACE.Server.Features.Rifts
             var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
 
             var creatureIds = creatureWeenieIds
-                .Where(c => c.Level <= averageLevel)
+                .Where(c => c.Level > averageLevel)
                 .Select(c => c.Id)
                 .ToList();
 

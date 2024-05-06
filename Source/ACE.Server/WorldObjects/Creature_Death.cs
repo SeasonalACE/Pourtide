@@ -164,18 +164,6 @@ namespace ACE.Server.WorldObjects
 
                 if (ore != null)
                     ore.EnterWorld();
-                else
-                {
-                    var riftCreatureChance = PropertyManager.GetLong("rift_creature_chance").Item;
-                    if (ThreadSafeRandom.Next(1, riftCreatureChance) == 1)
-                    {
-                        var riftCreatureId = rift.GetRandomCreature();
-                        var creature = WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
-                        creature.Location = new InstancedPosition(location);
-                        creature.Name = $"Rift {creature.Name}";
-                        creature.EnterWorld();
-                    }
-                }
             }
         }
 

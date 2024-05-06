@@ -1193,9 +1193,9 @@ namespace ACE.Database
             { 0, new CreatureTierProps(1, 5, 20, 100, 10000, 0, 1000, 1000) },
             { 1, new CreatureTierProps(1, 20, 50, 100, 30000, 0, 1000, 1000) },
             { 2, new CreatureTierProps(1, 50, 100, 10000, 50000, 0, 1000, 1000) },
-            { 3, new CreatureTierProps(1, 100, 115, 80000, 100000, 0, 1000, 1000) },
+            { 3, new CreatureTierProps(1, 100, 115, 80000, 200000, 0, 1000, 1000) },
             { 4, new CreatureTierProps(3, 130, 150, 200000, 500000, 0, 1000, 1000) },
-            { 5, new CreatureTierProps(4, 185, 220, 800000, 1200000, 0, 1000, 3000) },
+            { 5, new CreatureTierProps(4, 185, 220, 500000, 2000000, 0, 1000, 5000) },
             { 6, new CreatureTierProps(5, 200, 300, 800000, 2000000, 2000, 3000, 5000) },
         };
 
@@ -1252,6 +1252,15 @@ namespace ACE.Database
                 var creatures = GetCreatureWeenieIdsByTier(tier);
                 CachedDungeonCreatures.Add(tier, creatures);
                 return creatures;
+            }
+        }
+
+        public void CacheDungeonCreatures()
+        {
+            for (var i = 0; i <= 6; i++)
+            {
+                // load cache of mob ids
+                DatabaseManager.World.GetDungeonCreatureWeenieIds((uint)i);
             }
         }
     }

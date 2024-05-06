@@ -28,19 +28,19 @@ namespace ACE.Server.Managers
         {
             uint tier = 0;
 
-            if (level <= 300)
+            if (level < 300)
                 tier = 6;
-            if (level <= 220)
+            if (level < 220)
                 tier = 5;
-            if (level <= 150)
+            if (level < 150)
                 tier = 4;
-            if (level <= 115)
+            if (level < 115)
                 tier = 3;
-            if (level <= 100)
+            if (level < 100)
                 tier = 2;
-            if (level <= 50)
+            if (level < 50)
                 tier = 1;
-            if (level <= 20)
+            if (level < 20)
                 tier = 0;
 
             return tier;
@@ -71,7 +71,7 @@ namespace ACE.Server.Managers
 
         public static WorldObject CreateOre(InstancedPosition position, uint tier = 1)
         {
-            if (ThreadSafeRandom.Next(1, 25) == 1)
+            if (ThreadSafeRandom.Next(1, 100) == 1)
             {
                 var ore = WorldObjectFactory.CreateNewWorldObject(603001);
 
@@ -91,6 +91,46 @@ namespace ACE.Server.Managers
             }
 
             return null;
+        }
+
+        public static WorldObject ProcessRiftCreature(WorldObject wo, Rift rift)
+        {
+            var ore = CreateOre(wo.Location, rift.Tier);
+
+            if (ore != null)
+            {
+                wo.Destroy();
+                return ore;
+            }
+
+            if (ThreadSafeRandom.Next(1, 2) == 1)
+            {
+                try
+                {
+                    var riftCreatureId = rift.GetRandomCreature();
+                    if (riftCreatureId == 0)
+                        return wo;
+
+                    var creature = WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
+
+                    if (creature.IsGenerator)
+                        return wo;
+
+                    creature.Location = new InstancedPosition(wo.Location);
+                    creature.Name = $"Rift {creature.Name}";
+                    wo.Destroy();
+                    return creature;
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex.Message);
+                    log.Error(ex.StackTrace);
+
+                    return wo;
+                }
+            }
+
+            return wo;
         }
     }
 }
