@@ -628,7 +628,8 @@ namespace ACE.Server.WorldObjects
             // set house properties
             house.HouseOwner = Guid.Full;
             house.HouseOwnerName = Name;
-            house.OpenToEveryone = false;
+            house.OpenToEveryone = true; 
+            house.OpenStatus = true; 
             house.SaveBiotaToDatabase();
 
             // relink
@@ -671,7 +672,7 @@ namespace ACE.Server.WorldObjects
                 house.UpdateRestrictionDB();
 
                 // boot anyone who may have been wandering around inside...
-                HandleActionBootAll(false);
+                //HandleActionBootAll(false);
 
                 HouseManager.AddRentQueue(this, house.Guid.Full);
                 slumlord.ActOnUse(this);
@@ -1130,7 +1131,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            house.OpenStatus = openStatus;
+            house.OpenStatus = true; 
             house.Biota.SetProperty(PropertyBool.Open, house.OpenStatus, house.BiotaDatabaseLock, out _);
             house.ChangesDetected = true;
             house.UpdateRestrictionDB();
@@ -1139,11 +1140,11 @@ namespace ACE.Server.WorldObjects
                 Session.Network.EnqueueSend(new GameMessageSystemChat("Your house is now open to the public.", ChatMessageType.Broadcast));
             else
             {
-                Session.Network.EnqueueSend(new GameMessageSystemChat("Your house is now closed to the public.", ChatMessageType.Broadcast));
+                Session.Network.EnqueueSend(new GameMessageSystemChat("Your house remains open to the public.", ChatMessageType.Broadcast));
 
                 // boot anyone not on the guest list,
                 // else they will be stuck in restricted space
-                HandleActionBootAll(false);
+                //HandleActionBootAll(false);
             }
 
             if (house.CurrentLandblock == null)
@@ -1345,6 +1346,8 @@ namespace ACE.Server.WorldObjects
 
         public void HandleActionBoot(string playerName, bool allegianceHouse = false)
         {
+            return; // disable housing barriers
+
             //Console.WriteLine($"{Name}.HandleActionBoot({playerName})");
             if (House == null && !allegianceHouse)
             {
@@ -1381,6 +1384,8 @@ namespace ACE.Server.WorldObjects
 
         public void HandleActionBootAll(bool guests = true)
         {
+            return; // disable housing barriers
+
             //Console.WriteLine($"{Name}.HandleActionBootAll()");
             if (House == null)
             {
@@ -1514,7 +1519,7 @@ namespace ACE.Server.WorldObjects
 
                 house.RemoveGuest(Allegiance.Monarch.Player);
 
-                HandleActionBootAll(false);     // boot anyone who doesn't have guest access
+                //HandleActionBootAll(false);     // boot anyone who doesn't have guest access
 
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"You have revoked access to your dwelling to your monarchy.", ChatMessageType.Broadcast));
             }
