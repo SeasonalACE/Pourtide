@@ -1070,6 +1070,25 @@ namespace ACE.Database
                 return topTenPlayers.Select(player => ((uint)player.PlayerId, player.KillCount)).ToList();
             }
         }
+        public (int killCount, List<uint>) GetPersonalKillStats(uint playerId)
+        {
+            using (var context = new ShardDbContext())
+            {
+                var last10Kills = context.PKStatsKills
+                  .Where(kill => kill.KillerId == playerId)
+                  .OrderByDescending(kill => kill.EventTime)
+                  .Take(10)
+                  .ToList();
+
+                var last10VictimIds = last10Kills.Select(kill => (uint)kill.VictimId).ToList();
+
+                var killCount = context.PKStatsKills
+                    .Where(kill => kill.KillerId == playerId)
+                    .Count();
+
+                return (killCount, last10VictimIds);
+            }
+        }
 
         public PKStatsKill GetLastKillEntry(uint killerId, uint victimId)
         {

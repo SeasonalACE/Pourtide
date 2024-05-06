@@ -283,7 +283,58 @@ namespace ACE.Server.Command.Handlers
             {
                 var stats = players[i];
                 var player = PlayerManager.FindByGuid(stats.PlayerId);
+                if (player == null)
+                    continue;
                 message.Append($"{i + 1}. Name = {player.Name}, Kills = {stats.KillCount}\n");
+            }
+
+            message.Append("-----------------------\n");
+
+            if (discordChannel == 0)
+                CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
+            else
+                DiscordChatBridge.SendMessage(discordChannel, $"`{message.ToString()}`");
+        }
+
+        /** Leaderboards/Stats Start **/
+        [CommandHandler("my-kills", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show my kills.")]
+        public static void HandlePersonalKills(Session session, params string[] parameters)
+        {
+            if (session != null)
+            {
+                if (session.AccessLevel == AccessLevel.Player && DateTime.UtcNow - session.Player.PrevPersonalPvPKillsCommandRequestTimestamp < TimeSpan.FromMinutes(1))
+                {
+                    session.Network.EnqueueSend(new GameMessageSystemChat("You have used this command too recently!", ChatMessageType.Broadcast));
+                    return;
+                }
+                session.Player.PrevPersonalPvPKillsCommandRequestTimestamp = DateTime.UtcNow;
+            }
+
+            ulong discordChannel = 0;
+            if (parameters.Length > 1 && parameters[0] == "discord")
+                ulong.TryParse(parameters[1], out discordChannel);
+
+            StringBuilder message = new StringBuilder();
+
+            message.Append("<Showing Kill Count>\n");
+            message.Append("-----------------------\n");
+
+            var (count, last10Victims) = DatabaseManager.Shard.BaseDatabase.GetPersonalKillStats((uint)session.Player.Guid.Full);
+
+            message.Append($"{session.Player.Name}, Total Kills = {count}\n");
+
+            message.Append("-----------------------\n");
+            message.Append("<Showing Last 10 Kills>\n");
+
+            var victims = last10Victims
+                .Select(guid => PlayerManager.FindByGuid(guid))
+                .Where(player => player != null)
+                .ToList();
+
+            for (var i = 0; i < victims.Count; i++)
+            {
+                var victim = victims[i];
+                message.Append($"{i + 1}. Name = {victim.Name}\n");
             }
 
             message.Append("-----------------------\n");
@@ -324,6 +375,8 @@ namespace ACE.Server.Command.Handlers
             {
                 var stats = players[i];
                 var player = PlayerManager.FindByGuid(stats.PlayerId);
+                if (player == null)
+                    continue;
                 message.Append($"{i + 1}. Name = {player.Name}, Deaths = {stats.DeathCount}\n");
             }
 
@@ -368,6 +421,8 @@ namespace ACE.Server.Command.Handlers
             {
                 var info = players[i];
                 var player = PlayerManager.FindByGuid(info.Guid);
+                if (player == null)
+                    continue;
                 message.Append($"{i + 1}. Name = {player.Name}, Level = {player.Level}\n");
             }
 
