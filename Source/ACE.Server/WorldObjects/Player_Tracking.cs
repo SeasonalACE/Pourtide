@@ -220,6 +220,50 @@ namespace ACE.Server.WorldObjects
             actionChain.EnqueueChain();
         }
 
+        public void HandleRiftPlayer()
+        {
+            var actionChain = new ActionChain();
+
+            actionChain.AddAction(this, () =>
+            {
+                Ethereal = true;
+                EnqueueBroadcastPhysicsState();
+            });
+            actionChain.AddAction(this, () =>
+            {
+                EnqueueBroadcast(false, new GameMessageDeleteObject(this));
+            });
+            actionChain.AddDelaySeconds(.5);
+            actionChain.AddAction(this, () =>
+            {
+                EnqueueBroadcast(false, new GameMessageCreateObject(this));
+            });
+
+            actionChain.EnqueueChain();
+        }
+
+        public void HandleDeRiftPlayer()
+        {
+            var actionChain = new ActionChain();
+
+            actionChain.AddAction(this, () =>
+            {
+                EnqueueBroadcastPhysicsState();
+            });
+            actionChain.AddAction(this, () =>
+            {
+                EnqueueBroadcast(false, new GameMessageDeleteObject(this));
+            });
+            actionChain.AddDelaySeconds(.5);
+            actionChain.AddAction(this, () =>
+            {
+                Ethereal = false;
+                EnqueueBroadcast(false, new GameMessageCreateObject(this));
+            });
+
+            actionChain.EnqueueChain();
+        }
+
         /*
         public void ClearInstance(ulong iBlockCell)
         {

@@ -1528,6 +1528,14 @@ Please report this to the ACRealms developer.");
                     return Landblock.RealmRuleset != null && Landblock.RealmRuleset.GetProperty(RealmPropertyBool.IsPKOnly);
                 }
             }
+
+            public bool IsRift
+            {
+                get
+                {
+                    return Landblock.InnerRealmInfo != null && Landblock.RealmRuleset.Realm.Id == 1016;
+                }
+            }
         }
     }
 }

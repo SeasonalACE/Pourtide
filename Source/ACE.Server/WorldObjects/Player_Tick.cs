@@ -129,6 +129,9 @@ namespace ACE.Server.WorldObjects
 
             PhysicsObj.ObjMaint.DestroyObjects();
 
+            if (!Location.IsEphemeralRealm && Ethereal.HasValue && Ethereal.Value == true)
+                HandleDeRiftPlayer();
+
             // Check if we're due for our periodic SavePlayer
             if (LastRequestedDatabaseSave == DateTime.MinValue)
                 LastRequestedDatabaseSave = DateTime.UtcNow;

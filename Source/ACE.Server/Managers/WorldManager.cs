@@ -164,7 +164,10 @@ namespace ACE.Server.Managers
             var loc = player.Location;
             // players should never log into an ephemeral realm
             if (loc != null && loc.IsEphemeralRealm)
+            {
                 player.Location = player.Sanctuary.AsInstancedPosition(player, PlayerInstanceSelectMode.HomeRealm);
+                player.HandleDeRiftPlayer();
+            }
 
             session.SetPlayer(player);
 

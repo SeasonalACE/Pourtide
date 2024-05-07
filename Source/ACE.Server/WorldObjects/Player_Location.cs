@@ -882,6 +882,7 @@ namespace ACE.Server.WorldObjects
             {
                 EphemeralRealmExitTo = null;
                 EphemeralRealmLastEnteredDrop = null;
+                HandleDeRiftPlayer();
             }
 
             var pk = false;
@@ -890,6 +891,9 @@ namespace ACE.Server.WorldObjects
                 var lb = LandblockManager.GetLandblockUnsafe(newLocation.LandblockId, newLocation.Instance);
                 if ((lb.RealmHelpers.IsDuel || lb.RealmHelpers.IsPkOnly) && MinimumTimeSincePk == null)
                     pk = true;
+
+                if (lb.RealmHelpers.IsRift)
+                    HandleRiftPlayer();
             }
 
             if (newRealm.StandardRules.GetProperty(RealmPropertyBool.IsPKOnly) && MinimumTimeSincePk == null)
