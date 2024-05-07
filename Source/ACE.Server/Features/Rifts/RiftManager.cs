@@ -216,7 +216,6 @@ namespace ACE.Server.Features.Rifts
             var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
 
             var creatureIds = creatureWeenieIds
-                .Where(c => c.Level > averageLevel)
                 .Select(c => c.Id)
                 .ToList();
 
