@@ -71,7 +71,8 @@ namespace ACE.Server.Managers
 
         public static WorldObject CreateOre(InstancedPosition position, uint tier = 1)
         {
-            if (ThreadSafeRandom.Next(1, 100) == 1)
+            var oreChance = PropertyManager.GetLong("rift_ore_chance").Item;
+            if (ThreadSafeRandom.Next(1, (int)oreChance) == 1)
             {
                 var ore = WorldObjectFactory.CreateNewWorldObject(603001);
 
@@ -103,7 +104,9 @@ namespace ACE.Server.Managers
                 return ore;
             }
 
-            if (ThreadSafeRandom.Next(1, 2) == 1)
+            var riftCreatureChance = PropertyManager.GetLong("rift_creature_chance").Item;
+
+            if (ThreadSafeRandom.Next(1, (int)riftCreatureChance) == 1)
             {
                 try
                 {
