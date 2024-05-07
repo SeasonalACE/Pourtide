@@ -647,6 +647,9 @@ namespace ACE.Entity.Enum.Properties
         [ServerOnly]
         CrossRealmPortalRealmID                 = 42006,
 
+
+        // Pourtide property IDs are reserved start with 60000-69999
+
         [ServerOnly]
         OriginalArmorLevel                      = 60000,
 
@@ -658,6 +661,7 @@ namespace ACE.Entity.Enum.Properties
 
         [ServerOnly]
         CorpsePermitOpenTimestamp               = 60003
+
     }
 
     public static class PropertyIntExtensions
