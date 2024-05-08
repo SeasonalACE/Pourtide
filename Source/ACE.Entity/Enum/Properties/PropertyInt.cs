@@ -660,7 +660,10 @@ namespace ACE.Entity.Enum.Properties
         BountyTrophyGuid                        = 60002,
 
         [ServerOnly]
-        CorpsePermitOpenTimestamp               = 60003
+        CorpsePermitOpenTimestamp               = 60003,
+
+        [ServerOnly]
+        ForgottenOreTier               = 60004
 
     }
 

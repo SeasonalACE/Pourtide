@@ -46,6 +46,20 @@ namespace ACE.Server.Managers
             return tier;
         }
 
+        public static uint GetLootTierFromRiftTier(uint tier)
+        {
+            uint lootTier = 4;
+
+            if (tier == 6)
+                lootTier = 8;
+            if (tier == 5)
+                lootTier = 7;
+            if (tier == 4)
+                lootTier = 5;
+
+            return lootTier;
+        }
+
         private static uint[] BlackListedLandblockIds =
         {
             0x8A02FFFF, // facility hub
@@ -67,6 +81,19 @@ namespace ACE.Server.Managers
             }
 
             return weenie;
+        }
+        public static int CantripRoll()
+        {
+            var cantripAmount = 1;
+
+            if (ThreadSafeRandom.Next(1, 500) == 1)
+            {
+                cantripAmount = 2;
+                if (ThreadSafeRandom.Next(1, 10) == 1)
+                    cantripAmount = 3;
+            }
+
+            return cantripAmount;
         }
 
         public static WorldObject CreateOre(InstancedPosition position, uint tier = 1)

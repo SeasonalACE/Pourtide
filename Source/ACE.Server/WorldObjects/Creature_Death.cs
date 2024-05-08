@@ -729,20 +729,6 @@ namespace ACE.Server.WorldObjects
 
         public bool IsOreNode => OreNodes.Contains(WeenieClassId);
 
-        public static int CantripRoll()
-        {
-            var cantripAmount = 1;
-
-            if (ThreadSafeRandom.Next(1, 500) == 1)
-            {
-                cantripAmount = 2;
-                if (ThreadSafeRandom.Next(1, 10) == 1)
-                    cantripAmount = 3;
-            }
-
-            return cantripAmount;
-        }
-
         /// <summary>
         /// Transfers generated treasure from creature to corpse
         /// </summary>
@@ -752,11 +738,17 @@ namespace ACE.Server.WorldObjects
 
             if (IsOreNode)
             {
+                RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift activeRift);
+
                 var tier = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 2 : 3;
                 var amount = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 10 : 20;
                 for (var i = 0; i < amount; ++i)
                 {
-                    corpse.TryAddToInventory(WorldObjectFactory.CreateNewWorldObject(603004));
+                    var forgottenOre = WorldObjectFactory.CreateNewWorldObject(603004);
+                    if (activeRift != null)
+                        forgottenOre.ForgottenOreTier = (int)MutationsManager.GetLootTierFromRiftTier(activeRift.Tier);
+                    forgottenOre.Name = $"{forgottenOre.Name} Tier: {forgottenOre.ForgottenOreTier}";
+                    corpse.TryAddToInventory(forgottenOre);
                 }
 
 
@@ -798,7 +790,7 @@ namespace ACE.Server.WorldObjects
                 {
                     dt = new TreasureDeath()
                     {
-                        CantripAmount = CantripRoll(),
+                        CantripAmount = MutationsManager.CantripRoll(),
                         Tier = dt.Tier,
                         LootQualityMod = 0,
                         MagicItemTreasureTypeSelectionChances = 8,

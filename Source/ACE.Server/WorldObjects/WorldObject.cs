@@ -295,6 +295,9 @@ namespace ACE.Server.WorldObjects
             if (MotionTableId != 0)
                 CurrentMotionState = new Motion(MotionStance.Invalid);
 
+            if (WeenieClassId == 603004)
+                Name = $"{Name} Tier: {ForgottenOreTier}";
+
         }
 
         /// <summary>

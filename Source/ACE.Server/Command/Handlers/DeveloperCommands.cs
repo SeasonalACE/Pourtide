@@ -2364,7 +2364,7 @@ namespace ACE.Server.Command.Handlers
             {
                 Tier = tier,
                 LootQualityMod = 0,
-                CantripAmount = 3,
+                CantripAmount = MutationsManager.CantripRoll(),
                 MagicItemTreasureTypeSelectionChances = 9,  // 8 or 9?
             };
 

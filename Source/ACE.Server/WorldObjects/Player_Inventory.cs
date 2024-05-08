@@ -12,6 +12,7 @@ using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Entity.Models;
+using ACE.Server.Command.Handlers;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
@@ -3569,6 +3570,7 @@ namespace ACE.Server.WorldObjects
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 603004)
                         {
                             var xp = QuestXpDailyMax * 0.10;
+                            DeveloperCommands.HandleCILoot(Session, item.ForgottenOreTier.ToString(), 5.ToString());
                             EarnXP((long)xp, XpType.Quest, ShareType.None);
                             return;
                         }
