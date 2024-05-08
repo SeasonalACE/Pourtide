@@ -209,9 +209,14 @@ namespace ACE.Server.Features.Rifts
 
             var creatures = generatorCreatureObjects.Concat(spawnedCreatures).Distinct().ToList();
 
-            var averageLevel = creatures.Any() ? creatures.Average(wo => wo.Level) : 1;
+            var groupedCreaturesByLevel = creatures.GroupBy(c => c.Level).Select(g => new { Level = g.Key, Count = g.Count() });
 
-            var tier = MutationsManager.GetMonsterTierByLevel((uint)averageLevel);
+            var mostCommonLevel = groupedCreaturesByLevel.OrderByDescending(l => l.Count).Select(l => l.Level).FirstOrDefault();
+
+            if (mostCommonLevel == null)
+                mostCommonLevel = 1;
+
+            var tier = MutationsManager.GetMonsterTierByLevel((uint)mostCommonLevel);
 
             var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
 
