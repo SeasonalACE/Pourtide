@@ -1375,6 +1375,9 @@ namespace ACE.Database.Models.World
                     .HasComment("Type of Treasure for this instance");
 
                 entity.Property(e => e.UnknownChances).HasColumnName("unknown_Chances");
+
+                entity.Property(e => e.CantripAmount).HasColumnName("cantrip_amount").HasComment("Amount of cantrips to apply.");
+
             });
 
             modelBuilder.Entity<TreasureGemCount>(entity =>

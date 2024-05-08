@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 #nullable disable
@@ -24,6 +24,7 @@ namespace ACE.Database.Models.World
         public int MundaneItemMinAmount { get; set; }
         public int MundaneItemMaxAmount { get; set; }
         public int MundaneItemTypeSelectionChances { get; set; }
+        public int CantripAmount { get; set; }
         public DateTime LastModified { get; set; }
     }
 }
