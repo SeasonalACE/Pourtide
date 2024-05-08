@@ -264,6 +264,8 @@ namespace ACE.Server.Managers
             if (olthoiPlayerReturnedToLifestone)
                 session.Player.Location = session.Player.Sanctuary.AsInstancedPosition(session.Player, PlayerInstanceSelectMode.HomeRealm);
 
+            // teach pourtide augs
+            PlayerFactory.TeachPourtideAugmentations(player);
 
             session.Player.PlayerEnterWorld();
 

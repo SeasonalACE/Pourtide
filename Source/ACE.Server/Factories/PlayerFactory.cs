@@ -39,6 +39,15 @@ namespace ACE.Server.Factories
             15270
         };
 
+        public static void TeachPourtideAugmentations(Player player)
+        {
+            foreach (var augtype in RealmConstants.PourtideAugmentations)
+            {
+                AugmentationDevice.DoAugmentation(player, augtype, null, false, false);
+                player.SaveBiotaToDatabase();
+            }
+        }
+
         public static void AddStarterEssentials(Player player)
         {
             /*for (uint spellLevel = 1; spellLevel <= 3; spellLevel++)
