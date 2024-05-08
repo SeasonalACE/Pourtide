@@ -778,9 +778,11 @@ namespace ACE.Server.WorldObjects
 
                         if (wo != null)
                         {
+                            wo.Name = $"Salvage ({100})";
                             wo.Structure = 100;
-                            wo.Workmanship = 5f;
-                            wo.Value = 0;
+                            wo.ItemWorkmanship = ThreadSafeRandom.Next(50, 100);
+                            wo.NumItemsInMaterial = 10;
+                            wo.Value = 100000;
                             corpse.TryAddToInventory(wo);
                         }
                     }
