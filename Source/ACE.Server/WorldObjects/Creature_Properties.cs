@@ -354,6 +354,12 @@ namespace ACE.Server.WorldObjects
             set { if (!value.HasValue) RemoveProperty(PropertyInt.SocietyRankRadblo); else SetProperty(PropertyInt.SocietyRankRadblo, value.Value); }
         }
 
+        public bool IsRiftMonster
+        {
+            get => GetProperty(PropertyBool.IsRiftMonster) ?? false;
+            set { if (!value) RemoveProperty(PropertyBool.IsRiftMonster); else SetProperty(PropertyBool.IsRiftMonster, value); }
+        }
+
         public FactionBits Society => Faction1Bits ?? FactionBits.None;
     }
 }

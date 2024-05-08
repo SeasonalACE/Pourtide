@@ -114,13 +114,14 @@ namespace ACE.Server.Managers
                     if (riftCreatureId == 0)
                         return wo;
 
-                    var creature = WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
+                    Creature creature = (Creature)WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
 
                     if (creature.IsGenerator)
                         return wo;
 
                     creature.Location = new InstancedPosition(wo.Location);
                     creature.Name = $"Rift {creature.Name}";
+                    creature.IsRiftMonster = true;
                     wo.Destroy();
                     return creature;
                 }
