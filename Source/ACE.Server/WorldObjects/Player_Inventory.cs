@@ -3533,8 +3533,12 @@ namespace ACE.Server.WorldObjects
                                 if (BountyGuid.Value == item.BountyTrophyGuid.Value)
                                 {
                                     xp = PvpXpDailyMax * 0.25;
-                                    var ore = WorldObjectFactory.CreateNewWorldObject(603004);
-                                    TryCreateInInventoryWithNetworking(ore);
+                                    for (var i = 0; i < 5; ++i)
+                                    {
+                                        var ore = WorldObjectFactory.CreateNewWorldObject(603004);
+                                        TryCreateInInventoryWithNetworking(ore);
+                                    }
+
                                     BountyGuid = null;
                                 }
                             }
@@ -3564,11 +3568,10 @@ namespace ACE.Server.WorldObjects
 
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 603004)
                         {
-                            var xp = QuestXpDailyMax * 0.025;
+                            var xp = QuestXpDailyMax * 0.10;
                             EarnXP((long)xp, XpType.Quest, ShareType.None);
                             return;
                         }
-
 
                         if (item == itemToGive)
                             Session.Network.EnqueueSend(new GameEventItemServerSaysContainId(Session, item, target));
