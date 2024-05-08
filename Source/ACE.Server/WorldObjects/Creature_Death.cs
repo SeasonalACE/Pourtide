@@ -729,6 +729,19 @@ namespace ACE.Server.WorldObjects
 
         public bool IsOreNode => OreNodes.Contains(WeenieClassId);
 
+        public static int CantripRoll()
+        {
+            var cantripAmount = 1;
+
+            if (ThreadSafeRandom.Next(1, 500) == 1)
+            {
+                cantripAmount = 2;
+                if (ThreadSafeRandom.Next(1, 10) == 1)
+                    cantripAmount = 3;
+            }
+
+            return cantripAmount;
+        }
 
         /// <summary>
         /// Transfers generated treasure from creature to corpse
@@ -777,7 +790,33 @@ namespace ACE.Server.WorldObjects
             // create death treasure from loot generation factory
             if (DeathTreasure != null)
             {
-                List<WorldObject> items = LootGenerationFactory.CreateRandomLootObjects(DeathTreasure);
+                var dt = DeathTreasure;
+
+                if (IsRiftMonster)
+                {
+                    dt = new TreasureDeath()
+                    {
+                        CantripAmount = CantripRoll(),
+                        Tier = dt.Tier,
+                        LootQualityMod = 0,
+                        MagicItemTreasureTypeSelectionChances = 8,
+                        MagicItemChance = dt.MagicItemChance,
+                        MagicItemMinAmount = 5,
+                        MagicItemMaxAmount = 20,
+                        TreasureType = dt.TreasureType,
+                        UnknownChances = dt.UnknownChances,
+                        ItemChance = dt.ItemChance,
+                        ItemMinAmount = dt.ItemMinAmount,
+                        ItemMaxAmount = dt.ItemMaxAmount,
+                        ItemTreasureTypeSelectionChances = dt.ItemTreasureTypeSelectionChances,
+                        MundaneItemChance = dt.MundaneItemChance,
+                        MundaneItemMinAmount = dt.MundaneItemMinAmount,
+                        MundaneItemMaxAmount = dt.MundaneItemMaxAmount,
+                        MundaneItemTypeSelectionChances = dt.MundaneItemTypeSelectionChances
+                    };
+                }
+
+                List<WorldObject> items = LootGenerationFactory.CreateRandomLootObjects(dt);
                 foreach (WorldObject wo in items)
                 {
                     if (corpse != null)

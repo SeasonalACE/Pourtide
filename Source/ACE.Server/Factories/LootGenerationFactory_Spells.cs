@@ -292,6 +292,21 @@ namespace ACE.Server.Factories
             {
                 var cantripLevel = CantripChance.RollCantripLevel(profile);
 
+                if (cantripLevel == 1 && profile.Tier == 4 && profile.CantripAmount > 0)
+                    cantripLevel = ThreadSafeRandom.Next(1, 4) == 1 ? 2 : 1;
+
+                if (cantripLevel == 1 && profile.Tier == 5 && profile.CantripAmount > 0)
+                    cantripLevel = ThreadSafeRandom.Next(1, 3) == 1 ? 2 : 1;
+
+                if (cantripLevel == 1 && profile.Tier == 6 && profile.CantripAmount > 0)
+                    cantripLevel = ThreadSafeRandom.Next(1, 2) == 1 ? 2 : 1;
+
+                if (cantripLevel == 1 && profile.Tier == 7 && profile.CantripAmount > 0)
+                    cantripLevel = ThreadSafeRandom.Next(1, 2) == 1 ? 2 : 1;
+
+                if (cantripLevel == 2 && profile.Tier == 7 && profile.CantripAmount > 0)
+                    cantripLevel = ThreadSafeRandom.Next(1, 2) == 1 ? 3 : 2;
+
                 var cantripLevels = SpellLevelProgression.GetSpellLevels(cantrip);
 
                 if (cantripLevels.Count != 4)
