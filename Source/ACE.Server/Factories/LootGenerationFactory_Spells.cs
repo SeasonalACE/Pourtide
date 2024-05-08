@@ -264,11 +264,13 @@ namespace ACE.Server.Factories
 
             var numCantrips = CantripChance.RollNumCantrips(profile);
 
-            if (profile.CantripAmount > 0)
-                numCantrips = profile.CantripAmount;
-
             if (numCantrips == 0)
-                return null;
+            {
+                if (profile.CantripAmount > 0)
+                    numCantrips = profile.CantripAmount;
+                else
+                    return null;
+            }
 
             var numAttempts = numCantrips * 3;
 
