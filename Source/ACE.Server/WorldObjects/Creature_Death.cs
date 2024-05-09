@@ -774,7 +774,7 @@ namespace ACE.Server.WorldObjects
                             wo.Structure = 100;
                             wo.ItemWorkmanship = ThreadSafeRandom.Next(50, 100);
                             wo.NumItemsInMaterial = 10;
-                            wo.Value = 100000;
+                            wo.Value = 15000;
                             corpse.TryAddToInventory(wo);
                         }
                     }
