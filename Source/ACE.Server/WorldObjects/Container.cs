@@ -569,7 +569,7 @@ namespace ACE.Server.WorldObjects
             else
                 containerItems.Where(i => i.UseBackpackSlot && i.PlacementPosition >= placementPosition).ToList().ForEach(i => i.PlacementPosition++);
 
-            UpdateDurability(worldObject, null);
+            UpdateDurability(worldObject);
 
             Inventory.Add(worldObject.Guid, worldObject);
 

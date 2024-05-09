@@ -635,6 +635,7 @@ namespace ACE.Server.WorldObjects
                 if (item.ArmorLevel != null && item.ArmorLevel > 10)
                 {
                     item.ArmorLevel -= (int)(item.OriginalArmorLevel * 0.05);
+                    UpdateDurability(item);
                 }
             }
 

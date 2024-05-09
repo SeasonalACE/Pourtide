@@ -69,7 +69,14 @@ namespace ACE.Server.Managers
 
             var recipe = GetRecipe(player, source, target);
             var isLeather = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Leather;
+            var isSteel = source.ItemType == ItemType.TinkeringMaterial && source.Structure == 100 && source.MaterialType == MaterialType.Steel;
             var isArmorOrShield = target.ValidLocations != null && (target.ValidLocations & (EquipMask.Extremity | EquipMask.Armor | EquipMask.Shield)) != 0 && target.ArmorLevel < target.OriginalArmorLevel;
+
+            if (isSteel && target.ArmorLevel != null && target.OriginalArmorLevel != null && target.ArmorLevel < target.OriginalArmorLevel)
+            {
+                player.SendUseDoneEvent();
+                return;
+            }
 
             if (recipe == null || (isLeather && isArmorOrShield))
             {
@@ -193,7 +200,7 @@ namespace ACE.Server.Managers
         public static void ApplyDurability(WorldObject target)
         {
             target.ArmorLevel = target.OriginalArmorLevel;
-            WorldObject.UpdateDurability(target, target.OriginalArmorLevel);
+            WorldObject.UpdateDurability(target);
         }
 
         private static bool ApplyDurability(Player player, WorldObject source, WorldObject target)
@@ -1630,7 +1637,7 @@ namespace ACE.Server.Managers
             if (source.MaterialType == MaterialType.Steel)
                 target.OriginalArmorLevel = target.ArmorLevel;
 
-            WorldObject.UpdateDurability(target, target.ArmorLevel);
+            WorldObject.UpdateDurability(target);
 
             target.TinkerLog += (uint?)source.MaterialType ?? source.WeenieClassId;
         }

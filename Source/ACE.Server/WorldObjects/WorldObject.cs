@@ -131,50 +131,29 @@ namespace ACE.Server.WorldObjects
             SetEphemeralValues();
             InitializeGenerator();
             InitializeHeartbeats();
-            UpdateDurability(this, null);
+            UpdateDurability(this);
         }
 
 
 
         public bool BumpVelocity { get; set; }
 
-        public static void UpdateDurability(WorldObject item, int? armorLevel) 
+        public static void UpdateDurability(WorldObject item) 
         {
             if (item.ArmorLevel == null)
                 return;
 
             if (item.OriginalArmorLevel == null)
-            {
                 item.OriginalArmorLevel = item.ArmorLevel;
-                armorLevel = (int)item.ArmorLevel;
-            }
 
-            if (item.ArmorLevel != null && item.ArmorLevel > 0)
-            {
-                var description = $"{item.LongDesc}\n";
-                StringBuilder message = new StringBuilder(description);
-                int originalAlIndex = message.ToString().IndexOf("Original Armor Level:");
+            StringBuilder message = new StringBuilder();
 
+            var originalAl = $"Original Armor Level: {item.OriginalArmorLevel}\n";
+            message.Append(originalAl);
 
-                if (originalAlIndex != -1)
-                {
-                    int endIndex = message.ToString().IndexOf('\n', originalAlIndex);
-
-                    if (endIndex == -1)
-                        endIndex = message.Length - 1;
-
-                    var originalAl = $"Original Armor Level: {armorLevel ?? item.OriginalArmorLevel}";
-                    message.Replace(message.ToString().Substring(originalAlIndex, endIndex - originalAlIndex + 1), originalAl);
-                    item.LongDesc = message.ToString();
-
-                }
-                else
-                {
-                    var originalAl = $"Original Armor Level: {armorLevel ?? item.OriginalArmorLevel}\n";
-                    message.Append(originalAl);
-                    item.LongDesc = message.ToString();
-                }
-            }
+            var durabilityLoss = item.OriginalArmorLevel - item.ArmorLevel;
+            message.Append($"Durability Loss: {durabilityLoss}");
+            item.LongDesc = message.ToString();
         }
 
         /// <summary>
@@ -762,7 +741,7 @@ namespace ACE.Server.WorldObjects
             if (Generator != null)
                 Location = new InstancedPosition(Location, Generator.Location.Instance);
 
-            UpdateDurability(this, null);
+            UpdateDurability(this);
 
             if (!LandblockManager.AddObject(this))
                 return false;
