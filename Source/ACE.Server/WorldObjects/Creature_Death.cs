@@ -747,7 +747,6 @@ namespace ACE.Server.WorldObjects
                     var forgottenOre = WorldObjectFactory.CreateNewWorldObject(603004);
                     if (activeRift != null)
                         forgottenOre.ForgottenOreTier = (int)MutationsManager.GetLootTierFromRiftTier(activeRift.Tier);
-                    forgottenOre.Name = $"{forgottenOre.Name} Tier: {forgottenOre.ForgottenOreTier}";
                     corpse.TryAddToInventory(forgottenOre);
                 }
 
