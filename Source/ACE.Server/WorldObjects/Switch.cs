@@ -90,7 +90,7 @@ namespace ACE.Server.WorldObjects
 
         public override void SetLinkProperties(WorldObject wo)
         {
-            wo.ActivationTarget = Guid;
+            wo.ActivationTarget = Guid.Full;
         }
     }
 }

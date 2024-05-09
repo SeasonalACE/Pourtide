@@ -81,7 +81,7 @@ namespace ACE.Server.WorldObjects.Managers
 
                 case EmoteType.Activate:
 
-                    if (WorldObject.ActivationTarget != ObjectGuid.Invalid)
+                    if (WorldObject.ActivationTarget > 0)
                     {
                         // ActOnUse delay?
                         var activationTarget = WorldObject.CurrentLandblock?.GetObject(WorldObject.ActivationTarget);

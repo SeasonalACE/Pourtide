@@ -142,14 +142,14 @@ namespace ACE.Server.WorldObjects
             if (ActivationResponse.HasFlag(ActivationResponse.Talk))
                 OnTalk(activator);
 
-            if (!(this is Creature) && ActivationTarget != ObjectGuid.Invalid)
+            if (!(this is Creature) && ActivationTarget > 0)
             {
-                var activationTarget = CurrentLandblock?.GetObject(ActivationTarget);
+                var activationTarget = CurrentLandblock?.GetObject(new ObjectGuid(ActivationTarget));
                 if (activationTarget != null)
                     activationTarget.OnActivate(activator);
                 else
                 {
-                    log.Warn($"{Name}.OnActivate({activator.Name}): couldn't find activation target {ActivationTarget}");
+                    log.Warn($"{Name}.OnActivate({activator.Name}): couldn't find activation target {ActivationTarget:X8}");
                 }
             }
         }
