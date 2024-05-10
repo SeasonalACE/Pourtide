@@ -109,43 +109,49 @@ namespace ACE.Server.WorldObjects
 
         public void HandlePKDeathBroadcast(DamageHistoryInfo lastDamager, DamageHistoryInfo topDamager)
         {
-            if (topDamager == null || !topDamager.IsPlayer)
-                return;
-
-            var pkPlayer = topDamager.TryGetAttacker() as Player;
-            if (pkPlayer == null)
-                return;
-
-            if (IsPKDeath(topDamager))
+            try
             {
-                pkPlayer.PkTimestamp = Time.GetUnixTime();
-                pkPlayer.PlayerKillsPk++;
+                if (topDamager == null || !topDamager.IsPlayer)
+                    return;
 
-                string globalPKDe;
-                if (pkPlayer.CurrentLandblock.RealmHelpers.IsDuel)
-                    globalPKDe = $"{lastDamager.Name} has defeated {Name} in a duel!";
-                else
+                var pkPlayer = topDamager.TryGetAttacker() as Player;
+                if (pkPlayer == null)
+                    return;
+
+                if (IsPKDeath(topDamager))
                 {
-                    globalPKDe = $"{lastDamager.Name} has defeated {Name}!";
-                    if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift ActiveRift))
-                        globalPKDe += $" The kill occured at Rift {ActiveRift.Name}";
-                    else if (DungeonManager.TryGetDungeonLandblock(Location.LandblockHex, out DungeonLandblock landblock))
-                        globalPKDe += $" The kill occured at Dungeon {landblock.Name}";
-                    else if (!Location.Indoors)
-                        globalPKDe += $" The kill occured at {Location.GetMapCoordStr()}";
+                    pkPlayer.PkTimestamp = Time.GetUnixTime();
+                    pkPlayer.PlayerKillsPk++;
+
+                    string globalPKDe;
+                    if (pkPlayer.CurrentLandblock.RealmHelpers.IsDuel)
+                        globalPKDe = $"{lastDamager.Name} has defeated {Name} in a duel!";
+                    else
+                    {
+                        globalPKDe = $"{lastDamager.Name} has defeated {Name}!";
+                        if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift ActiveRift))
+                            globalPKDe += $" The kill occured at Rift {ActiveRift.Name}";
+                        else if (DungeonManager.TryGetDungeonLandblock(Location.LandblockHex, out DungeonLandblock landblock))
+                            globalPKDe += $" The kill occured at Dungeon {landblock.Name}";
+                        else if (!Location.Indoors)
+                            globalPKDe += $" The kill occured at {Location.GetMapCoordStr()}";
+                    }
+
+                    globalPKDe += "\n[PKDe]";
+
+                    var channel = ChatType.General;
+                    Player? sender = null;
+                    var formattedMessage = $"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{globalPKDe}\"";
+                    _ = WebhookRepository.SendGeneralChat(formattedMessage);
+
+                    PlayerManager.BroadcastToAll(new GameMessageSystemChat(globalPKDe, ChatMessageType.Broadcast));
                 }
-
-                globalPKDe += "\n[PKDe]";
-
-                var channel = ChatType.General;
-                Player? sender = null;
-                var formattedMessage = $"[CHAT][{channel.ToString().ToUpper()}] {(sender != null ? sender.Name : "[SYSTEM]")} says on the {channel} channel, \"{globalPKDe}\"";
-                _ = WebhookRepository.SendGeneralChat(formattedMessage);
-
-                PlayerManager.BroadcastToAll(new GameMessageSystemChat(globalPKDe, ChatMessageType.Broadcast));
+                else if (IsPKLiteDeath(topDamager))
+                    pkPlayer.PlayerKillsPkl++;
+            } catch (Exception ex)
+            {
+                log.Error($"Error: during pk death {ex}");
             }
-            else if (IsPKLiteDeath(topDamager))
-                pkPlayer.PlayerKillsPkl++;
         }
 
         /// <summary>
