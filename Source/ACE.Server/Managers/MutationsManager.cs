@@ -144,10 +144,7 @@ namespace ACE.Server.Managers
                     Creature creature = (Creature)WorldObjectFactory.CreateNewWorldObject((uint)riftCreatureId);
 
                     if (creature.IsGenerator)
-                    {
-                        creature.Destroy();
-                        return ProcessRiftCreature(wo, rift);
-                    }
+                        return wo;
 
                     creature.Location = new InstancedPosition(wo.Location);
                     creature.Name = $"Rift {creature.Name}";
