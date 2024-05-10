@@ -188,14 +188,17 @@ namespace ACE.Server.Features.Rifts
             return objects.Select(link => WorldObjectFactory.CreateNewWorldObject(link.WeenieClassId)).ToList();
         }
 
-        private static List<WorldObject> GetGeneratorCreaturesObjectsFromDungeon(List<WorldObject> dungeonObjects)
+        private static List<Creature> GetGeneratorCreaturesObjectsFromDungeon(List<WorldObject> dungeonObjects)
         {
-            return dungeonObjects
+            var objects = dungeonObjects
                 .Where(wo => wo.IsGenerator)
                 .SelectMany(wo => wo.Biota.PropertiesGenerator.Select(prop => prop.WeenieClassId))
                 .Select(wcid => WorldObjectFactory.CreateNewWorldObject(wcid))
-                .Where(wo => wo is Creature creature && creature is not Player && !creature.IsGenerator && !creature.IsNPC)
+                .OfType<Creature>()
+                .Where(creature => creature is not Player && !creature.IsGenerator && !creature.IsNPC)
                 .ToList();
+
+            return objects;
         }
 
         public static (uint, List<uint>) GetRiftCreatureIds(InstancedPosition dropPosition)
@@ -205,24 +208,34 @@ namespace ACE.Server.Features.Rifts
             var generatorCreatureObjects = GetGeneratorCreaturesObjectsFromDungeon(dungeonObjects);
 
             var spawnedCreatures = dungeonObjects
-              .Where(wo => wo is Creature creature && creature is not Player && !creature.IsGenerator && !creature.IsNPC);
+                .OfType<Creature>()
+                .Where(creature => creature is not Player && !creature.IsGenerator && !creature.IsNPC);
 
             var creatures = generatorCreatureObjects.Concat(spawnedCreatures).Distinct().ToList();
 
+            var groupedCreaturesByLootTier = creatures.GroupBy(c => c.DeathTreasure.Tier).Select(g => new { Tier = g.Key, Count = g.Count() });
             var groupedCreaturesByLevel = creatures.GroupBy(c => c.Level).Select(g => new { Level = g.Key, Count = g.Count() });
 
+            var mostCommonLoot = groupedCreaturesByLootTier.OrderByDescending(l => l.Count).Select(l => l.Tier).FirstOrDefault();
             var mostCommonLevel = groupedCreaturesByLevel.OrderByDescending(l => l.Count).Select(l => l.Level).FirstOrDefault();
+
+            if (mostCommonLoot == null)
+                mostCommonLoot = 1;
 
             if (mostCommonLevel == null)
                 mostCommonLevel = 1;
 
             var tier = MutationsManager.GetMonsterTierByLevel((uint)mostCommonLevel);
 
-            var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(tier);
+            var creatureWeenieIds = DatabaseManager.World.GetDungeonCreatureWeenieIds(mostCommonLoot);
 
             var creatureIds = creatureWeenieIds
+                .Where(c => c.Level >= mostCommonLevel && c.Level <= mostCommonLevel + 20)
                 .Select(c => c.Id)
                 .ToList();
+
+            creatures.ForEach(c => c.Destroy()); ;
+            creatures.Clear();
 
             return (tier, creatureIds);
         }

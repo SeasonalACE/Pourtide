@@ -1163,105 +1163,70 @@ namespace ACE.Database
             cachedWieldedTreasure.Clear();
         }
 
-        private class CreatureTierProps
-        {
-            public uint Tier { get; }
-            public uint MinLevel { get; }
-            public uint MaxLevel { get; }
-            public uint MinXp { get; }
-            public uint MaxXp { get; }
-            public uint TreasureMax { get; }
-            public uint TreasureMin { get; }
-            public uint MaxHealth { get; }
-
-            public CreatureTierProps(uint tier, uint minLevel, uint maxLevel, uint minXp, uint maxXp, uint treasureMin, uint treasureMax, uint maxHealth)
-            {
-                Tier = tier;
-                MinLevel = minLevel;
-                MaxLevel = maxLevel;
-                MinXp = minXp;
-                MaxXp = maxXp;
-                TreasureMax = treasureMax;
-                TreasureMin = treasureMin;
-                MaxHealth = maxHealth;
-            }
-        }
-
-        private readonly Dictionary<uint, CreatureTierProps> CreatureCacheProps = new Dictionary<uint, CreatureTierProps>()
-        {
-
-            { 0, new CreatureTierProps(1, 5, 20, 100, 10000, 0, 1000, 1000) },
-            { 1, new CreatureTierProps(1, 20, 50, 100, 30000, 0, 1000, 1000) },
-            { 2, new CreatureTierProps(1, 50, 100, 10000, 50000, 0, 1000, 1000) },
-            { 3, new CreatureTierProps(1, 100, 115, 80000, 200000, 0, 1000, 1000) },
-            { 4, new CreatureTierProps(3, 130, 150, 200000, 500000, 0, 1000, 1000) },
-            { 5, new CreatureTierProps(4, 185, 220, 500000, 2000000, 0, 1000, 5000) },
-            { 6, new CreatureTierProps(5, 200, 300, 800000, 2000000, 2000, 3000, 5000) },
-        };
-
         public class CreatureInfo
         {
             public uint Id { get; set; }
+            public string Name { get; set; }
+            public int Tier { get; set; }
+
             public int Level { get; set; }
         }
 
-        public List<CreatureInfo> GetCreatureWeenieIdsByTier(uint tier)
+        public Dictionary<int, List<CreatureInfo>> GetAllCreaturesWithLootTier()
         {
-            var props = CreatureCacheProps[tier];
-
-
             using (var context = new WorldDbContext())
             {
 
-                List<CreatureInfo> query = (from weenieRecord in context.Weenie
+                List<CreatureInfo> creatures = (from weenieRecord in context.Weenie
                             join name in context.WeeniePropertiesString on weenieRecord.ClassId equals name.ObjectId
-                            join xp in context.WeeniePropertiesInt on weenieRecord.ClassId equals xp.ObjectId
-                            join level in context.WeeniePropertiesInt on weenieRecord.ClassId equals level.ObjectId
-                            join type in context.WeeniePropertiesInt on weenieRecord.ClassId equals type.ObjectId
                             join treasure in context.WeeniePropertiesDID on weenieRecord.ClassId equals treasure.ObjectId
                             join attackable in context.WeeniePropertiesBool on weenieRecord.ClassId equals attackable.ObjectId
-                            join health in context.WeeniePropertiesAttribute2nd on weenieRecord.ClassId equals health.ObjectId
-                            where name.Type == (short)PropertyString.Name &&
-                            type.Type == (ushort)PropertyInt.ItemType &&
-                            type.Value == 16 &&
+                            join level in context.WeeniePropertiesInt on weenieRecord.ClassId equals level.ObjectId
+                            join treasure_death in context.TreasureDeath on  treasure.Value equals treasure_death.TreasureType
+                            where
+                            name.Type == (short)PropertyString.Name &&
+                            weenieRecord.Type == (int)WeenieType.Creature &&
+                            treasure.Type == (ushort)PropertyDataId.DeathTreasureType &&
                             attackable.Type == (ushort)PropertyBool.Attackable &&
-                            xp.Type == (ushort)PropertyInt.XpOverride &&
-                            xp.Value >= props.MinXp &&
-                            xp.Value <= props.MaxXp &&
-                            health.Type == 1 &&
-                            health.InitLevel < props.MaxHealth &&
-                            health.CurrentLevel < props.MaxHealth &&
-                            treasure.Value >= props.TreasureMin &&
-                            treasure.Value <= props.TreasureMax &&
-                            level.Type == 25 &&
-                            level.Value >= props.MinLevel &&
-                            level.Value <= props.MaxLevel
-                            select new  CreatureInfo { Id = weenieRecord.ClassId,  Level = level.Value }).Distinct().ToList();
+                            attackable.Value == true &&
+                            level.Type == (int)PropertyInt.Level 
+                            select new  CreatureInfo { Id = weenieRecord.ClassId, Name = name.Value, Tier = treasure_death.Tier, Level = level.Value }).Distinct().ToList();
 
-                return query;
+                Dictionary<int, List<CreatureInfo>> creatureTierTable = new Dictionary<int, List<CreatureInfo>>();
+
+                foreach(var creature in creatures)
+                {
+                    if (creatureTierTable.ContainsKey(creature.Tier))
+                    {
+                        creatureTierTable[creature.Tier].Add(creature);
+                    }
+                    else
+                        creatureTierTable[creature.Tier] = new List<CreatureInfo>()
+                        {
+                            creature
+                        };
+                }
+
+                return creatureTierTable;
             }
         }
 
-        private static Dictionary<uint, List<CreatureInfo>> CachedDungeonCreatures = new Dictionary<uint, List<CreatureInfo>>();
+        private static Dictionary<int, List<CreatureInfo>> CachedDungeonCreatures = new Dictionary<int, List<CreatureInfo>>();
 
-        public List<CreatureInfo> GetDungeonCreatureWeenieIds(uint tier)
+        public List<CreatureInfo> GetDungeonCreatureWeenieIds(int tier)
         {
             if (CachedDungeonCreatures.ContainsKey(tier)) return CachedDungeonCreatures[tier];
             else
             {
-                var creatures = GetCreatureWeenieIdsByTier(tier);
-                CachedDungeonCreatures.Add(tier, creatures);
-                return creatures;
+                var creatures = GetAllCreaturesWithLootTier();
+                CachedDungeonCreatures = creatures;
+                return CachedDungeonCreatures[tier];
             }
         }
 
         public void CacheDungeonCreatures()
         {
-            for (var i = 0; i <= 6; i++)
-            {
-                // load cache of mob ids
-                DatabaseManager.World.GetDungeonCreatureWeenieIds((uint)i);
-            }
+            GetAllCreaturesWithLootTier();
         }
     }
 }
