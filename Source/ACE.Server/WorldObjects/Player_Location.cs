@@ -1012,6 +1012,9 @@ namespace ACE.Server.WorldObjects
                 var lb = LandblockManager.GetLandblockUnsafe(newPosition.LandblockId, newPosition.Instance);
                 if (lb?.InnerRealmInfo == null)
                     return false;
+
+                if (lb.RealmHelpers.IsRift && RiftManager.TryGetActiveRift(newPosition.LandblockHex, out Rift activeRift))
+                    return activeRift.ValidateTimedOutPlayer(this);
                 /*if (lb.InnerRealmInfo.Owner == this)
                     return true;
                 if (lb.InnerRealmInfo.AllowedPlayers.Contains(this))

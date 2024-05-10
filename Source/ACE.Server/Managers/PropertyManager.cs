@@ -654,6 +654,7 @@ namespace ACE.Server.Managers
                 ("rares_max_days_between", new Property<long>(45, "for rares_real_time_v2: the maximum number of days a player can go before a rare is generated on rare eligible creature kills")),
                 ("rares_max_seconds_between", new Property<long>(5256000, "for rares_real_time: the maximum number of seconds a player can go before a second chance at a rare is allowed on rare eligible creature kills that did not generate a rare")),
                 ("rift_duration", new Property<long>(120, "the number of minutes a rift should exist for")),
+                ("rift_death_duration", new Property<long>(30, "the number of minutes a player must wait in timeout after pk death in rift")),
                 ("summoning_killtask_multicredit_cap", new Property<long>(2, "if allow_summoning_killtask_multicredit is enabled, the maximum # of killtask credits a player can receive from 1 kill")),
                 ("rift_creature_chance", new Property<long>(3, "the chance a rift creature spawns instead of a normal mob. Default is 3 or 1/3 chance")),
                 ("rift_ore_chance", new Property<long>(100, "the chance an ore node spawns instead of a normal mob. Default is 100 or 1/100 chance")),

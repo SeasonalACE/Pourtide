@@ -679,6 +679,9 @@ namespace ACE.Server.WorldObjects
                     var earnedPvpXp = playerXp * mod;
                     var killerPlayer = PlayerManager.GetOnlinePlayer(killer.Guid);
                     killerPlayer?.EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Pvp, ShareType.None);
+
+                    if (CurrentLandblock.RealmHelpers.IsRift && RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift activeRift))
+                        activeRift.AddPlayerTimeout(victim.Guid.Full);
                 }
 
                 if (!isAlly && UpdatePkTrophies(corpse.KillerId.Value, corpse.VictimId.Value))

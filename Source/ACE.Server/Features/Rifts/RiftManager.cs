@@ -17,6 +17,12 @@ using System.Linq;
 
 namespace ACE.Server.Features.Rifts
 {
+    internal class TimedOutPlayer
+    {
+        public ulong Guid { get; set; }
+        public DateTime TimeoutTimeStamp { get; set; }
+    }
+
     internal class Rift : DungeonBase
     {
         public InstancedPosition DropPosition = null;
@@ -31,6 +37,8 @@ namespace ACE.Server.Features.Rifts
                     return 1.0;
             }
         }
+
+        private Dictionary<ulong, TimedOutPlayer> TimedOutPlayers = new Dictionary<ulong, TimedOutPlayer>();
 
         public List<WorldObject> RiftPortals = new List<WorldObject>();
 
@@ -47,6 +55,15 @@ namespace ACE.Server.Features.Rifts
         public uint Tier = 1;
 
         public uint Instance { get; set; } = 0;
+
+        public void AddPlayerTimeout(ulong playerGuid)
+        {
+            TimedOutPlayers.Add(playerGuid, new TimedOutPlayer()
+            {
+                Guid = playerGuid,
+                TimeoutTimeStamp = DateTime.UtcNow
+            });
+        }
 
         public Rift(string landblock, string name, string coords, InstancedPosition dropPosition, uint instance, Landblock ephemeralRealm, List<uint> creatureIds, uint tier) : base(landblock, name, coords)
         {
@@ -92,6 +109,30 @@ namespace ACE.Server.Features.Rifts
             LandblockInstance = null;
             Players.Clear();
             RiftPortals.Clear();
+            TimedOutPlayers.Clear();
+        }
+
+        internal bool ValidateTimedOutPlayer(Player player)
+        {
+            var guid = player.Guid.Full;
+            if (TimedOutPlayers.ContainsKey(guid))
+            {
+                var timedOutPlayer = TimedOutPlayers[guid];
+                var timeoutDuration = PropertyManager.GetLong("rift_death_duration").Item;
+                if (DateTime.UtcNow - timedOutPlayer.TimeoutTimeStamp < TimeSpan.FromMinutes(timeoutDuration))
+                {
+                    var message = $"You have died to a pk too recently in {Name}, you must wait {Formatting.FormatTimeRemaining(timedOutPlayer.TimeoutTimeStamp.AddMinutes(timeoutDuration) - DateTime.UtcNow)}!";
+                    player?.Session.Network.EnqueueSend(new Network.GameMessages.Messages.GameMessageSystemChat(message, ChatMessageType.System));
+                    return false;
+                }
+                else
+                {
+                    TimedOutPlayers.Remove(guid);
+                    return true;
+                }
+            }
+
+            return true;
         }
     }
 
