@@ -32,6 +32,7 @@ using ACE.Server.Mods;
 using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Features.Rifts;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.DatLoader.Entity;
 
 namespace ACE.Server.Entity
 {
@@ -912,6 +913,15 @@ namespace ACE.Server.Entity
             {
                 log.DebugFormat("Landblock 0x{0} failed to add 0x{1:X8} {2}. Invalid Location", Id, wo.Biota.Id, wo.Name);
                 return false;
+            }
+
+            if (
+                wo.Location.RealmID == 1016 &&
+                RiftManager.TryGetActiveRift(wo.Location.LandblockHex, out Rift activeRift) &&
+                wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator
+                )
+            {
+                wo = MutationsManager.ProcessRiftCreature(wo, activeRift);
             }
 
             return AddWorldObjectInternal(wo);
