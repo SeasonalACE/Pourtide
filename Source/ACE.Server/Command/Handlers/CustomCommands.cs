@@ -10,6 +10,7 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
 using ACE.Server.Features.Discord;
 using ACE.Server.Features.HotDungeons.Managers;
+using ACE.Server.Features.Rifts;
 using ACE.Server.Features.Xp;
 using ACE.Server.Managers;
 using ACE.Server.Network;
@@ -159,13 +160,23 @@ namespace ACE.Server.Command.Handlers
 
             foreach (var dungeon in DungeonManager.GetDungeons())
             {
-                message.Append($"Rift {dungeon.Name} is active, and has a an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x\n");
-
-                if (DungeonManager.DungeonsTimeRemaining.TotalMilliseconds <= 0)
+                if (RiftManager.TryGetActiveRift(dungeon.Landblock, out Rift rift))
                 {
-                    DungeonManager.Reset();
-                }
+                    var oreDropChance = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreDropChance);
+                    var oreSlayerDropChance = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
+                    var oreSalvageDropAmount = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSalvageDropAmount);
+                    message.Append($"Rift {dungeon.Name} is active!\n");
+                    message.Append($"With an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x.\n");
+                    message.Append($"With an ore drop chance of 1/{oreDropChance}.\n");
+                    message.Append($"With an ore slayer drop chance of 1/{oreSlayerDropChance}.\n");
+                    message.Append($"With an ore salvage drop amount of {oreSalvageDropAmount * 2}.\n");
+                    message.Append("-----------------------\n");
 
+                    if (DungeonManager.DungeonsTimeRemaining.TotalMilliseconds <= 0)
+                    {
+                        DungeonManager.Reset();
+                    }
+                }
             }
 
             message.Append("-----------------------\n");
