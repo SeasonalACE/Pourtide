@@ -176,7 +176,7 @@ namespace ACE.Server.Managers
                 target.SlayerCreatureType = source.SlayerCreatureType;
 
                 target.SlayerDamageBonus = source.SlayerDamageBonus;
-                target.LongDesc = $"Slayer Damage Bonux: {target.SlayerDamageBonus.ToString("0.00")}";
+                target.LongDesc = $"Slayer Damage Bonux: {target.SlayerDamageBonus?.ToString("0.00")}";
                 player.TryConsumeFromInventoryWithNetworking(source);
                 return true;
             }
