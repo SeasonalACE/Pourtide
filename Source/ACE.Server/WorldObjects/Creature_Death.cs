@@ -160,7 +160,8 @@ namespace ACE.Server.WorldObjects
 
             if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift rift))
             {
-                var ore = MutationsManager.CreateOre(location, rift.Tier);
+                var oreDropChance = RealmRuleset.GetProperty(RealmPropertyInt.OreDropChance);
+                var ore = MutationsManager.CreateOre(location, oreDropChance, rift.Tier);
 
                 if (ore != null)
                     ore.EnterWorld();
@@ -751,7 +752,9 @@ namespace ACE.Server.WorldObjects
                 }
 
 
-                // slayer
+                var slayerDropChance = RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
+                if (ThreadSafeRandom.Next(1, slayerDropChance) == 1)
+                {
                 var creatureType = SlayersChance.GetCreatureType();
                 var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
                 slayer.Name = $"{creatureType} Slayer Skull";
@@ -760,7 +763,8 @@ namespace ACE.Server.WorldObjects
                 corpse.TryAddToInventory(slayer);
 
                 // salvage
-                for (var i = 0; i < tier * 3; i++)
+                var maxSalvageAmount = RealmRuleset.GetProperty(RealmPropertyInt.OreSalvageDropAmount);
+                for (var i = 0; i < maxSalvageAmount; i++)
                 {
                     var salvageWcids = SalvageChance.Roll();
                     foreach (var wcid in salvageWcids)

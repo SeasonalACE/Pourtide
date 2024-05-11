@@ -1,21 +1,36 @@
 {
-  "name": "Rift",
-  "type": "Ruleset",
+    "name": "Rift",
+    "type": "Ruleset",
     "properties": {
         "Description": "This represents a dungeon rift",
         //"IsFullLootOnDeath": false,
         "IsNeutralZone": true,
-        "ReplaceMobs":  false,
+        "ReplaceMobs": false,
         "HasRecalls": false,
         "ExperienceMultiplierAll": {
-          "low": 2.0,
-          "high": 3.0,
-          "reroll": "landblock"
+            "low": 2.0,
+            "high": 3.0,
+            "reroll": "landblock"
         },
         "CreatureRespawnDuration": {
             "low": 120.0,
             "high": 180.0,
             "reroll": "landblock"
+        },
+        "OreDropChance": {
+          "low": 30,
+          "high": 100,
+          "reroll": "landblock"
+        },
+        "OreSlayerDropChance": {
+          "low": 1,
+          "high": 5,
+          "reroll": "landblock"
+        },
+        "OreSalvageDropAmount": {
+          "low": 2,
+          "high": 5,
+          "reroll": "landblock"
         }
     }
 }

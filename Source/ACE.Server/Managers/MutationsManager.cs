@@ -96,10 +96,9 @@ namespace ACE.Server.Managers
             return cantripAmount;
         }
 
-        public static WorldObject CreateOre(InstancedPosition position, uint tier = 1)
+        public static WorldObject CreateOre(InstancedPosition position, int oreDropChance, uint tier = 1)
         {
-            var oreChance = PropertyManager.GetLong("rift_ore_chance").Item;
-            if (ThreadSafeRandom.Next(1, (int)oreChance) == 1)
+            if (ThreadSafeRandom.Next(1, oreDropChance) == 1)
             {
                 var ore = WorldObjectFactory.CreateNewWorldObject(603001);
 
@@ -121,9 +120,9 @@ namespace ACE.Server.Managers
             return null;
         }
 
-        public static WorldObject ProcessRiftCreature(WorldObject wo, Rift rift)
+        public static WorldObject ProcessRiftCreature(WorldObject wo, int oreDropChance, Rift rift)
         {
-            var ore = CreateOre(wo.Location, rift.Tier);
+            var ore = CreateOre(wo.Location, oreDropChance, rift.Tier);
 
             if (ore != null)
             {

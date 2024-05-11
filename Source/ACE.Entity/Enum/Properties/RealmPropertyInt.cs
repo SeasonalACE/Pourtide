@@ -58,6 +58,19 @@ namespace ACE.Entity.Enum.Properties
         /// </summary>
         [RealmPropertyInt(5, 1, 1440)]
         LandblockUnloadInterval = 15,
+
+        // between 1/30 to 1/100 chance ore spawns on death of mob or generator spawn
+        [RealmPropertyInt(30, 30, 100)]
+        OreDropChance = 16,
+
+        // between 1/1 to 1/5 chance slayer skulls drop on ore
+        [RealmPropertyInt(1, 1, 5)]
+        OreSlayerDropChance = 17,
+
+        // multiply this value by 2 and that's the amount of salvage dropped from ore
+        // default value is 2, which means 4 bags of slavage will drop, but up to 10 may drop if 5 is selected
+        [RealmPropertyInt(2, 2, 5)]
+        OreSalvageDropAmount = 18,
     }
 
     public static class RealmPropertyIntExtensions

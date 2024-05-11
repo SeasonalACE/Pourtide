@@ -361,7 +361,8 @@ namespace ACE.Server.Entity
                     wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator
                     )
                 {
-                    wo = MutationsManager.ProcessRiftCreature(wo, activeRift);
+                    var oreDropChance = Generator.RealmRuleset.GetProperty(RealmPropertyInt.OreDropChance);
+                    wo = MutationsManager.ProcessRiftCreature(wo, oreDropChance, activeRift);
                 }
 
                 if (Biota.PaletteId.HasValue && Biota.PaletteId > 0)
