@@ -1,10 +1,6 @@
 using ACE.Common;
 using ACE.Entity.Enum;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ACE.Server.Factories.Tables
 {
@@ -52,7 +48,7 @@ namespace ACE.Server.Factories.Tables
 
         public static CreatureType GetCreatureType()
         {
-            return CreatureTypes[ThreadSafeRandom.Next(0, CreatureTypes.Count - 1)];
+           return CreatureTypes[ThreadSafeRandom.Next(0, CreatureTypes.Count - 1)];
         }
     }
 }

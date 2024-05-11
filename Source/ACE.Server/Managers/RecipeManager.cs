@@ -174,7 +174,9 @@ namespace ACE.Server.Managers
             if (isWeaponOrCaster && target.SlayerCreatureType == null && source.SlayerCreatureType != null)
             {
                 target.SlayerCreatureType = source.SlayerCreatureType;
-                target.SlayerDamageBonus = 2;
+
+                target.SlayerDamageBonus = source.SlayerDamageBonus;
+                target.LongDesc = $"Slayer Damage Bonux: {target.SlayerDamageBonus.ToString("0.00")}";
                 player.TryConsumeFromInventoryWithNetworking(source);
                 return true;
             }
