@@ -463,5 +463,13 @@ VALUES (0x7A9B46B4, 3000311, 0xA9B40029, 120.678, 9.15448, 94.005, -0.438726, 0,
 /* @teleloc 0xA9B40029 [120.678001 9.154480 94.004997] -0.438726 0.000000 0.000000 -0.898621 */
 
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x7A9B46B5, 3000304, 0xA9B40029, 122.6733, 8.43652, 95.61, 0.418277, 0, 0, 0.908319, False, '2024-05-10 04:20:44'); /* Fitness Instructor Anthony */
-/* @teleloc 0xA9B40029 [122.673302 8.436520 95.610001] 0.418277 0.000000 0.000000 0.908319 */
+VALUES (0x7A9B46B5, 3000304, 0xA9B40029, 122.673, 8.43652, 95.61, 0.418277, 0, 0, 0.908319, False, '2024-05-10 04:20:44'); /* Fitness Instructor Anthony */
+/* @teleloc 0xA9B40029 [122.672997 8.436520 95.610001] 0.418277 0.000000 0.000000 0.908319 */
+
+INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
+VALUES (0x7A9B46B6, 3000382, 0xA9B40029, 124.524, 4.06663, 94.005, -0.701403, 0, 0, -0.712765, False, '2024-05-11 15:02:58'); /* Head to Quest Xp Collector */
+/* @teleloc 0xA9B40029 [124.524002 4.066630 94.004997] -0.701403 0.000000 0.000000 -0.712765 */
+
+INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
+VALUES (0x7A9B46B7, 3000383, 0xA9B40029, 125.4905, 2.037429, 94.005, -0.727633, 0, 0, -0.685967, False, '2024-05-11 15:03:11'); /* Head to Monster Xp Collector */
+/* @teleloc 0xA9B40029 [125.490501 2.037429 94.004997] -0.727633 0.000000 0.000000 -0.685967 */

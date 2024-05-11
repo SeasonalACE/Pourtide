@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Security.Policy;
 using System.Threading;
 using ACE.Common;
 using ACE.Database;
@@ -17,7 +16,6 @@ using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
 using ACE.Server.Features.HotDungeons.Managers;
-using ACE.Server.Features.Xp;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
@@ -3530,6 +3528,36 @@ namespace ACE.Server.WorldObjects
                     // if stacked item, only give 1, ignoring amount indicated, unless they are AiAcceptEverything in which case, take full amount indicated
                     if (RemoveItemForGive(item, itemFoundInContainer, itemWasEquipped, itemRootOwner, acceptAll ? amount : 1, out WorldObject itemToGive))
                     {
+                        if (target.WeenieClassId == 3000382 && item.WeenieClassId == 60000212)
+                        {
+                            if (item.BountyTrophyGuid == null)
+                                return;
+
+                            var victim = PlayerManager.FindByGuid((ulong)item.BountyTrophyGuid);
+                            if (victim == null)
+                                return;
+
+                            var mod = (double)victim.Level / (double)Level;
+                            var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.005;
+                            var earnedPvpXp = playerXp * mod;
+                            EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Quest, ShareType.None);
+                        }
+
+                        if (target.WeenieClassId == 3000383 && item.WeenieClassId == 60000212)
+                        {
+                            if (item.BountyTrophyGuid == null)
+                                return;
+
+                            var victim = PlayerManager.FindByGuid((ulong)item.BountyTrophyGuid);
+                            if (victim == null)
+                                return;
+
+                            var mod = (double)victim.Level / (double)Level;
+                            var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.005;
+                            var earnedPvpXp = playerXp * mod;
+                            EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Kill, ShareType.None);
+                        }
+
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 60000212)
                         {
                             var xp = PvpXpDailyMax * 0.08; // give 8% of total PvpXpDailyMax
