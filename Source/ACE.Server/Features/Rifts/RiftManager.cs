@@ -236,7 +236,7 @@ namespace ACE.Server.Features.Rifts
                 .SelectMany(wo => wo.Biota.PropertiesGenerator.Select(prop => prop.WeenieClassId))
                 .Select(wcid => WorldObjectFactory.CreateNewWorldObject(wcid))
                 .OfType<Creature>()
-                .Where(creature => creature is not Player && !creature.IsGenerator && !creature.IsNPC)
+                .Where(creature => creature is not Player && !creature.IsGenerator && !creature.IsNPC && creature.DeathTreasure != null)
                 .ToList();
 
             return objects;
@@ -250,7 +250,7 @@ namespace ACE.Server.Features.Rifts
 
             var spawnedCreatures = dungeonObjects
                 .OfType<Creature>()
-                .Where(creature => creature is not Player && !creature.IsGenerator && !creature.IsNPC);
+                .Where(creature => creature is not Player && !creature.IsGenerator && !creature.IsNPC && creature.DeathTreasure != null);
 
             var creatures = generatorCreatureObjects.Concat(spawnedCreatures).Distinct().ToList();
 
