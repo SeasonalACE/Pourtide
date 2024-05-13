@@ -1,7 +1,7 @@
 DELETE FROM `weenie` WHERE `class_Id` = 3000311;
 
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
-VALUES (3000311, 'ace3000311-qualityoflifevendor', 12, '2024-05-08 07:48:44') /* Vendor */;
+VALUES (3000311, 'ace3000311-qualityoflifevendor', 12, '2024-05-13 21:40:45') /* Vendor */;
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES (3000311,   1,         16) /* ItemType - Creature */
@@ -111,11 +111,14 @@ VALUES (3000311, 2, 25703,  0, 93, 1, False) /* Create Dapper Suit (25703) for W
      , (3000311, 4, 30246, -1, 0, 0, False) /* Create Artist's Crystal (30246) for Shop */
      , (3000311, 4,  8904, -1, 0, 0, False) /* Create Focusing Stone (8904) for Shop */
      , (3000311, 4, 35593, -1, 0, 0, False) /* Create  (35593) for Shop */
-     , (3000311, 4, 24179, -1, 0, 0, False) /* Create Heart of the Innocent (24179) for Shop */;
+     , (3000311, 4, 24179, -1, 0, 0, False) /* Create Heart of the Innocent (24179) for Shop */
+     , (3000311, 4, 44880, -1, 0, 0, False) /* Create Armor Middle Reduction Tool (44880) for Shop */
+     , (3000311, 4, 44879, -1, 0, 0, False) /* Create Armor Lower Reduction Tool (44879) for Shop */
+     , (3000311, 4, 42622, -1, 0, 0, False) /* Create Armor Main Reduction Tool (42622) for Shop */;
 
 /* Lifestoned Changelog:
 {
-  "LastModified": "2024-05-08T00:35:20.5532762-07:00",
+  "LastModified": "2024-05-13T14:38:09.3149445-07:00",
   "ModifiedBy": "pourman",
   "Changelog": [
     {
