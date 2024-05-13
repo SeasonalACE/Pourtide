@@ -1,7 +1,7 @@
 DELETE FROM `weenie` WHERE `class_Id` = 3000311;
 
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
-VALUES (3000311, 'ace3000311-qualityoflifevendor', 12, '2024-05-13 21:40:45') /* Vendor */;
+VALUES (3000311, 'ace3000311-qualityoflifevendor', 12, '2024-05-13 21:53:10') /* Vendor */;
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES (3000311,   1,         16) /* ItemType - Creature */
@@ -114,11 +114,18 @@ VALUES (3000311, 2, 25703,  0, 93, 1, False) /* Create Dapper Suit (25703) for W
      , (3000311, 4, 24179, -1, 0, 0, False) /* Create Heart of the Innocent (24179) for Shop */
      , (3000311, 4, 44880, -1, 0, 0, False) /* Create Armor Middle Reduction Tool (44880) for Shop */
      , (3000311, 4, 44879, -1, 0, 0, False) /* Create Armor Lower Reduction Tool (44879) for Shop */
-     , (3000311, 4, 42622, -1, 0, 0, False) /* Create Armor Main Reduction Tool (42622) for Shop */;
+     , (3000311, 4, 42622, -1, 0, 0, False) /* Create Armor Main Reduction Tool (42622) for Shop */
+     , (3000311, 4, 30196, -1, 0, 0, False) /* Create Wayfarer's Pearl (30196) for Shop */
+     , (3000311, 4, 30202, -1, 0, 0, False) /* Create Ursuin's Pearl (30202) for Shop */
+     , (3000311, 4, 30206, -1, 0, 0, False) /* Create Magus's Pearl (30206) for Shop */
+     , (3000311, 4, 30240, -1, 0, 0, False) /* Create Lugian's Pearl (30240) for Shop */
+     , (3000311, 4, 30224, -1, 0, 0, False) /* Create Resister's Crystal (30224) for Shop */
+     , (3000311, 4, 30228, -1, 0, 0, False) /* Create Evader's Crystal (30228) for Shop */
+     , (3000311, 4, 30229, -1, 0, 0, False) /* Create Dodger's Crystal (30229) for Shop */;
 
 /* Lifestoned Changelog:
 {
-  "LastModified": "2024-05-13T14:38:09.3149445-07:00",
+  "LastModified": "2024-05-13T14:52:16.7175496-07:00",
   "ModifiedBy": "pourman",
   "Changelog": [
     {
