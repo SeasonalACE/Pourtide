@@ -101,6 +101,9 @@ namespace ACE.Entity.Enum.Properties
         TinkerLog                       = 9007,
 
         [ServerOnly]
+        CurrentRareEnchantmentIds       = 10001,
+
+        [ServerOnly]
         SummonTargetRuleset             = 42000,
     }
 

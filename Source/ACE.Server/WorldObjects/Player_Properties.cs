@@ -4,6 +4,7 @@ using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Network.GameMessages;
 using ACE.Server.Network.GameMessages.Messages;
+using System.Collections.Generic;
 
 namespace ACE.Server.WorldObjects
 {
@@ -1414,5 +1415,27 @@ namespace ACE.Server.WorldObjects
             get => GetProperty(PropertyInt.ImbueSuccesses) ?? 0;
             set { if (value == 0) RemoveProperty(PropertyInt.ImbueSuccesses); else SetProperty(PropertyInt.ImbueSuccesses, value); }
         }
+
+        public string CurrentRareEnchantmentIds
+        {
+            get => GetProperty(PropertyString.CurrentRareEnchantmentIds);
+            set { if (string.IsNullOrEmpty(value)) RemoveProperty(PropertyString.CurrentRareEnchantmentIds); else SetProperty(PropertyString.CurrentRareEnchantmentIds, value); }
+        }
+
+        HashSet<uint> RareSpellEnchantments = new HashSet<uint>();
+        public void AddRareEnchantment(uint id)
+        {
+            if (RareSpellEnchantments.Add(id))
+                this.PackCurrentRareEnchantmentIds();
+        }
+
+        public void TryRemoveRareEnchantment(uint id)
+        {
+            if (RareSpellEnchantments.Remove(id))
+                this.PackCurrentRareEnchantmentIds();
+        }
+
+        public void ClearRareEnchantments() { this.RareSpellEnchantments.Clear(); CurrentRareEnchantmentIds = null; }
+        public void PackCurrentRareEnchantmentIds() => CurrentRareEnchantmentIds = string.Join("|", RareSpellEnchantments);
     }
 }
