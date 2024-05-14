@@ -347,13 +347,14 @@ namespace ACE.Server.Entity
                     log.Warn($"GeneratorProfile.AddWorldObject failed to Spawn(): failed to create wcid {Biota.WeenieClassId} Generator is null");
 
                 var wo = WorldObjectFactory.CreateNewWorldObject(Biota.WeenieClassId, Generator.RealmRuleset);
-                wo.Location = new InstancedPosition(Generator.Location);
 
                 if (wo == null)
                 {
                     log.Warn($"[GENERATOR] 0x{Generator.Guid}:{Generator.WeenieClassId} {Generator.Name}.Spawn(): failed to create wcid {Biota.WeenieClassId}");
                     return null;
                 }
+
+                wo.Location = new InstancedPosition(Generator.Location);
 
                 if (
                     Generator.Location.RealmID == 1016 &&
@@ -363,6 +364,11 @@ namespace ACE.Server.Entity
                 {
                     var oreDropChance = Generator.RealmRuleset.GetProperty(RealmPropertyInt.OreDropChance);
                     wo = MutationsManager.ProcessRiftCreature(wo, oreDropChance, activeRift);
+                    if (wo is Creature creature && !creature.IsOreNode)
+                    {
+                        wo.Translucency = (float)0.8;
+                        wo.LightsStatus = false;
+                    }
                 }
 
                 if (Biota.PaletteId.HasValue && Biota.PaletteId > 0)
