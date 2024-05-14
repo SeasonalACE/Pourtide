@@ -3538,7 +3538,7 @@ namespace ACE.Server.WorldObjects
                                 return;
 
                             var mod = (double)victim.Level / (double)Level;
-                            var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.005;
+                            var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.02;
                             var earnedPvpXp = playerXp * mod;
                             EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Quest, ShareType.None);
                         }
@@ -3553,7 +3553,7 @@ namespace ACE.Server.WorldObjects
                                 return;
 
                             var mod = (double)victim.Level / (double)Level;
-                            var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.005;
+                            var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.02;
                             var earnedPvpXp = playerXp * mod;
                             EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Kill, ShareType.None);
                         }
