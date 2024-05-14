@@ -143,6 +143,9 @@ namespace ACE.Server.WorldObjects
                     break;
             }
 
+            if ((TotalExperience + amount > (long)XpManager.CurrentDailyXp.XpCap))
+                return;
+
             // until we are max level we must make sure that we send
             var xpTable = DatManager.PortalDat.XpTable;
 
