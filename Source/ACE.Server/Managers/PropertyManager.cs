@@ -582,6 +582,7 @@ namespace ACE.Server.Managers
                 ("offline_xp_passup_limit", new Property<bool>(true, "if FALSE, allows unlimited xp to passup to offline characters in allegiances")),
                 ("olthoi_play_disabled", new Property<bool>(true, "if false, allows players to create and play as olthoi characters")),
                 ("override_encounter_spawn_rates", new Property<bool>(false, "if enabled, landblock encounter spawns are overidden by double properties below.")),
+                ("pk_vicinity_detection", new Property<bool>(false, "if enabled, pk enemies within vicinity will cause a player to be pk tagged when logging out or recalling.")),
                 ("permit_corpse_all", new Property<bool>(false, "If TRUE, /permit grants permittees access to all corpses of the permitter. Defaults to FALSE as per retail, where /permit only grants access to 1 locked corpse")),
                 ("persist_movement", new Property<bool>(false, "If TRUE, persists autonomous movements such as turns and sidesteps through non-autonomous server actions. Retail didn't appear to do this, but some players may prefer this.")),
                 ("pet_stow_replace", new Property<bool>(false, "pet stowing for different pet devices becomes a stow and replace. defaults to retail value of false")),

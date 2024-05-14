@@ -1050,6 +1050,8 @@ namespace ACE.Server.WorldObjects
 
             var targetPlayer = targetCreature as Player;
 
+            player?.VerifyPkEnemyInVicinity();
+
             if (player != null && player.PKTimerActive)
             {
                 player.Session.Network.EnqueueSend(new GameEventWeenieError(player.Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
@@ -1186,6 +1188,8 @@ namespace ACE.Server.WorldObjects
                 player.Session.Network.EnqueueSend(new GameEventWeenieError(player.Session, WeenieError.OlthoiCanOnlyRecallToLifestone));
                 return;
             }
+
+            player?.VerifyPkEnemyInVicinity();
 
             if (player != null && player.PKTimerActive)
             {
@@ -1325,6 +1329,8 @@ namespace ACE.Server.WorldObjects
         {
             if (targetCreature is Player targetPlayer)
             {
+                targetPlayer?.VerifyPkEnemyInVicinity();
+
                 if (targetPlayer.PKTimerActive)
                 {
                     targetPlayer.Session.Network.EnqueueSend(new GameEventWeenieError(targetPlayer.Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
@@ -1367,6 +1373,8 @@ namespace ACE.Server.WorldObjects
 
             if (targetPlayer == null || targetPlayer.Fellowship == null)
                 return false;
+
+            targetPlayer?.VerifyPkEnemyInVicinity();
 
             if (targetPlayer.PKTimerActive)
             {

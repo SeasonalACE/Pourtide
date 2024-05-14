@@ -94,6 +94,8 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
+            VerifyPkEnemyInVicinity();
+
             if (PKTimerActive)
             {
                 Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
@@ -162,6 +164,8 @@ namespace ACE.Server.WorldObjects
             if (recallsDisabled)
                 return;
 
+            VerifyPkEnemyInVicinity();
+
             if (PKTimerActive)
             {
                 Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
@@ -224,6 +228,8 @@ namespace ACE.Server.WorldObjects
             var recallsDisabled = !RealmRuleset.GetProperty(RealmPropertyBool.HasRecalls);
             if (recallsDisabled)
                 return;
+
+            VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -301,6 +307,8 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
+            VerifyPkEnemyInVicinity();
+
             if (PKTimerActive)
             {
                 Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
@@ -372,6 +380,8 @@ namespace ACE.Server.WorldObjects
                 Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.OlthoiCanOnlyRecallToLifestone));
                 return;
             }
+
+            VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -468,6 +478,8 @@ namespace ACE.Server.WorldObjects
                 Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.OlthoiCanOnlyRecallToLifestone));
                 return;
             }
+
+            VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -587,11 +599,14 @@ namespace ACE.Server.WorldObjects
                 return;
             //Console.WriteLine($"{Name}.HandleActionTeleToPkArena()");
 
+
             if (PlayerKillerStatus != PlayerKillerStatus.PK)
             {
                 Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.OnlyPKsMayUseCommand));
                 return;
             }
+
+            VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -679,6 +694,8 @@ namespace ACE.Server.WorldObjects
                 Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.OnlyPKLiteMayUseCommand));
                 return;
             }
+
+            VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {

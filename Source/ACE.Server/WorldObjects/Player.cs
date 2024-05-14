@@ -545,6 +545,25 @@ namespace ACE.Server.WorldObjects
 
         public bool IsLoggingOut;
 
+        public bool VerifyPkEnemyInVicinity()
+        {
+            if (!PropertyManager.GetBool("pk_vicinity_detection").Item)
+                return false;
+
+            var knownPlayers = PhysicsObj.ObjMaint.GetKnownPlayersValuesAsPlayer();
+
+            foreach(var player in knownPlayers)
+            {
+                if (player.IsPK && !player.IsAdmin && player.Location.SquaredDistanceTo(Location) <= 80000 && !player.IsAlly(this))
+                {
+                    UpdatePKTimer();
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Do the player log out work.<para />
         /// If you want to force a player to logout, use Session.LogOffPlayer().
@@ -562,11 +581,7 @@ namespace ACE.Server.WorldObjects
                     MaterializeLogoutState = MaterializedLogoutState
                 });
 
-                var objects = CurrentLandblock.GetAllWorldObjectsForDiagnostics();
-                var enemies = objects.Where(o => o != this && o is Player player && player.IsPK && !player.IsAlly(this)).ToList();
-
-                if (enemies.Count > 0)
-                    UpdatePKTimer();
+                VerifyPkEnemyInVicinity();
 
                 if (PKLogoutActive && !forceImmediate || PkLogoutState != LogoutState.Pending)
                 {

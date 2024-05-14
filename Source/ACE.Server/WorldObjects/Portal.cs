@@ -170,6 +170,8 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
+            player?.VerifyPkEnemyInVicinity();
+
             if (player.PKTimerActive && !PortalIgnoresPkAttackTimer)
             {
                 return new ActivationResult(new GameEventWeenieError(player.Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
