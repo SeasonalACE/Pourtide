@@ -606,5 +606,23 @@ namespace ACE.Server.Command.Handlers
             lbResetChain.EnqueueChain();
         }
 
+        [CommandHandler("spl", AccessLevel.Developer, CommandHandlerFlag.None, 0, "Show player locations.")]
+        [CommandHandler("show-player-locations", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Show player locations.")]
+        public static void HandleShowPlayerLocations(Session session, params string[] parameters)
+        {
+            var online = PlayerManager.GetAllOnline();
+
+            foreach (var player in online)
+            {
+                if (player != null && player.Location != null)
+                {
+                    RiftManager.TryGetActiveRift(player.Location.LandblockHex, out Rift rift);
+                    DungeonManager.TryGetDungeonLandblock(player.Location.LandblockHex, out DungeonLandblock dungeon);
+
+                    var at = rift != null ? $"Rift {rift.Name}" : dungeon != null ? $"Dungeon {dungeon.Name}" : player.Location.GetMapCoordStr();
+                    CommandHandlerHelper.WriteOutputInfo(session, $"Name = {player.Name}, At = {at}, RealmId = {player.Location.RealmID}, Instance = {player.Location.Instance} ", ChatMessageType.WorldBroadcast);
+                }
+            }
+        }
     }
 }
