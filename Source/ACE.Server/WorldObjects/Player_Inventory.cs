@@ -15,6 +15,7 @@ using ACE.Server.Command.Handlers;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
+using ACE.Server.Factories.Tables;
 using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Managers;
 using ACE.Server.Network;
@@ -3570,9 +3571,23 @@ namespace ACE.Server.WorldObjects
                                     xp = PvpXpDailyMax * 0.25;
                                     for (var i = 0; i < 5; ++i)
                                     {
+                                        // add ore
                                         var ore = WorldObjectFactory.CreateNewWorldObject(603004);
                                         TryCreateInInventoryWithNetworking(ore);
                                     }
+
+                                    // add slayer
+                                    var creatureType = SlayersChance.GetCreatureType();
+                                    var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
+                                    var damage = ThreadSafeRandom.Next((float)1.5, (float)3.0);
+                                    slayer.Name = $"{creatureType} Slayer Skull";
+
+                                    if (creatureType == ACE.Entity.Enum.CreatureType.Human)
+                                        damage = ThreadSafeRandom.Next((float)1.1, (float)1.5);
+
+                                    slayer.LongDesc = $"Use this skull on any loot-generated weapon or caster to give it a {creatureType} Slayer effect. The damage for this slayer skull is {damage.ToString("0.00")}";
+                                    slayer.SlayerCreatureType = creatureType;
+                                    slayer.SlayerDamageBonus = damage;
 
                                     BountyGuid = null;
                                 }

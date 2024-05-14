@@ -755,18 +755,19 @@ namespace ACE.Server.WorldObjects
                 var slayerDropChance = RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
                 if (ThreadSafeRandom.Next(1, slayerDropChance) == 1)
                 {
-                var creatureType = SlayersChance.GetCreatureType();
-                var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
+                    var creatureType = SlayersChance.GetCreatureType();
+                    var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
                     var damage = ThreadSafeRandom.Next((float)1.5, (float)3.0);
-                slayer.Name = $"{creatureType} Slayer Skull";
+
+                    slayer.Name = $"{creatureType} Slayer Skull";
 
                     if (creatureType == ACE.Entity.Enum.CreatureType.Human)
                         damage = ThreadSafeRandom.Next((float)1.1, (float)1.5);
 
                     slayer.LongDesc = $"Use this skull on any loot-generated weapon or caster to give it a {creatureType} Slayer effect. The damage for this slayer skull is {damage.ToString("0.00")}";
-                slayer.SlayerCreatureType = creatureType;
+                    slayer.SlayerCreatureType = creatureType;
                     slayer.SlayerDamageBonus = damage;
-                corpse.TryAddToInventory(slayer);
+                    corpse.TryAddToInventory(slayer);
                 }
 
 
