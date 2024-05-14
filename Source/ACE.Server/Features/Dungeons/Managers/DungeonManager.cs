@@ -92,7 +92,7 @@ namespace ACE.Server.Features.HotDungeons.Managers
         public static int GetMaxHotSpots()
         {
             var count = (uint)PlayerManager.GetOnlineCount();
-            return count <= 25 ? 2 : count <= 40 ? 3 : 4;
+            return count <= 10 ? 2 : count <= 20 ? 3 : 4;
         }
 
         public static bool HasHotspotDungeon(string id)
