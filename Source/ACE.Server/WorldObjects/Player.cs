@@ -600,7 +600,7 @@ namespace ACE.Server.WorldObjects
             {
                 log.Error($"Error: Failed to logout player {Name}");
                 log.Error(ex.Message);
-                log.Error(ex.StackTrace);
+                log.Error(System.Environment.StackTrace);
                 return false;
             }
 
