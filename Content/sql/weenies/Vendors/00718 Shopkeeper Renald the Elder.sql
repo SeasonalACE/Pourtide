@@ -1,7 +1,7 @@
 DELETE FROM `weenie` WHERE `class_Id` = 718;
 
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
-VALUES (718, 'holtburgshopkeep', 12, '2024-04-26 14:57:41') /* Vendor */;
+VALUES (718, 'holtburgshopkeep', 12, '2024-05-14 16:24:57') /* Vendor */;
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES (718,   1,         16) /* ItemType - Creature */
@@ -232,11 +232,12 @@ VALUES (718, 2,   130,  0, 8, 0.33, False) /* Create Shirt (130) for Wield */
      , (718, 4, 41396, -1, 0, 0, False) /* Create  (41396) for Shop */
      , (718, 4, 41420, -1, 0, 0, False) /* Create  (41420) for Shop */
      , (718, 4, 41418, -1, 0, 0, False) /* Create  (41418) for Shop */
-     , (718, 4, 602001, -1, 0, 0, False) /* Create  (602001) for Shop */;
+     , (718, 4, 602001, -1, 0, 0, False) /* Create  (602001) for Shop */
+     , (718, 4, 43950, -1, 0, 0, False) /* Create  (43950) for Shop */;
 
 /* Lifestoned Changelog:
 {
-  "LastModified": "2024-04-26T07:57:11.5364707-07:00",
+  "LastModified": "2024-05-14T09:23:35.6316908-07:00",
   "ModifiedBy": "pourman",
   "Changelog": [],
   "UserChangeSummary": " Added Metal Form (41419). Added Medal Mold (41423) Added Handle Mold (41396) Added Hammer (41420) Added Leather Strap(41418) to createList.",
