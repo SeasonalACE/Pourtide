@@ -89,17 +89,17 @@ namespace ACE.Server.Features.Rifts
 
         public void Close()
         {
+            foreach (var portal in RiftPortals)
+            {
+                portal.Destroy();
+            }
+
             foreach (var player in Players.Values)
             {
                 if (player != null)
                 {
                     player.ExitInstance();
                 }
-            }
-
-            foreach (var portal in RiftPortals)
-            {
-                portal.Destroy();
             }
 
             Instance = 0;
@@ -154,22 +154,6 @@ namespace ACE.Server.Features.Rifts
                 log.Info(message);
                 foreach (var rift in ActiveRifts)
                     rift.Value.Close();
-
-                var landblocks = LandblockManager.GetLoadedLandblocks();
-
-                var ephemeralRealms = landblocks.Where(lb => lb.InnerRealmInfo != null).ToList();
-
-                foreach (var realm in ephemeralRealms)
-                {
-                    var objects = realm.GetAllWorldObjectsForDiagnostics();
-                    var players = objects.Where(o => o is Player).ToList();
-
-                    foreach (var player in players)
-                    {
-                        if (player is Player pl)
-                            pl.ExitInstance();
-                    }
-                }
 
                 ActiveRifts.Clear();
             }
