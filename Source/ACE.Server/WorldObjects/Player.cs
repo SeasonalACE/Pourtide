@@ -30,6 +30,7 @@ using Character = ACE.Database.Models.Shard.Character;
 using MotionTable = ACE.DatLoader.FileTypes.MotionTable;
 using ACE.Server.Realms;
 using System.Linq;
+using ACE.Server.Command.Handlers;
 
 namespace ACE.Server.WorldObjects
 {
@@ -601,6 +602,8 @@ namespace ACE.Server.WorldObjects
                 log.Error($"Error: Failed to logout player {Name}");
                 log.Error(ex.Message);
                 log.Error(System.Environment.StackTrace);
+
+                CustomCommands.HandleForceLogoffStuckCharacter(Session, Name);
                 return false;
             }
 
