@@ -554,7 +554,7 @@ namespace ACE.Server.WorldObjects
 
             foreach(var player in knownPlayers)
             {
-                if (player.IsPK && !player.IsAdmin && player.Location.SquaredDistanceTo(Location) <= 80000 && !player.IsAlly(this))
+                if (IsPK && player.IsPK && !player.IsAdmin && player.Location.SquaredDistanceTo(Location) <= 80000 && !player.IsAlly(this))
                 {
                     UpdatePKTimer();
                     return true;

@@ -1189,7 +1189,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            player?.VerifyPkEnemyInVicinity();
+            //player?.VerifyPkEnemyInVicinity();
 
             if (player != null && player.PKTimerActive)
             {

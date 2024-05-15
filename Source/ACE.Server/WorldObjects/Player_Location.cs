@@ -94,7 +94,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -164,7 +164,7 @@ namespace ACE.Server.WorldObjects
             if (recallsDisabled)
                 return;
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -229,7 +229,7 @@ namespace ACE.Server.WorldObjects
             if (recallsDisabled)
                 return;
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -307,7 +307,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -381,7 +381,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -479,7 +479,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -606,7 +606,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {
@@ -695,7 +695,7 @@ namespace ACE.Server.WorldObjects
                 return;
             }
 
-            VerifyPkEnemyInVicinity();
+            //VerifyPkEnemyInVicinity();
 
             if (PKTimerActive)
             {

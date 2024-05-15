@@ -170,7 +170,7 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
-            player?.VerifyPkEnemyInVicinity();
+            //player?.VerifyPkEnemyInVicinity();
 
             if (player.PKTimerActive && !PortalIgnoresPkAttackTimer)
             {
