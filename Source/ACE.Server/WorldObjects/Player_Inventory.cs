@@ -3589,6 +3589,8 @@ namespace ACE.Server.WorldObjects
                                     slayer.SlayerCreatureType = creatureType;
                                     slayer.SlayerDamageBonus = damage;
 
+                                    TryCreateInInventoryWithNetworking(slayer);
+
                                     BountyGuid = null;
                                 }
                             }
