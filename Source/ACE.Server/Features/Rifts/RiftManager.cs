@@ -89,27 +89,42 @@ namespace ACE.Server.Features.Rifts
 
         public void Close()
         {
-            foreach (var portal in RiftPortals)
-            {
-                portal.Destroy();
-            }
-
-            foreach (var player in Players.Values)
-            {
-                if (player != null)
-                {
-                    player.ExitInstance();
-                }
-            }
+            ClosePortals();
+            RemovePlayers();
 
             Instance = 0;
             Next = null;
             Previous = null;
             LandblockInstance.Permaload = false;
             LandblockInstance = null;
-            Players.Clear();
-            RiftPortals.Clear();
             TimedOutPlayers.Clear();
+        }
+
+        private void ClosePortals()
+        {
+            foreach (var portal in RiftPortals)
+            {
+                var actionChain = new ActionChain();
+                actionChain.AddDelayForOneTick();
+                actionChain.AddAction(portal.CurrentLandblock, () =>
+                {
+                    portal.Destroy();
+                });
+                actionChain.EnqueueChain();
+            }
+
+            RiftPortals.Clear();
+        }
+
+        private void RemovePlayers()
+        {
+            foreach (var player in Players.Values)
+            {
+                if (player != null)
+                    player.ExitInstance();
+            }
+
+            Players.Clear();
         }
 
         internal bool ValidateTimedOutPlayer(Player player)
