@@ -238,6 +238,9 @@ namespace ACE.Server.WorldObjects
 
                     var totalXP = (xp) * damagePercent;
 
+                    if (this is Player)
+                        return;
+
                     playerDamager.EarnXP((long)Math.Round(totalXP), XpType.Kill);
 
                     // handle luminance
