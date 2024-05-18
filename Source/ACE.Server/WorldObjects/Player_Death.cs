@@ -638,7 +638,8 @@ namespace ACE.Server.WorldObjects
                 if (isPkDeath && ThreadSafeRandom.Next(1, 100) <= 2)
                     dropItems.Add(item);
 
-                if (item.ArmorLevel != null && item.ArmorLevel > 10)
+                var hasDurability = PropertyManager.GetBool("durability").Item;
+                if (hasDurability && item.ArmorLevel != null && item.ArmorLevel > 10)
                 {
                     item.ArmorLevel -= (int)(item.OriginalArmorLevel * 0.05);
                     UpdateDurability(item);
