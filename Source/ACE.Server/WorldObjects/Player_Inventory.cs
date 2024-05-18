@@ -3621,7 +3621,7 @@ namespace ACE.Server.WorldObjects
                         if (target.WeenieClassId == 3000381 && item.WeenieClassId == 603004)
                         {
                             var xp = QuestXpDailyMax * 0.10;
-                            DeveloperCommands.HandleCILoot(Session, item.ForgottenOreTier.ToString(), 5.ToString());
+                            //DeveloperCommands.HandleCILoot(Session, item.ForgottenOreTier.ToString(), 5.ToString());
                             EarnXP((long)xp, XpType.Quest, ShareType.None);
                             return;
                         }
