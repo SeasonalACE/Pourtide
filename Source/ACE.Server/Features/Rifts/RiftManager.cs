@@ -244,10 +244,10 @@ namespace ACE.Server.Features.Rifts
             var mostCommonLoot = groupedCreaturesByLootTier.OrderByDescending(l => l.Count).Select(l => l.Tier).FirstOrDefault();
             var mostCommonLevel = groupedCreaturesByLevel.OrderByDescending(l => l.Count).Select(l => l.Level).FirstOrDefault();
 
-            if (mostCommonLoot == null)
+            if (mostCommonLoot == 0)
                 mostCommonLoot = 1;
 
-            if (mostCommonLevel == null)
+            if (mostCommonLevel == null || mostCommonLevel == 0)
                 mostCommonLevel = 1;
 
             var tier = MutationsManager.GetMonsterTierByLevel((uint)mostCommonLevel);
