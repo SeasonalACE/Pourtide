@@ -381,6 +381,19 @@ namespace ACE.Server.Managers
             }
         }
 
+        public static int GetOnlineCount(ushort realmId)
+        {
+            playersLock.EnterReadLock();
+            try
+            {
+                return onlinePlayers.Values.Where(player => player.HomeRealm == realmId).Count();
+            }
+            finally
+            {
+                playersLock.ExitReadLock();
+            }
+        }
+
         /// <summary>
         /// This will return null if the player wasn't found.
         /// </summary>
