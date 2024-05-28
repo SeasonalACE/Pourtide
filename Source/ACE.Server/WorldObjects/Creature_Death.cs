@@ -158,7 +158,7 @@ namespace ACE.Server.WorldObjects
             if (location.RealmID != 1016)
                 return;
 
-            if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift rift))
+            if (RiftManager.TryGetActiveRift(location.Instance, out Rift rift))
             {
                 var oreDropChance = RealmRuleset.GetProperty(RealmPropertyInt.OreDropChance);
                 var ore = MutationsManager.CreateOre(location, oreDropChance, rift.Tier);
@@ -742,55 +742,59 @@ namespace ACE.Server.WorldObjects
 
             if (IsOreNode)
             {
-                RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift activeRift);
+                if (Location.RealmID != 1016)
+                    return droppedItems;
 
-                var tier = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 2 : 3;
-                var amount = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 10 : 20;
-                for (var i = 0; i < amount; ++i)
+                if (RiftManager.TryGetActiveRift(Location.Instance, out Rift activeRift))
                 {
-                    var forgottenOre = WorldObjectFactory.CreateNewWorldObject(603004);
-                    if (activeRift != null)
-                        forgottenOre.ForgottenOreTier = (int)MutationsManager.GetLootTierFromRiftTier(activeRift.Tier);
-                    corpse.TryAddToInventory(forgottenOre);
-                }
-
-
-                var slayerDropChance = RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
-                if (ThreadSafeRandom.Next(1, slayerDropChance) == 1)
-                {
-                    var creatureType = SlayersChance.GetCreatureType();
-                    var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
-                    var damage = ThreadSafeRandom.Next((float)1.5, (float)3.0);
-
-                    slayer.Name = $"{creatureType} Slayer Skull";
-
-                    if (creatureType == ACE.Entity.Enum.CreatureType.Human)
-                        damage = ThreadSafeRandom.Next((float)1.1, (float)1.5);
-
-                    slayer.LongDesc = $"Use this skull on any loot-generated weapon or caster to give it a {creatureType} Slayer effect. The damage for this slayer skull is {damage.ToString("0.00")}";
-                    slayer.SlayerCreatureType = creatureType;
-                    slayer.SlayerDamageBonus = damage;
-                    corpse.TryAddToInventory(slayer);
-                }
-
-
-                // salvage
-                var maxSalvageAmount = RealmRuleset.GetProperty(RealmPropertyInt.OreSalvageDropAmount);
-                for (var i = 0; i < maxSalvageAmount; i++)
-                {
-                    var salvageWcids = SalvageChance.Roll();
-                    foreach (var wcid in salvageWcids)
+                    var tier = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 2 : 3;
+                    var amount = WeenieClassId == 603001 ? 1 : WeenieClassId == 603002 ? 10 : 20;
+                    for (var i = 0; i < amount; ++i)
                     {
-                        var wo = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
+                        var forgottenOre = WorldObjectFactory.CreateNewWorldObject(603004);
+                        if (activeRift != null)
+                            forgottenOre.ForgottenOreTier = (int)MutationsManager.GetLootTierFromRiftTier(activeRift.Tier);
+                        corpse.TryAddToInventory(forgottenOre);
+                    }
 
-                        if (wo != null)
+
+                    var slayerDropChance = RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
+                    if (ThreadSafeRandom.Next(1, slayerDropChance) == 1)
+                    {
+                        var creatureType = SlayersChance.GetCreatureType();
+                        var slayer = WorldObjectFactory.CreateNewWorldObject(604001);
+                        var damage = ThreadSafeRandom.Next((float)1.5, (float)3.0);
+
+                        slayer.Name = $"{creatureType} Slayer Skull";
+
+                        if (creatureType == ACE.Entity.Enum.CreatureType.Human)
+                            damage = ThreadSafeRandom.Next((float)1.1, (float)1.5);
+
+                        slayer.LongDesc = $"Use this skull on any loot-generated weapon or caster to give it a {creatureType} Slayer effect. The damage for this slayer skull is {damage.ToString("0.00")}";
+                        slayer.SlayerCreatureType = creatureType;
+                        slayer.SlayerDamageBonus = damage;
+                        corpse.TryAddToInventory(slayer);
+                    }
+
+
+                    // salvage
+                    var maxSalvageAmount = RealmRuleset.GetProperty(RealmPropertyInt.OreSalvageDropAmount);
+                    for (var i = 0; i < maxSalvageAmount; i++)
+                    {
+                        var salvageWcids = SalvageChance.Roll();
+                        foreach (var wcid in salvageWcids)
                         {
-                            wo.Name = $"Salvage ({100})";
-                            wo.Structure = 100;
-                            wo.ItemWorkmanship = ThreadSafeRandom.Next(50, 100);
-                            wo.NumItemsInMaterial = 10;
-                            wo.Value = 15000;
-                            corpse.TryAddToInventory(wo);
+                            var wo = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
+
+                            if (wo != null)
+                            {
+                                wo.Name = $"Salvage ({100})";
+                                wo.Structure = 100;
+                                wo.ItemWorkmanship = ThreadSafeRandom.Next(50, 100);
+                                wo.NumItemsInMaterial = 10;
+                                wo.Value = 15000;
+                                corpse.TryAddToInventory(wo);
+                            }
                         }
                     }
                 }

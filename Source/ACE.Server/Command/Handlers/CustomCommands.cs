@@ -56,6 +56,33 @@ namespace ACE.Server.Command.Handlers
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Ruleset List>", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n{RealmManager.GetRulesetsList()}", ChatMessageType.System));
+
+        }
+
+        [CommandHandler("set-home-realm", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Sets the home realm of a player.")]
+        public static void HandleSetHomeRealm(Session session, params string[] parameters)
+        {
+            if (parameters.Length < 1)
+                return;
+            if (!ushort.TryParse(parameters[0], out var realmid))
+                return;
+
+            var objectId = ObjectGuid.Invalid;
+
+            var target = session.Player.CurrentAppraisalTarget;
+
+            if (target.HasValue)
+                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
+            else
+                objectId = new ObjectGuid((uint)session.Player.Guid.Full);
+
+            var wo = session.Player.CurrentLandblock?.GetObject(objectId);
+            if (wo != null && wo is Player player)
+            {
+                var positionMessage = new GameMessageSystemChat($"Setting home realm of {player.Name} to realm {realmid}.", ChatMessageType.Broadcast);
+                session.Network.EnqueueSend(positionMessage);
+                RealmManager.SetHomeRealm(player, realmid);
+            }
         }
 
         [CommandHandler("telerealm", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Teleports the current player to another realm.")]
@@ -156,25 +183,19 @@ namespace ACE.Server.Command.Handlers
             message.Append("<Active Rift List>\n");
             message.Append("-----------------------\n");
 
-            foreach (var dungeon in DungeonManager.GetDungeons())
+            foreach (var rift in RiftManager.GetRifts())
             {
-                if (RiftManager.TryGetActiveRift(dungeon.Landblock, out Rift rift))
-                {
-                    var oreDropChance = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreDropChance);
-                    var oreSlayerDropChance = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
-                    var oreSalvageDropAmount = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSalvageDropAmount);
-                    message.Append($"Rift {dungeon.Name} is active!\n");
-                    message.Append($"With an xp bonus of {dungeon.BonuxXp.ToString("0.00")}x.\n");
-                    message.Append($"With an ore drop chance of 1/{oreDropChance}.\n");
-                    message.Append($"With an ore slayer drop chance of 1/{oreSlayerDropChance}.\n");
-                    message.Append($"With an ore salvage drop amount of {oreSalvageDropAmount * 2}.\n");
-                    message.Append("-----------------------\n");
-
-                    if (DungeonManager.DungeonsTimeRemaining.TotalMilliseconds <= 0)
-                    {
-                        DungeonManager.Reset();
-                    }
-                }
+                var oreDropChance = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreDropChance);
+                var oreSlayerDropChance = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
+                var oreSalvageDropAmount = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSalvageDropAmount);
+                Position.ParseInstanceID(rift.HomeInstance, out var isEphemeralRealm, out var realmId, out var instanceId);
+                var realm = RealmManager.GetRealm(realmId).Realm;
+                message.Append($"Rift {rift.Name} from realm {realm.Name} is active!\n");
+                message.Append($"With an xp bonus of {rift.BonuxXp.ToString("0.00")}x.\n");
+                message.Append($"With an ore drop chance of 1/{oreDropChance}.\n");
+                message.Append($"With an ore slayer drop chance of 1/{oreSlayerDropChance}.\n");
+                message.Append($"With an ore salvage drop amount of {oreSalvageDropAmount * 2}.\n");
+                message.Append("-----------------------\n");
             }
 
             message.Append("-----------------------\n");
@@ -185,6 +206,9 @@ namespace ACE.Server.Command.Handlers
                 CommandHandlerHelper.WriteOutputInfo(session, message.ToString(), ChatMessageType.Broadcast);
             else
                 DiscordChatBridge.SendMessage(discordChannel, $"`{message.ToString()}`");
+
+            if (DungeonManager.DungeonsTimeRemaining.TotalMilliseconds <= 0)
+                DungeonManager.Reset();
         }
 
         [CommandHandler("reset-dungeons", AccessLevel.Admin, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
@@ -198,10 +222,14 @@ namespace ACE.Server.Command.Handlers
         public static void HandleCheckDungeonsPotential(Session session, params string[] paramters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Active Potential Dungeon List>", ChatMessageType.System));
-            foreach (var dungeon in DungeonManager.GetPotentialDungeons())
+            foreach (var (realmId, dungeon) in DungeonManager.GetPotentialDungeons())
             {
+                var realm = RealmManager.GetRealm(realmId).Realm.Name;
+                if (realm == null)
+                    continue;
+
                 var at = dungeon.Coords.Length > 0 ? $"at {dungeon.Coords}" : "";
-                var message = $"Dungeon {dungeon.Name} has potential {at}";
+                var message = $"Dungeon {dungeon.Name} from realm {realm} has potential {at}";
                 session.Network.EnqueueSend(new GameMessageSystemChat($"\n{message}", ChatMessageType.System));
 
                 var xp = dungeon.TotalXpEarned;
@@ -620,13 +648,12 @@ namespace ACE.Server.Command.Handlers
         [CommandHandler("show-player-locations", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Show player locations.")]
         public static void HandleShowPlayerLocations(Session session, params string[] parameters)
         {
-            var online = PlayerManager.GetAllOnline();
 
-            foreach (var player in online)
+            foreach (var player in PlayerManager.GetAllOnline())
             {
                 if (player != null && player.Location != null)
                 {
-                    RiftManager.TryGetActiveRift(player.Location.LandblockHex, out Rift rift);
+                    RiftManager.TryGetActiveRift(player.HomeRealm, player.Location.LandblockHex, out Rift rift);
                     DungeonManager.TryGetDungeonLandblock(player.Location.LandblockHex, out DungeonLandblock dungeon);
 
                     var at = rift != null ? $"Rift {rift.Name}" : dungeon != null ? $"Dungeon {dungeon.Name}" : player.Location.GetMapCoordStr();

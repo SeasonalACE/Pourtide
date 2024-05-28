@@ -357,8 +357,8 @@ namespace ACE.Server.Entity
                 wo.Location = new InstancedPosition(Generator.Location);
 
                 if (
-                    Generator.Location.RealmID == 1016 &&
-                    RiftManager.TryGetActiveRift(Generator.Location.LandblockHex, out Rift activeRift) &&
+                    Generator.CurrentLandblock.RealmHelpers.IsRift &&
+                    RiftManager.TryGetActiveRift(Generator.Location.Instance, out Rift activeRift) &&
                     wo.WeenieType == ACE.Entity.Enum.WeenieType.Creature && wo.Attackable && !wo.IsGenerator
                     )
                 {

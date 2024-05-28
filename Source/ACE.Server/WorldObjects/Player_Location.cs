@@ -1032,7 +1032,7 @@ namespace ACE.Server.WorldObjects
 
                 if (lb.RealmHelpers.IsRift)
                 {
-                    if (RiftManager.TryGetActiveRift(newPosition.LandblockHex, out Rift activeRift))
+                    if (RiftManager.TryGetActiveRift(HomeRealm, Location.LandblockHex, out Rift activeRift))
                         return activeRift.ValidateTimedOutPlayer(this);
                     else
                         return false;
@@ -1074,7 +1074,7 @@ namespace ACE.Server.WorldObjects
                 loc = Sanctuary.AsInstancedPosition(this, PlayerInstanceSelectMode.HomeRealm) ?? Home;
             }
 
-            if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift activeRift))
+            if (RiftManager.TryGetActiveRift(HomeRealm, Location.LandblockHex, out Rift activeRift))
             {
                 loc = Sanctuary.AsInstancedPosition(this, PlayerInstanceSelectMode.HomeRealm) ?? Home;
             }

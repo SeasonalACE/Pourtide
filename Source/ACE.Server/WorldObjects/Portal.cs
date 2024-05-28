@@ -298,7 +298,8 @@ namespace ACE.Server.WorldObjects
 
             if (WeenieClassId == 600005) // if Rift Entry Portal
             {
-                var rifts = RiftManager.ActiveRifts.Values.ToList();
+                var realm = player.HomeRealm;
+                var rifts = RiftManager.ActiveRifts[realm].Values.ToList();
                 if (rifts.Count <= 0)
                     return;
 

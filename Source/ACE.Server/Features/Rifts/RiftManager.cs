@@ -17,132 +17,15 @@ using System.Linq;
 
 namespace ACE.Server.Features.Rifts
 {
-    internal class TimedOutPlayer
-    {
-        public ulong Guid { get; set; }
-        public DateTime TimeoutTimeStamp { get; set; }
-    }
-
-    internal class Rift : DungeonBase
-    {
-        public InstancedPosition DropPosition = null;
-        public double BonuxXp
-        {
-            get
-            {
-                var rules = LandblockInstance?.RealmRuleset;
-                if (rules != null)
-                    return rules.GetProperty(ACE.Entity.Enum.Properties.RealmPropertyFloat.ExperienceMultiplierAll);
-                else
-                    return 1.0;
-            }
-        }
-
-        private Dictionary<ulong, TimedOutPlayer> TimedOutPlayers = new Dictionary<ulong, TimedOutPlayer>();
-
-        public List<WorldObject> RiftPortals = new List<WorldObject>();
-
-        public uint AverageMonsterLevel = 1;
-
-        public Rift Next = null;
-
-        public Rift Previous = null;
-
-        public Landblock LandblockInstance = null;
-
-        public List<uint> CreatureIds = new List<uint>();
-
-        public uint Tier = 1;
-
-        public uint Instance { get; set; } = 0;
-
-        public void AddPlayerTimeout(ulong playerGuid)
-        {
-            TimedOutPlayers.Add(playerGuid, new TimedOutPlayer()
-            {
-                Guid = playerGuid,
-                TimeoutTimeStamp = DateTime.UtcNow
-            });
-        }
-
-        public Rift(string landblock, string name, string coords, InstancedPosition dropPosition, uint instance, Landblock ephemeralRealm, List<uint> creatureIds, uint tier) : base(landblock, name, coords)
-        {
-            Landblock = landblock;
-            Name = name;
-            Coords = coords;
-            DropPosition = dropPosition;
-            Instance = instance;
-            LandblockInstance = ephemeralRealm;
-            CreatureIds = creatureIds;
-            Tier = tier;
-        }
-
-        public uint GetRandomCreature()
-        {
-            if (CreatureIds.Count == 0)
-                return 0;
-
-            var randomIndex = ThreadSafeRandom.Next(0, CreatureIds.Count - 1);
-            return CreatureIds[randomIndex];
-        }
-
-
-        public void Close()
-        {
-            foreach (var portal in RiftPortals)
-            {
-                portal.Destroy();
-            }
-
-            foreach (var player in Players.Values)
-            {
-                if (player != null)
-                {
-                    player.ExitInstance();
-                }
-            }
-
-            Instance = 0;
-            Next = null;
-            Previous = null;
-            LandblockInstance.Permaload = false;
-            LandblockInstance = null;
-            Players.Clear();
-            RiftPortals.Clear();
-            TimedOutPlayers.Clear();
-        }
-
-        internal bool ValidateTimedOutPlayer(Player player)
-        {
-            var guid = player.Guid.Full;
-            if (TimedOutPlayers.ContainsKey(guid))
-            {
-                var timedOutPlayer = TimedOutPlayers[guid];
-                var timeoutDuration = PropertyManager.GetLong("rift_death_duration").Item;
-                if (DateTime.UtcNow - timedOutPlayer.TimeoutTimeStamp < TimeSpan.FromMinutes(timeoutDuration))
-                {
-                    var message = $"You have died to a pk too recently in {Name}, you must wait {Formatting.FormatTimeRemaining(timedOutPlayer.TimeoutTimeStamp.AddMinutes(timeoutDuration) - DateTime.UtcNow)}!";
-                    player?.Session.Network.EnqueueSend(new Network.GameMessages.Messages.GameMessageSystemChat(message, ChatMessageType.System));
-                    return false;
-                }
-                else
-                {
-                    TimedOutPlayers.Remove(guid);
-                    return true;
-                }
-            }
-
-            return true;
-        }
-    }
-
     internal static class RiftManager
     {
         private static readonly object lockObject = new object();
 
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public static Dictionary<string, Rift> ActiveRifts = new Dictionary<string, Rift>();
+        public static Dictionary<ushort, Dictionary<string, Rift>> ActiveRifts = new Dictionary<ushort, Dictionary<string, Rift>>();
+
+        public static Dictionary<uint, Rift> ActiveRiftsByInstance = new Dictionary<uint, Rift>();
 
         public static Position RiftEntryPortal = InstancedPosition.slocToPosition("0x00070104 [70.125999 -169.860001 -5.995000] 0.999909 0.000000 0.000000 0.013459 393216");
 
@@ -150,12 +33,13 @@ namespace ACE.Server.Features.Rifts
         {
             lock (lockObject)
             {
-                var message = $"Rifts are currently resetting!";
-                log.Info(message);
-                foreach (var rift in ActiveRifts)
-                    rift.Value.Close();
+                log.Info($"Rifts are currently resetting!");
+                var rifts = ActiveRifts.Values.SelectMany(kvp => kvp.Values).ToList();
+                foreach (var rift in rifts)
+                    rift.Close();
 
                 ActiveRifts.Clear();
+                ActiveRiftsByInstance.Clear();
             }
         }
 
@@ -163,12 +47,15 @@ namespace ACE.Server.Features.Rifts
         {
             var guid = player.Guid.Full;
 
-            if (ActiveRifts.TryGetValue(lb, out Rift rift))
+            if (ActiveRifts.ContainsKey(player.HomeRealm))
             {
-                if (rift.Players.ContainsKey(guid))
+                if (ActiveRifts[player.HomeRealm].TryGetValue(lb, out Rift rift))
                 {
-                    rift.Players.Remove(guid);
-                    log.Info($"Removed {player.Name} from {rift.Name}");
+                    if (rift.Players.ContainsKey(guid))
+                    {
+                        rift.Players.Remove(guid);
+                        log.Info($"Removed {player.Name} from {rift.Name}");
+                    }
                 }
             }
         }
@@ -177,32 +64,61 @@ namespace ACE.Server.Features.Rifts
         {
             var guid = player.Guid.Full;
 
-            if (ActiveRifts.TryGetValue(nextLb, out Rift rift))
+            if (ActiveRifts.ContainsKey(player.HomeRealm))
             {
-                if (!rift.Players.ContainsKey(guid))
+                if (ActiveRifts[player.HomeRealm].TryGetValue(nextLb, out Rift rift))
                 {
-                    rift.Players.TryAdd(guid, player);
-                    log.Info($"Added {player.Name} to {rift.Name}");
+                    if (!rift.Players.ContainsKey(guid))
+                    {
+                        rift.Players.TryAdd(guid, player);
+                        log.Info($"Added {player.Name} to {rift.Name}");
+                    }
                 }
             }
         }
 
-        public static bool HasActiveRift(string lb)
+        public static bool HasActiveRift(ushort realmId, string lb)
         {
-            return ActiveRifts.ContainsKey(lb);
+            if (ActiveRifts.ContainsKey(realmId))
+                return ActiveRifts[realmId].ContainsKey(lb);
+
+            return false;
         }
 
-        public static bool TryGetActiveRift(string lb, out Rift activeRift)
+        public static List<Rift> GetRifts()
         {
-            if (ActiveRifts.TryGetValue(lb, out activeRift))
+            return ActiveRifts.Values.SelectMany(kvp => kvp.Values).ToList();
+        }
+
+        public static bool TryGetActiveRift(ushort realmId, string lb, out Rift activeRift)
+        {
+            if (ActiveRifts.ContainsKey(realmId))
             {
+                if (ActiveRifts[realmId].TryGetValue(lb, out activeRift))
+                {
+                    return true;
+                }
+                else
+                {
+                    activeRift = null;
+                    return false;
+                }
+            }
+
+            activeRift = null;
+            return false;
+        }
+
+        public static bool TryGetActiveRift(uint instance, out Rift activeRift)
+        {
+            if (ActiveRiftsByInstance.ContainsKey(instance))
+            {
+                activeRift = ActiveRiftsByInstance[instance];
                 return true;
             }
-            else
-            {
-                activeRift = null;
-                return false;
-            }
+
+            activeRift = null;
+            return false;
         }
 
         public static List<WorldObject> GetDungeonObjectsFromPosition(InstancedPosition position)
@@ -279,7 +195,7 @@ namespace ACE.Server.Features.Rifts
 
             var (tier, creatureIds) = GetRiftCreatureIds(dropPosition);
 
-            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, ephemeralRealm, creatureIds, tier);
+            var rift = new Rift(dungeon.Landblock, dungeon.Name, dungeon.Coords, dropPosition, instance, dungeon.DropPosition.Instance, ephemeralRealm, creatureIds, tier);
 
             log.Info($"Creating Rift instance for {rift.Name} - {instance}");
 
@@ -295,7 +211,7 @@ namespace ACE.Server.Features.Rifts
             var filteredWorldObjects = worldObjects
                 .Where(wo => wo is Creature creature && !(creature is Player) && !wo.IsGenerator)
                 .OrderBy(creature => creature, new DistanceComparer(rift.DropPosition))
-                .ToList(); // To prevent multiple enumeration
+                .ToList(); 
 
             return filteredWorldObjects;
         }
@@ -313,12 +229,15 @@ namespace ACE.Server.Features.Rifts
             }
         }
 
-        internal static bool TryAddRift(string currentLb, Dungeon dungeon, out Rift addedRift)
+        internal static bool TryAddRift(ushort realmId, string currentLb, Dungeon dungeon, out Rift addedRift)
         {
             addedRift = null;
 
+            if (!ActiveRifts.ContainsKey(realmId))
+                ActiveRifts.TryAdd(realmId, new Dictionary<string, Rift>());
 
-            if (ActiveRifts.ContainsKey(currentLb))
+
+            if (ActiveRifts[realmId].ContainsKey(currentLb))
                 return false;
 
             var rift = CreateRiftInstance(dungeon);
@@ -326,8 +245,7 @@ namespace ACE.Server.Features.Rifts
             SpawnHomeToRiftPortalAsync(rift);
             SpawnRiftToHomePortalAsync(rift);
 
-            var rifts = ActiveRifts.Values.ToList();
-
+            var rifts = ActiveRifts[realmId].Values.ToList();
 
             var last = rifts.LastOrDefault();
 
@@ -340,7 +258,8 @@ namespace ACE.Server.Features.Rifts
                 SpawnPreviousLinkAsync(rift);
             }
 
-            ActiveRifts[currentLb] = rift;
+            ActiveRifts[realmId][currentLb] = rift;
+            ActiveRiftsByInstance[rift.Instance] = rift;
 
             addedRift = rift;
 
@@ -402,14 +321,14 @@ namespace ACE.Server.Features.Rifts
             if (rift.DropPosition == null)
                 return;
 
-            var landblock = LandblockManager.GetLandblock(rift.LandblockInstance.Id, RealmManager.ServerBaseRealmInstance, null, false);
+            var landblock = LandblockManager.GetLandblock(rift.LandblockInstance.Id, rift.HomeInstance, null, false);
             var chain = new ActionChain();
             chain.AddDelaySeconds(5);
 
             chain.AddAction(landblock, () =>
             {
 
-                var toRiftDrop = new InstancedPosition(rift.DropPosition, RealmManager.ServerBaseRealmInstance);
+                var toRiftDrop = new InstancedPosition(rift.DropPosition, rift.HomeInstance);
 
                 Portal portal = (Portal)WorldObjectFactory.CreateNewWorldObject(600004);
                 portal.Name = $"Rift Portal {rift.Name}";

@@ -726,10 +726,10 @@ namespace ACE.Server.Entity
                         if (DungeonManager.HasDungeonLandblock(currentLb))
                             log.Info($"Player {player.Name} has entered {DungeonManager.GetDungeonLandblock(currentLb).Name}");
 
-                        if (DungeonManager.HasHotspotDungeon(currentLb))
+                        if (DungeonManager.HasHotspotDungeon(player.HomeRealm, currentLb))
                             DungeonManager.AddDungeonPlayer(currentLb, player);
 
-                        if (RiftManager.HasActiveRift(currentLb))
+                        if (RiftManager.HasActiveRift(player.HomeRealm, currentLb))
                             RiftManager.AddRiftPlayer(currentLb, player);
                     }
                     else if (kvp.Value is Creature creature)
@@ -760,10 +760,10 @@ namespace ACE.Server.Entity
                             if (DungeonManager.HasDungeon(currentLb))
                                 log.Info($"Player {player.Name} has left {DungeonManager.GetDungeonLandblock(currentLb).Name}");
 
-                            if (DungeonManager.HasHotspotDungeon(currentLb))
-                                DungeonManager.RemoveDungeonPlayer(currentLb, player);
+                            if (DungeonManager.HasHotspotDungeon(player.HomeRealm, currentLb))
+                                DungeonManager.RemoveDungeonPlayer( currentLb, player);
 
-                            if (RiftManager.HasActiveRift(currentLb))
+                            if (RiftManager.HasActiveRift(player.HomeRealm, currentLb))
                                 RiftManager.RemoveRiftPlayer(currentLb, player);
                         }
                         else if (wo is Creature creature)

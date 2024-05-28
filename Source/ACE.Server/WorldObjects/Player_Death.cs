@@ -129,7 +129,7 @@ namespace ACE.Server.WorldObjects
                     else
                     {
                         globalPKDe = $"{lastDamager.Name} has defeated {Name}!";
-                        if (RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift ActiveRift))
+                        if (RiftManager.TryGetActiveRift(HomeRealm, Location.LandblockHex, out Rift ActiveRift))
                             globalPKDe += $" The kill occured at Rift {ActiveRift.Name}";
                         else if (DungeonManager.TryGetDungeonLandblock(Location.LandblockHex, out DungeonLandblock landblock))
                             globalPKDe += $" The kill occured at Dungeon {landblock.Name}";
@@ -687,7 +687,7 @@ namespace ACE.Server.WorldObjects
                     var killerPlayer = PlayerManager.GetOnlinePlayer(killer.Guid);
                     killerPlayer?.EarnXP((long)Math.Round((double)earnedPvpXp), XpType.Pvp, ShareType.None);
 
-                    if (CurrentLandblock.RealmHelpers.IsRift && RiftManager.TryGetActiveRift(Location.LandblockHex, out Rift activeRift))
+                    if (CurrentLandblock.RealmHelpers.IsRift && RiftManager.TryGetActiveRift(HomeRealm, Location.LandblockHex, out Rift activeRift))
                         activeRift.AddPlayerTimeout(victim.Guid.Full);
                 }
 

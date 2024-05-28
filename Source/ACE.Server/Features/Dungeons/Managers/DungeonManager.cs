@@ -65,39 +65,38 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        private static Dictionary<string, Dungeon> HotspotDungeons = new Dictionary<string, Dungeon>();
+        private static Dictionary<ushort, Dictionary<string, Dungeon>> HotspotDungeons = new Dictionary<ushort, Dictionary<string, Dungeon>>();
 
-        private static Dictionary<string, Dungeon> PotentialHotspotCandidates = new Dictionary<string, Dungeon>();
+        private static Dictionary<ushort, Dictionary<string, Dungeon>> PotentialHotspotCandidates = new Dictionary<ushort, Dictionary<string, Dungeon>>();
 
-        private static float MaxBonuxXp = 4.0f;
-
-        private static uint MaxHotspots => (uint)GetMaxHotSpots();
-
-        private static TimeSpan DungeonsInterval { get; set; }
+        private static TimeSpan DungeonsInterval => TimeSpan.FromMinutes(PropertyManager.GetLong("rift_duration").Item);
 
         private static DateTime DungeonsLastCheck { get; set; } = DateTime.MinValue;
 
         public static TimeSpan DungeonsTimeRemaining => DungeonsLastCheck + DungeonsInterval - DateTime.UtcNow;
 
-        public static void Initialize(uint intialDelay = 30, float maxBonuxXp = 4.0f)
+        public static void Initialize(uint intialDelay = 30)
         {
             DungeonRepository.Initialize();
-            var duration = PropertyManager.GetLong("rift_duration").Item;
-            DungeonsInterval = TimeSpan.FromMinutes(duration);
-            MaxBonuxXp = maxBonuxXp;
             DungeonsLastCheck = DateTime.UtcNow - DungeonsInterval + TimeSpan.FromMinutes(intialDelay);
             log.Info($"Dungeons will be reset in {FormatTimeRemaining(DungeonsTimeRemaining)}");
         }
 
-        public static int GetMaxHotSpots()
+        public static int GetMaxHotSpots(ushort realmId)
         {
-            var count = (uint)PlayerManager.GetOnlineCount();
+            var count = (uint)PlayerManager.GetOnlineCount(realmId);
             return count <= 10 ? 2 : count <= 20 ? 3 : 4;
         }
 
-        public static bool HasHotspotDungeon(string id)
+        public static bool HasHotspotDungeon(ushort realmId, string id)
         {
-            return HotspotDungeons.ContainsKey(id);
+            if (HotspotDungeons.ContainsKey(realmId))
+            {
+
+                return HotspotDungeons[realmId].ContainsKey(id);
+            }
+
+            return false;
         }
 
         public static bool HasDungeon(string lb)
@@ -123,7 +122,6 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
         public static void Reset(bool force = false)
         {
-
             lock (dungeonsLock)
             {
                 if (!force && DungeonsTimeRemaining.TotalMilliseconds > 0)
@@ -131,9 +129,19 @@ namespace ACE.Server.Features.HotDungeons.Managers
 
                 DungeonsLastCheck = DateTime.UtcNow;
 
-                RiftManager.Close();
+                CloseRealmDungeons();
 
-                foreach (var dungeon in HotspotDungeons.Values.ToList())
+                CreateRealmDungeons();
+            }
+        }
+
+        private static void CloseRealmDungeons()
+        {
+            foreach (var realmDungeons in HotspotDungeons)
+            {
+                var dungeons = realmDungeons.Value.Values.ToList();
+
+                foreach (var dungeon in dungeons)
                 {
                     dungeon.Close();
                     var message = $"{dungeon.Name} is no longer boosted xp!";
@@ -143,112 +151,142 @@ namespace ACE.Server.Features.HotDungeons.Managers
                     PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
                 }
 
-                HotspotDungeons.Clear();
+                realmDungeons.Value.Clear();
+            }
 
-                var sorted = PotentialHotspotCandidates.Values
+            HotspotDungeons.Clear();
+
+            RiftManager.Close();
+        }
+
+        private static void CreateRealmDungeons()
+        {
+            foreach(var realmDungeons in PotentialHotspotCandidates)
+            {
+                var sorted = realmDungeons.Value.Values
                     .OrderByDescending(d => d.TotalXpEarned)
                     .ThenByDescending(d => d.PlayerTouches)
-                    .Take((int)MaxHotspots)
+                    .Take((int)GetMaxHotSpots(realmDungeons.Key))
                     .ToList();
 
-                PotentialHotspotCandidates.Clear();
+                var dungeonsMap = new Dictionary<string, Dungeon>();
+
+                HotspotDungeons.Add(realmDungeons.Key, dungeonsMap);
 
                 foreach (var dungeon in sorted)
                 {
-                    try
+                    if (RiftManager.TryAddRift(realmDungeons.Key, dungeon.Landblock, dungeon, out Rift activeRift))
                     {
-                        RiftManager.TryAddRift(dungeon.Landblock, dungeon, out Rift activeRift);
                         dungeon.BonuxXp = activeRift.BonuxXp;
                         dungeon.Instance = activeRift.Instance;
-                        HotspotDungeons.Add(dungeon.Landblock, dungeon);
+                        dungeonsMap.Add(dungeon.Landblock, dungeon);
 
                         var message = $"{dungeon.Name} has been very active, a rift portal has been created in Subway (main hall, first room on the right), this dungeon has been boosted with {dungeon.BonuxXp.ToString("0.00")}x xp for {FormatTimeRemaining(DungeonsTimeRemaining)}";
                         _ = WebhookRepository.SendGeneralChat(message);
                         log.Info(message);
                         PlayerManager.BroadcastToAll(new GameMessageSystemChat(message, ChatMessageType.WorldBroadcast));
-                    } catch (Exception _)
-                    {
-                        RiftManager.Close();
-                        log.Error($"Error: failed to create rift for dungeon {dungeon.Name}");
-                        log.Error(System.Environment.StackTrace);
-
                     }
-
                 }
-
-
             }
 
-        }
-        public static List<Dungeon> GetPotentialDungeons()
-        {
-            return PotentialHotspotCandidates.Values.ToList();
+            PotentialHotspotCandidates.Clear();
         }
 
+        public static List<(ushort, Dungeon)> GetPotentialDungeons()
+        {
+            return PotentialHotspotCandidates
+               .SelectMany(outerPair => outerPair.Value.Values.Select(dungeon => (outerPair.Key, dungeon)))
+               .ToList();
+        }
+
+        public static List<Dungeon> GetPotentialDungeons(ushort realmId)
+        {
+            if (PotentialHotspotCandidates.ContainsKey(realmId))
+                return PotentialHotspotCandidates[realmId].Values.ToList();
+
+            return new List<Dungeon>();
+        }
 
         public static List<Dungeon> GetDungeons()
         {
-            return HotspotDungeons.Values.ToList();
+            return HotspotDungeons.Values.SelectMany(kvp => kvp.Values).ToList();
+        }
+
+        public static List<Dungeon> GetDungeons(ushort realmId)
+        {
+            if (HotspotDungeons.ContainsKey(realmId))
+                return HotspotDungeons[realmId].Values.ToList();
+
+            return new List<Dungeon>();
         }
 
         public static void RemoveDungeonPlayer(string lb, Player player)
         {
-            var guid = player.Guid.Full;
+            if (HotspotDungeons.ContainsKey(player.HomeRealm))
+            {
+                var guid = player.Guid.Full;
 
-            if (HotspotDungeons.TryGetValue(lb, out Dungeon currentDungeon))
-                if (currentDungeon.Players.ContainsKey(guid))
-                    currentDungeon.Players.Remove(guid);
+                if (HotspotDungeons[player.HomeRealm].TryGetValue(lb, out Dungeon currentDungeon))
+                    if (currentDungeon.Players.ContainsKey(guid))
+                        currentDungeon.Players.Remove(guid);
+            }
         }
 
         public static void AddDungeonPlayer(string nextLb, Player player)
         {
-            var guid = player.Guid.Full;
+            if (HotspotDungeons.ContainsKey(player.HomeRealm))
+            {
+                var guid = player.Guid.Full;
 
-            if (HotspotDungeons.TryGetValue(nextLb, out Dungeon nextDungeon))
-                if (!nextDungeon.Players.ContainsKey(guid))
-                    nextDungeon.Players.TryAdd(guid, player);
+                if (HotspotDungeons[player.HomeRealm].TryGetValue(nextLb, out Dungeon nextDungeon))
+                    if (!nextDungeon.Players.ContainsKey(guid))
+                        nextDungeon.Players.TryAdd(guid, player);
+            }
         }
 
         internal static void ProcessCreaturesDeath(string currentLb, Player damager, int xpOverride, out double returnValue)
         {
             returnValue = 1; // Default value
 
-            var damagerInstance = damager.Location.Instance;
-
-            if (HotspotDungeons.TryGetValue(currentLb, out Dungeon currentDungeon))
-            {
-                if (damagerInstance == currentDungeon.Instance)
-                {
-                    //returnValue = currentDungeon.BonuxXp; // Assigning the total XP to the out parameter
-                }
-
-            }
-            else if (!PotentialHotspotCandidates.ContainsKey(currentLb))
-            {
-                var dungeonLandblock = DungeonRepository.GetDungeon(currentLb);
-                if (dungeonLandblock != null)
-                {
-                    var potentialDungeon = new Dungeon(dungeonLandblock.Landblock, dungeonLandblock.Name, dungeonLandblock.Coords, new InstancedPosition(damager.Location));
-                    PotentialHotspotCandidates.TryAdd(currentLb, potentialDungeon);
-                    potentialDungeon.AddTotalXp(xpOverride);
-                    potentialDungeon.PlayerTouches++;
-                }
-            }
-            else
-            {
-                var potentialDungeon = PotentialHotspotCandidates[currentLb];
-                if (potentialDungeon != null)
-                {
-                    potentialDungeon.AddTotalXp(xpOverride);
-                    potentialDungeon.PlayerTouches++;
-                    potentialDungeon.DropPosition = new InstancedPosition(damager.Location);
-                }
-            }
+            var realmId = damager.HomeRealm;
 
             if (DungeonsTimeRemaining.TotalMilliseconds <= 0)
             {
                 Reset();
+                return;
             }
+
+            if (HotspotDungeons.ContainsKey(realmId) && HotspotDungeons[realmId].ContainsKey(currentLb))
+                return;
+            else 
+            {
+                if (!PotentialHotspotCandidates.ContainsKey(realmId))
+                    PotentialHotspotCandidates.Add(realmId, new Dictionary<string, Dungeon>());
+
+                if (!PotentialHotspotCandidates[realmId].ContainsKey(currentLb))
+                {
+                    var dungeonLandblock = DungeonRepository.GetDungeon(currentLb);
+                    if (dungeonLandblock != null)
+                    {
+                        var potentialDungeon = new Dungeon(dungeonLandblock.Landblock, dungeonLandblock.Name, dungeonLandblock.Coords, new InstancedPosition(damager.Location));
+                        PotentialHotspotCandidates[realmId].TryAdd(currentLb, potentialDungeon);
+                        potentialDungeon.AddTotalXp(xpOverride);
+                        potentialDungeon.PlayerTouches++;
+                    }
+                }
+                else
+                {
+                    var potentialDungeon = PotentialHotspotCandidates[realmId][currentLb];
+                    if (potentialDungeon != null)
+                    {
+                        potentialDungeon.AddTotalXp(xpOverride);
+                        potentialDungeon.PlayerTouches++;
+                        potentialDungeon.DropPosition = new InstancedPosition(damager.Location);
+                    }
+                }
+            }
+
+
         }
 
         public static string FormatTimeRemaining(TimeSpan timeRemaining)
