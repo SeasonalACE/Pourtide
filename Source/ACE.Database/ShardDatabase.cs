@@ -923,25 +923,28 @@ namespace ACE.Database
             }
         }
 
-
-
-        public Dictionary<string, HashSet<ulong>> GetIpToCharacterLoginMap()
+        public Dictionary<ushort, Dictionary<string, HashSet<ulong>>> GetIpToCharacterLoginMap()
         {
             using (var context = new ShardDbContext())
             {
                 var characterLogins = context.CharacterLogin.ToList();
                 var ipCharacterMap = characterLogins
-                    .GroupBy(cl => cl.SessionIP)
+                    .GroupBy(cl => cl.HomeRealmId)
                     .ToDictionary(
                         group => group.Key,
-                        group =>  new HashSet<ulong>(group.Select(cl => cl.CharacterId))
-                    ); 
+                        group => group
+                            .GroupBy(cl => cl.SessionIP)
+                            .ToDictionary(
+                                innerGroup => innerGroup.Key,
+                                innerGroup => new HashSet<ulong>(innerGroup.Select(cl => cl.CharacterId))
+                            )
+                    );
 
                 return ipCharacterMap;
             }
         }
 
-        public void LogCharacterLogin(uint accountId, string accountName, string sessionIP, ulong characterId, string characterName)
+        public void LogCharacterLogin(ushort homeRealmId, ushort currentRealmId, uint accountId, string accountName, string sessionIP, ulong characterId, string characterName)
         {
             var logEntry = new CharacterLogin();
 
@@ -952,6 +955,8 @@ namespace ACE.Database
                 logEntry.SessionIP = sessionIP;
                 logEntry.CharacterId = characterId;
                 logEntry.CharacterName = characterName;
+                logEntry.HomeRealmId = homeRealmId;
+                logEntry.CurrentRealmId = currentRealmId;
                 logEntry.LoginDateTime = DateTime.Now;
 
                 using (var context = new ShardDbContext())

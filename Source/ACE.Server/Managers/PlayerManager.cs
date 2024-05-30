@@ -38,7 +38,7 @@ namespace ACE.Server.Managers
         private static readonly ReaderWriterLockSlim playersLock = new ReaderWriterLockSlim();
         private static readonly Dictionary<ulong, Player> onlinePlayers = new Dictionary<ulong, Player>();
         private static readonly Dictionary<ulong, OfflinePlayer> offlinePlayers = new Dictionary<ulong, OfflinePlayer>();
-        private static readonly Dictionary<string, IpCharacterInfo> IptoPlayerGuidMap = new Dictionary<string, IpCharacterInfo>();
+        private static readonly Dictionary<ushort, Dictionary<string, IpCharacterInfo>> IptoPlayerGuidMap = new Dictionary<ushort, Dictionary<string, IpCharacterInfo>>();
 
 
         // indexed by player name
@@ -96,42 +96,55 @@ namespace ACE.Server.Managers
             BuildIpToPlayerGuidMap();
         }
 
-        public static bool CheckIpAssociations(string ipOne, string ipTwo)
+        public static bool CheckIpAssociations(ushort realmId, string ipOne, string ipTwo)
         {
-            if (IptoPlayerGuidMap.ContainsKey(ipOne) && IptoPlayerGuidMap.ContainsKey(ipTwo))
+            if (IptoPlayerGuidMap.ContainsKey(realmId))
             {
-                var guidsOne = IptoPlayerGuidMap[ipOne].Characters;
-                var guidsTwo = IptoPlayerGuidMap[ipTwo].Characters;
-                return guidsOne.Intersect(guidsTwo).Any();
+                var innerIpMap = IptoPlayerGuidMap[realmId];
+                if (innerIpMap.ContainsKey(ipOne) && innerIpMap.ContainsKey(ipTwo))
+                {
+                    var guidsOne = innerIpMap[ipOne].Characters;
+                    var guidsTwo = innerIpMap[ipTwo].Characters;
+                    return guidsOne.Intersect(guidsTwo).Any();
+                }
             }
 
-            log.Warn($"Warn: Could not find IpToPlayer mapping for addressA: {ipOne} or addressB: {ipTwo}");
+            log.Warn($"Warn: Could not find IpToPlayer mapping for addressA: {ipOne} or addressB: {ipTwo} with realmId {realmId}");
             return true; // return true as a failsafe, non associated IPs usually give rewards
-        }
 
+        }
 
         public static void BuildIpToPlayerGuidMap()
         {
             var loginMap = DatabaseManager.Shard.BaseDatabase.GetIpToCharacterLoginMap();
-            foreach (var ip in loginMap.Keys)
+            foreach (var realmId in loginMap.Keys)
             {
-                var characterGuids = loginMap[ip];
-                var monarchs = characterGuids
-                    .Select(guid => FindByGuid(guid))
-                    .Where(player => player != null)
-                    .Select(player => AllegianceManager.GetMonarch(player).Guid.Full);
-
-                foreach (var monarch in monarchs.ToList())
-                    characterGuids.Add(monarch);
-
-                IptoPlayerGuidMap.Add(ip, new IpCharacterInfo
+                var ipCharacterMap = loginMap[realmId];
+                foreach (var ip in ipCharacterMap.Keys)
                 {
-                    Characters = characterGuids
-                });
+                    var characterGuids = ipCharacterMap[ip];
+                    var monarchs = characterGuids
+                        .Select(guid => FindByGuid(guid))
+                        .Where(player => player != null)
+                        .Select(player => AllegianceManager.GetMonarch(player).Guid.Full);
+
+                    foreach (var monarch in monarchs.ToList())
+                        characterGuids.Add(monarch);
+
+                    if (!IptoPlayerGuidMap.ContainsKey(realmId))
+                    {
+                        IptoPlayerGuidMap[realmId] = new Dictionary<string, IpCharacterInfo>();
+                    }
+
+                    IptoPlayerGuidMap[realmId][ip] = new IpCharacterInfo
+                    {
+                        Characters = characterGuids
+                    };
+                }
             }
         }
 
-        public static void UpdatePlayerToIpMap(string ip, ulong guid)
+        public static void UpdatePlayerToIpMap(ushort homeRealmId, string ip, ulong guid)
         {
             try
             {
@@ -143,10 +156,23 @@ namespace ACE.Server.Managers
                     return;
                 }
 
-                if (IptoPlayerGuidMap.TryGetValue(ip, out IpCharacterInfo info))
+                if (IptoPlayerGuidMap.TryGetValue(homeRealmId, out var realmMap))
                 {
-                    info.Characters.Add(guid);
-                    info.Characters.Add(AllegianceManager.GetMonarch(player).Guid.Full);
+                    if (realmMap.TryGetValue(ip, out var info))
+                    {
+                        info.Characters.Add(guid);
+                        info.Characters.Add(AllegianceManager.GetMonarch(player).Guid.Full);
+                    }
+                    else
+                    {
+                        var newInfo = new IpCharacterInfo()
+                        {
+                            Characters = new HashSet<ulong>() { guid },
+                        };
+
+                        newInfo.Characters.Add(AllegianceManager.GetMonarch(player).Guid.Full);
+                        realmMap[ip] = newInfo;
+                    }
                 }
                 else
                 {
@@ -156,11 +182,16 @@ namespace ACE.Server.Managers
                     };
 
                     newInfo.Characters.Add(AllegianceManager.GetMonarch(player).Guid.Full);
-                    IptoPlayerGuidMap[ip] = newInfo;
+
+                    var newRealmMap = new Dictionary<string, IpCharacterInfo>();
+                    newRealmMap[ip] = newInfo;
+
+                    IptoPlayerGuidMap[homeRealmId] = newRealmMap;
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
-                log.Error($"Error: UpdatePlayerToIpMap with ip {ip} and guid {guid}, Ex: {ex}");
+                log.Error($"Error: UpdatePlayerToIpMap with ip {ip}, guid {guid}, and homeRealmId {homeRealmId}, Ex: {ex}");
             }
         }
 
@@ -465,7 +496,7 @@ namespace ACE.Server.Managers
         public static List<Player> GetEnemyOnlinePlayers(Player player)
         {
             var players = GetAllOnline();
-            var enemies = players.Where(p => !p.IsAlly(player)).ToList();
+            var enemies = players.Where(p => !p.IsAlly(player.HomeRealm,  player)).ToList();
             return enemies;
         }
 

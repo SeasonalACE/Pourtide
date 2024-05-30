@@ -670,7 +670,7 @@ namespace ACE.Server.WorldObjects
             {
                 var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
                 var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
-                var isAlly = IsAlly(killer);
+                var isAlly = IsAlly(HomeRealm, killer);
 
                 Trace(new PlayerKillEntry(){
                     KillerName = killer.Name,

@@ -80,7 +80,7 @@ namespace ACE.Server.WorldObjects
             return ipString;
         }
 
-        public bool IsAlly(IPlayer potentialAlly)
+        public bool IsAlly(ushort realmId, IPlayer potentialAlly)
         {
             if (potentialAlly == this)
                 return true;
@@ -94,7 +94,7 @@ namespace ACE.Server.WorldObjects
                 var selfIp = GetCharacterIp(this);
                 var potentialAllyIp = GetCharacterIp(potentialAlly);
 
-                return PlayerManager.CheckIpAssociations(selfIp, potentialAllyIp);
+                return PlayerManager.CheckIpAssociations(realmId, selfIp, potentialAllyIp);
             }
             catch (Exception ex)
             {
@@ -154,7 +154,7 @@ namespace ACE.Server.WorldObjects
             if (Allegiance != null && Allegiance.MonarchId == Guid.Full)
                 HandleMonarchSwear();
             else
-                PlayerManager.UpdatePlayerToIpMap(GetCharacterIp(this), Guid.Full);
+                PlayerManager.UpdatePlayerToIpMap(HomeRealm, GetCharacterIp(this), Guid.Full);
 
             SaveBiotaToDatabase();
 
@@ -194,7 +194,7 @@ namespace ACE.Server.WorldObjects
             AllegianceNode.Walk((node) =>
             {
                 node.Player.UpdateProperty(PropertyInstanceId.Monarch, MonarchId, true);
-                PlayerManager.UpdatePlayerToIpMap(GetCharacterIp(node.Player), node.Player.Guid.Full);
+                PlayerManager.UpdatePlayerToIpMap(HomeRealm, GetCharacterIp(node.Player), node.Player.Guid.Full);
 
                 node.Player.SaveBiotaToDatabase();
 

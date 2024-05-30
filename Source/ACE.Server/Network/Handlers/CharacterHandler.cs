@@ -264,8 +264,17 @@ namespace ACE.Server.Network.Handlers
 
             try
             {
-                DatabaseManager.Shard.BaseDatabase.LogCharacterLogin(session.AccountId, session.Account, session.EndPointC2S.Address.ToString(), character.Id, character.Name);
-                PlayerManager.UpdatePlayerToIpMap(session.EndPointC2S.Address.ToString(), character.Id);
+                var homeRealmId = offlinePlayer.GetProperty(ACE.Entity.Enum.Properties.PropertyInt.HomeRealm);
+
+                if (homeRealmId == null)
+                    homeRealmId = 0;
+
+                var playerLocation = offlinePlayer.Biota.GetPosition(ACE.Entity.Enum.Properties.PositionType.Location, offlinePlayer.BiotaDatabaseLock);
+
+                var currentRealmId = playerLocation?.RealmID ?? 0;
+
+                DatabaseManager.Shard.BaseDatabase.LogCharacterLogin((ushort)homeRealmId, currentRealmId, session.AccountId, session.Account, session.EndPointC2S.Address.ToString(), character.Id, character.Name);
+                PlayerManager.UpdatePlayerToIpMap((ushort)homeRealmId, session.EndPointC2S.Address.ToString(), character.Id);
 
             }
             catch (Exception ex)
