@@ -11,6 +11,9 @@ namespace ACE.Database.Models.Shard
         public string SessionIP { get; set; }
         public ulong CharacterId { get; set; }
         public string CharacterName { get; set; }
+        public ushort HomeRealmId { get; set; }
+        public ushort CurrentRealmId { get; set; }
+
         public DateTime LoginDateTime { get; set; }
 
         public DateTime? LogoutDateTime { get; set; }

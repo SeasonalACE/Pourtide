@@ -11,6 +11,9 @@ namespace ACE.Database.Models.Shard
         public uint TrophyCooldownId { get; set; }
         public ulong KillerId { get; set; }
         public ulong VictimId { get; set; }
+
+        public ushort HomeRealmId { get; set; }
+        public ushort CurrentRealmId { get; set; }
         public DateTime CooldownEndTime { get; set; }
     }
 }

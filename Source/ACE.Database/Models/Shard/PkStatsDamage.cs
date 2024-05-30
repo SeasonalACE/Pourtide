@@ -8,6 +8,9 @@ namespace ACE.Database.Models.Shard // Adjust namespace as per your project stru
         public uint AttackerId { get; set; }
         public uint DefenderId { get; set; }
         public int DamageAmount { get; set; }
+        public ushort HomeRealmId { get; set; }
+        public ushort CurrentRealmId { get; set; }
+
         public DateTime EventTime { get; set; }
     }
 }

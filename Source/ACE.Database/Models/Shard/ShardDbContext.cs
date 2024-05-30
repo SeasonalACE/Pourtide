@@ -1612,6 +1612,9 @@ namespace ACE.Database.Models.Shard
 
                 entity.Property(e => e.LogoutDateTime)
                     .HasColumnName("logoutDateTime");
+
+                entity.Property(e => e.HomeRealmId).HasColumnName("home_realm_id"); // Map HomeRealmId to home_realm_id column
+                entity.Property(e => e.CurrentRealmId).HasColumnName("current_realm_id"); // Map CurrentRealmId to current_realm_id column
             });
 
             modelBuilder.Entity<PKStatsDamage>(entity =>
@@ -1624,6 +1627,8 @@ namespace ACE.Database.Models.Shard
                 entity.Property(e => e.AttackerId).HasColumnName("attacker_id"); // Map AttackerId to attacker_id column
                 entity.Property(e => e.DefenderId).HasColumnName("defender_id"); // Map DefenderId to defender_id column
                 entity.Property(e => e.DamageAmount).HasColumnName("damage_amount"); // Map DamageAmount to damage_amount column
+                entity.Property(e => e.HomeRealmId).HasColumnName("home_realm_id"); // Map HomeRealmId to home_realm_id column
+                entity.Property(e => e.CurrentRealmId).HasColumnName("current_realm_id"); // Map CurrentRealmId to current_realm_id column
                 entity.Property(e => e.EventTime).HasColumnName("event_time"); // Map EventTime to event_time column
             });
 
@@ -1636,6 +1641,8 @@ namespace ACE.Database.Models.Shard
                 entity.Property(e => e.PKKillsId).HasColumnName("pk_kills_id"); // Map PKKillsId to pk_kills_id column
                 entity.Property(e => e.KillerId).HasColumnName("killer_id"); // Map KillerId to killer_id column
                 entity.Property(e => e.VictimId).HasColumnName("victim_id"); // Map VictimId to victim_id column
+                entity.Property(e => e.HomeRealmId).HasColumnName("home_realm_id"); // Map HomeRealmId to home_realm_id column
+                entity.Property(e => e.CurrentRealmId).HasColumnName("current_realm_id"); // Map CurrentRealmId to current_realm_id column
                 entity.Property(e => e.EventTime).HasColumnName("event_time"); // Map EventTime to event_time column
             });
 
@@ -1648,6 +1655,8 @@ namespace ACE.Database.Models.Shard
                 entity.Property(e => e.TrophyCooldownId).HasColumnName("trophy_cooldown_id"); // Map TrophyCooldownId to trophy_cooldown_id column
                 entity.Property(e => e.KillerId).HasColumnName("killer_id"); // Map KillerId to killer_id column
                 entity.Property(e => e.VictimId).HasColumnName("victim_id"); // Map VictimId to victim_id column
+                entity.Property(e => e.HomeRealmId).HasColumnName("home_realm_id"); // Map HomeRealmId to home_realm_id column
+                entity.Property(e => e.CurrentRealmId).HasColumnName("current_realm_id"); // Map CurrentRealmId to current_realm_id column
                 entity.Property(e => e.CooldownEndTime).HasColumnName("cooldown_end_time"); // Map CooldownEndTime to cooldown_end_time column
             });
 

@@ -7,6 +7,8 @@ namespace ACE.Database.Models.Shard // Adjust namespace as per your project stru
         public uint PKKillsId { get; set; }
         public ulong KillerId { get; set; }
         public ulong VictimId { get; set; }
+        public ushort HomeRealmId { get; set; }
+        public ushort CurrentRealmId { get; set; }
         public DateTime EventTime { get; set; }
     }
 }
