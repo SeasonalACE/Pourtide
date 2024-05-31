@@ -127,7 +127,22 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         private void LoadInventory()
         {
-            if (inventoryloaded) return;
+            if (inventoryloaded)
+            {
+                if (WeenieClassName != "realmselector")
+                    return;
+            }
+
+            // always clear realm selector default items
+            if (WeenieClassName == "realmselector")
+            {
+                foreach (var item in DefaultItemsForSale)
+                {
+                    item.Value.Destroy();
+                }
+
+                DefaultItemsForSale.Clear();
+            }
 
             var itemsForSale = new Dictionary<(uint weenieClassId, int paletteTemplate, double shade), uint>();
 
@@ -138,7 +153,11 @@ namespace ACE.Server.WorldObjects
                     log.Error("Weenie not found: realm-selector-token" + Environment.NewLine + Environment.StackTrace);
                 else
                 {
-                    foreach (var realm in RealmManager.Realms.Where(x => x.StandardRules.GetProperty(RealmPropertyBool.CanBeHomeworld)))
+                    var validHomeRealms = RealmManager.Realms
+                        .Where(x => x.StandardRules.GetProperty(RealmPropertyBool.CanBeHomeworld) &&
+                        (x.Realm.Id == RealmManager.CurrentSeason.Realm.Id) || x.StandardRules.GetProperty(RealmPropertyBool.IsDuelingRealm));
+
+                    foreach (var realm in validHomeRealms)
                     {
                         WorldObject wo = WorldObjectFactory.CreateNewWorldObject(weenie.WeenieClassId, RealmRuleset);
                         wo.Name = realm.Realm.Name;

@@ -115,7 +115,7 @@ namespace ACE.Server.Managers
 
         private static void PreloadLandblock(uint landblock, PreloadedLandblocks preloadLandblock)
         {
-            var instance = RealmManager.ServerBaseRealmInstance;
+            var instance = RealmManager.CurrentSeasonInstance;
             var landblockID = new LandblockId(landblock);
             GetLandblock(landblockID, instance, null, preloadLandblock.IncludeAdjacents, preloadLandblock.Permaload);
             log.DebugFormat("Landblock {0:X4}, ({1}) preloaded. IncludeAdjacents = {2}, Permaload = {3}", landblockID.Landblock, preloadLandblock.Description, preloadLandblock.IncludeAdjacents, preloadLandblock.Permaload);

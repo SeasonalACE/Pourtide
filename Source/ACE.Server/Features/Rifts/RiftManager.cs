@@ -181,13 +181,13 @@ namespace ACE.Server.Features.Rifts
             return (tier, creatureIds);
         }
 
-        public static Rift CreateRiftInstance(Dungeon dungeon)
+        public static Rift CreateRiftInstance(ushort realmId, Dungeon dungeon)
         {
             var rules = new List<Realm>()
             {
                 RealmManager.GetRealm(1016).Realm // rift ruleset
             };
-            var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(dungeon.DropPosition.LandblockId, rules, true);
+            var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(realmId, dungeon.DropPosition.LandblockId, rules, true);
 
             var instance = ephemeralRealm.Instance;
 
@@ -240,7 +240,7 @@ namespace ACE.Server.Features.Rifts
             if (ActiveRifts[realmId].ContainsKey(currentLb))
                 return false;
 
-            var rift = CreateRiftInstance(dungeon);
+            var rift = CreateRiftInstance(realmId, dungeon);
 
             SpawnHomeToRiftPortalAsync(rift);
             SpawnRiftToHomePortalAsync(rift);

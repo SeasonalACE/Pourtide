@@ -55,8 +55,6 @@ namespace ACE.Server.WorldObjects
             wo.HouseOwner = House.HouseOwner;
             wo.HouseInstance = House.HouseInstance;
 
-            var instance = RealmManager.ServerBaseRealmInstance;
-
             if (wo.IsLinkSpot)
             {
                 var housePortals = House.GetHousePortals();

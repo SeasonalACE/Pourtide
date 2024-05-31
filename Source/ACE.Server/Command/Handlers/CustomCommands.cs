@@ -30,7 +30,7 @@ namespace ACE.Server.Command.Handlers
         public static void HandleSeasonInfo(Session session, params string[] paramters)
         {
             var player  = session?.Player;
-            var season = RealmManager.ServerBaseRealm;
+            var season = RealmManager.CurrentSeason;
             
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Season Information>", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n{season.Realm.Name} - Id: {season.Realm.Id} - Instance: {season.StandardRules.GetDefaultInstanceID()}", ChatMessageType.System));

@@ -78,11 +78,11 @@ namespace ACE.Server.Factories
             var heritageGroup = DatManager.PortalDat.CharGen.HeritageGroups[(uint)characterCreateInfo.Heritage];
 
             if (weenieType == WeenieType.Admin)
-                player = new Admin(weenie, guid, accountId, RealmManager.ServerBaseRealm.StandardRules);
+                player = new Admin(weenie, guid, accountId, RealmManager.CurrentSeason.StandardRules);
             else if (weenieType == WeenieType.Sentinel)
-                player = new Sentinel(weenie, guid, accountId, RealmManager.ServerBaseRealm.StandardRules);
+                player = new Sentinel(weenie, guid, accountId, RealmManager.CurrentSeason.StandardRules);
             else
-                player = new Player(weenie, guid, accountId, RealmManager.ServerBaseRealm.StandardRules);
+                player = new Player(weenie, guid, accountId, RealmManager.CurrentSeason.StandardRules);
 
             player.SetProperty(PropertyInt.HeritageGroup, (int)characterCreateInfo.Heritage);
             player.SetProperty(PropertyString.HeritageGroup, heritageGroup.Name);
@@ -472,7 +472,7 @@ namespace ACE.Server.Factories
             if (weenie == null)
                 return null;
 
-            var worldObject = (Clothing)WorldObjectFactory.CreateNewWorldObject(weenie, RealmManager.ServerBaseRealm.StandardRules);
+            var worldObject = (Clothing)WorldObjectFactory.CreateNewWorldObject(weenie, RealmManager.CurrentSeason.StandardRules);
 
             worldObject.SetProperties((int)palette, shade);
 

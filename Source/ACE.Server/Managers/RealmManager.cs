@@ -33,7 +33,13 @@ namespace ACE.Server.Managers
         private static readonly Dictionary<ReservedRealm, WorldRealm> ReservedRealms = new Dictionary<ReservedRealm, WorldRealm>();
         private static readonly Dictionary<string, RulesetTemplate> EphemeralRealmCache = new Dictionary<string, RulesetTemplate>();
 
-        public static WorldRealm ServerBaseRealm { get; private set; }
+        public static WorldRealm CurrentSeason
+        {
+            get
+            {
+                return GetRealm((ushort)PropertyManager.GetLong("current_season").Item);
+            }
+        }
 
         //Todo: refactor
         public static WorldRealm DuelRealm;
@@ -44,11 +50,11 @@ namespace ACE.Server.Managers
 
         private static WorldRealm _defaultRealm;
 
-        public static uint ServerBaseRealmInstance
+        public static uint CurrentSeasonInstance
         {
             get
             {
-                return ServerBaseRealm.StandardRules.GetDefaultInstanceID();
+                return CurrentSeason.StandardRules.GetDefaultInstanceID();
             }
         }
 
@@ -88,19 +94,9 @@ namespace ACE.Server.Managers
                 if (!ImportComplete)
                     throw new Exception("Import of realms.jsonc did not complete successfully.");
 
-                HandleUpdateServerBaseRealm();
-
-                log.Info($"The current ServerBaseRealm is {ServerBaseRealm.Realm.Id} - {ServerBaseRealm.Realm.Id}");
-                log.Info($"The current ServerBaseRealmInstance is {ServerBaseRealmInstance}");
+                log.Info($"The current season is Name = {CurrentSeason.Realm.Name}, Id = {CurrentSeason.Realm.Id}, Instance = {CurrentSeasonInstance}");
             }
 
-        }
-
-        public static void HandleUpdateServerBaseRealm()
-        {
-            var baseRealmId = PropertyManager.GetLong("server_base_realm").Item;
-
-            ServerBaseRealm = GetRealm((ushort)baseRealmId);
         }
 
         public static string GetRealmList()
@@ -126,7 +122,7 @@ namespace ACE.Server.Managers
                 if (realm.Realm.Id > 0 && realm.Realm.Id < 1000)
                 {
 
-                    if (ServerBaseRealm.Realm.Id == realm.Realm.Id)
+                    if (CurrentSeason.Realm.Id == realm.Realm.Id)
                         sb.AppendLine($"{realm.Realm.Id} : {realm.Realm.Name} - <Active>");
                     else 
                         sb.AppendLine($"{realm.Realm.Id} : {realm.Realm.Name}");
@@ -230,9 +226,9 @@ namespace ACE.Server.Managers
             return GetRealm(player.EphemeralRealmExitTo?.RealmID ?? player.HomeRealm);*/
         }
 
-        internal static Landblock GetNewEphemeralLandblock(ACE.Entity.LandblockId physicalLandblockId, List<ACE.Entity.Models.Realm> realmTemplates, bool permaload = false)
+        internal static Landblock GetNewEphemeralLandblock(ushort realmId, ACE.Entity.LandblockId physicalLandblockId, List<ACE.Entity.Models.Realm> realmTemplates, bool permaload = false)
         {
-            var baseRealm = RealmManager.ServerBaseRealm;
+            var baseRealm = RealmManager.GetRealm(realmId);
             EphemeralRealm ephemeralRealm;
             lock (realmsLock)
                 ephemeralRealm = EphemeralRealm.Initialize(baseRealm, realmTemplates);
@@ -635,15 +631,14 @@ namespace ACE.Server.Managers
             player.SetProperty(PropertyBool.RecallsDisabled, false);
             var loc = realm.DefaultStartingLocation(player);
             player.Sanctuary = loc.AsLocalPosition();
-            /*WorldManager.ThreadSafeTeleport(player, loc, false, new Entity.Actions.ActionEventDelegate(() =>
+
+            WorldManager.ThreadSafeTeleport(player, loc, false, new Entity.Actions.ActionEventDelegate(() =>
             {
                 if (realm.StandardRules.GetProperty(RealmPropertyBool.IsDuelingRealm))
                 {
                     DuelRealmHelpers.SetupNewCharacter(player);
                 }
-            }));*/
-            player.SetPosition(PositionType.Sanctuary, new InstancedPosition(loc));
-            WorldManager.ThreadSafeTeleport(player, loc, false);
+            }));
             //player.GrantXP((long)player.GetXPToNextLevel(10), XpType.Emote, ShareType.None);
         }
     }
