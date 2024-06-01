@@ -270,16 +270,20 @@ namespace ACE.Server.Command.Handlers
                 session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Resetting Daily Xp Cap for {playerName}>", ChatMessageType.System));
                 XpManager.ResetPlayersForDaily(playerName);
             } else
-        {
+            {
                 session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Resetting Daily Xp Cap for all players>", ChatMessageType.System));
-            XpManager.ResetPlayersForDaily();
-        }
+                XpManager.ResetPlayersForDaily();
+            }
         }
 
         [CommandHandler("show-xp", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show xp cap information.")]
         public static void HandleShowXp(Session session, params string[] paramters)
         {
             var player = session.Player;
+            var realm = RealmManager.GetRealm(player.Location.RealmID);
+            if (realm.Realm.Id != RealmManager.CurrentSeason.Realm.Id)
+                return;
+
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Showing Xp Cap Information>", ChatMessageType.System));
             var queryXp = player.QuestXp;
             var pvpXp = player.PvpXp;
@@ -291,6 +295,7 @@ namespace ACE.Server.Command.Handlers
 
             var globalAverageModifier = XpManager.GetPlayerLevelXpModifier((int)player.Level).ToString("0.00");
 
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> The current week is {XpManager.Week}.", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> The daily xp cap today for all players is {Formatting.FormatIntWithCommas(XpManager.CurrentDailyXp.XpCap)}.", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> The current highest level player for the server is {(uint)XpManager.MaxLevel}.", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n--> Your current global xp modifier is {globalAverageModifier}x.", ChatMessageType.System));

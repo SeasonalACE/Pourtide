@@ -135,6 +135,13 @@ namespace ACE.Server.Features.Xp
 
         public static void SetPlayerXpCap(IPlayer player)
         {
+            var homeRealm = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt.HomeRealm);
+            if (homeRealm == null)
+                return;
+
+            if ((ushort)homeRealm != RealmManager.CurrentSeason.Realm.Id)
+                return;
+
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXp, 0);
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXp, 0);
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXp, 0);
@@ -157,13 +164,17 @@ namespace ACE.Server.Features.Xp
             if (MaxLevel == null || DateTime.UtcNow - GetAverageModifierTimestamp > TimeSpan.FromMinutes(duration))
             {
                 GetAverageModifierTimestamp = DateTime.UtcNow;
-
                 var maxLevel = PlayerManager.GetAllPlayers()
-                .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player)
-                .OrderByDescending(player => player.Level)
-                .Select(player => player.Level)
-                .Take(1)
-                .FirstOrDefault();
+                    .Where(player => {
+                        var homeRealm = player.GetProperty(ACE.Entity.Enum.Properties.PropertyInt.HomeRealm);
+                        return homeRealm != null &&
+                            player.Account.AccessLevel == (uint)AccessLevel.Player &&
+                            (ushort)homeRealm == RealmManager.CurrentSeason.Realm.Id;
+                    })
+                    .OrderByDescending(player => player.Level)
+                    .Select(player => player.Level)
+                    .Take(1)
+                    .FirstOrDefault();
 
                 if (maxLevel == null)
                     return 1;
