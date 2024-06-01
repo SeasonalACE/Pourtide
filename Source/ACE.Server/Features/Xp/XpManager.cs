@@ -44,20 +44,13 @@ namespace ACE.Server.Features.Xp
         public static readonly Dictionary<uint, ulong> WeeklyLevelWithCapXp = new Dictionary<uint, ulong>()
         {
             { 1, 46465302 },
-            { 2, 150013037 },
-            { 3, 387419625 },
-            { 4, 859755734 },
-            { 5, 1709581309 },
-            { 6, 3128116563 },
-            { 7, 5362412965 },
-            { 8, 8722524219 },
-            { 9, 13588677261 },
-            { 10, 20418443236 },
-            { 11, 29753908491 },
-            { 12, 42228845559 },
-            { 13, 58575884147 },
-            { 14, 79633682122 },
-            { 15, 106354096497 }
+            { 2, 246555428 },
+            { 3, 859755734  },
+            { 4, 2333712089 },
+            { 5, 10940644110 },
+            { 6, 35555554692 },
+            { 7, 92221953273 },
+            { 8, 191226310247 }
         };
 
         public static void Initialize()
@@ -116,8 +109,8 @@ namespace ACE.Server.Features.Xp
                 {
                     GetUpdatedXpCapTimestamps();
 
-                    // season ends at week 15
-                    if (Week > 15)
+                    // season ends at week 8
+                    if (Week > 8)
                         return;
 
                     CalculateCurrentDailyXpCap();
