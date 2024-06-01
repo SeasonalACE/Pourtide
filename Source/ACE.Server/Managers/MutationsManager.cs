@@ -72,12 +72,13 @@ namespace ACE.Server.Managers
             if (weenie == null)
                 return null;
 
-            if (weenie.WeenieClassId > 607000 && weenie.WeenieClassId < 608000)
-                return null;
-
             var location = new Position(instance.ObjCellId, instance.OriginX, instance.OriginY, instance.OriginZ, instance.AnglesX, instance.AnglesY, instance.AnglesZ, instance.AnglesW, iid);
 
+            if (location.IsEphemeralRealm && ruleset.GetProperty(RealmPropertyBool.IsDuelingRealm))
+                return null;
+
             var lb = location.LandblockId.Landblock;
+
             if (BlackListedLandblocks.Contains(lb))
             {
                 return null;
