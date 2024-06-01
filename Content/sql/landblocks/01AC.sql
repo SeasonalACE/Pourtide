@@ -43,3 +43,11 @@ VALUES (0x701AC00D,   278, 0x01AC0132, 60, -24.75, 0, 0, 0, 0, -1, False, '2005-
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
 VALUES (0x701AC00E,   278, 0x01AC0143, 50, -24.75, 6, 0, 0, 0, -1, False, '2005-02-09 10:00:00'); /* Door */
 /* @teleloc 0x01AC0143 [50.000000 -24.750000 6.000000] 0.000000 0.000000 0.000000 -1.000000 */
+
+INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
+VALUES (0x701AC00F, 607001, 0x01AC012C, 60.2496, 2.91119, -0.063, -0.999999, 0, 0, -0.001413, False, '2024-05-30 23:18:34'); /* Binding Realm */
+/* @teleloc 0x01AC012C [60.249599 2.911190 -0.063000] -0.999999 0.000000 0.000000 -0.001413 */
+
+INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
+VALUES (0x701AC010, 607002, 0x01AC0134, 68.94497, -1.355912, -0.063, 0.925553, 0, 0, -0.378619, False, '2024-06-01 13:38:48'); /* Nexus Portal */
+/* @teleloc 0x01AC0134 [68.944969 -1.355912 -0.063000] 0.925553 0.000000 0.000000 -0.378619 */
