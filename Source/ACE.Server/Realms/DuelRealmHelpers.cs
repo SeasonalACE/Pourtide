@@ -101,7 +101,7 @@ namespace ACE.Server.Realms
             DisableSpellComponentRequirement(player);
         }
 
-        private static void AddScarabsToInventory(Player player)
+        public static void AddScarabsToInventory(Player player)
         {
             var weenieIds = new HashSet<int>() { 686, 687, 688, 689, 690, 691, 7299, 8897, 37155 };
 

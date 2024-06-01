@@ -661,5 +661,14 @@ namespace ACE.Server.Command.Handlers
                 }
             }
         }
+
+        [CommandHandler("scarabs", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Add scarabs to inventory.")]
+        public static void HandleAddScarabs(Session session, params string[] parameters)
+        {
+            if (!session.Player.CurrentLandblock.RealmRuleset.GetProperty(RealmPropertyBool.IsDuelingRealm))
+                return;
+
+            DuelRealmHelpers.AddScarabsToInventory(session.Player);
+        }
     }
 }
