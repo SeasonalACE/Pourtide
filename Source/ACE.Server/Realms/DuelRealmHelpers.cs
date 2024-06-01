@@ -12,11 +12,22 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Entity;
 using ACE.Entity;
 using ACE.Server.Managers;
+using ACE.Server.Features.HotDungeons;
+using ACE.Entity.Models;
+using ACE.Server.Network;
 
 namespace ACE.Server.Realms
 {
+
+    public class DuelDungeon
+    {
+        public InstancedPosition Destination { get; set; }
+    }
+
     public static class DuelRealmHelpers
     {
+        private static Dictionary<string, DuelDungeon> Dungeons = new Dictionary<string, DuelDungeon>();
+
         static void TeachAugmentations(Player player)
         {
             foreach(var augtype in RealmConstants.DuelAugmentations)
@@ -24,6 +35,31 @@ namespace ACE.Server.Realms
                 AugmentationDevice.DoAugmentation(player, augtype, null, false, false);
                 player.SaveBiotaToDatabase();
             }
+        }
+
+        public static DuelDungeon GetDuelDungeon(InstancedPosition position)
+        {
+            var landblockHex = position.LandblockHex;
+            if (Dungeons.ContainsKey(landblockHex))
+                return Dungeons[landblockHex];
+
+            if (!DungeonRepository.HasDungeon(landblockHex))
+                return null;
+
+            var rules = new List<Realm>()
+            {
+                RealmManager.GetRealm(1017).Realm
+            };
+
+            var lb = RealmManager.GetNewEphemeralLandblock(RealmManager.DuelRealm.Realm.Id, position.LandblockId, rules, true);
+            var pos = new InstancedPosition(position, lb.Instance);
+            var dungeon = new DuelDungeon()
+            {
+                Destination = pos
+            };
+
+            Dungeons.Add(landblockHex, dungeon);
+            return dungeon;
         }
 
         static void GiveGear(Player player)
@@ -60,8 +96,29 @@ namespace ACE.Server.Realms
             TeachAugmentations(player);
             SpendAllXp(player);
             GiveGear(player);
+            AddScarabsToInventory(player);
             LearnAllNonAdminSpells(player);
             DisableSpellComponentRequirement(player);
+        }
+
+        private static void AddScarabsToInventory(Player player)
+        {
+            var weenieIds = new HashSet<int>() { 686, 687, 688, 689, 690, 691, 7299, 8897, 37155 };
+
+            foreach (uint weenieId in weenieIds)
+            {
+                var loot = WorldObjectFactory.CreateNewWorldObject(weenieId);
+
+                if (loot == null) 
+                    continue;
+
+                var stackSizeForThisWeenieId = loot.MaxStackSize;
+
+                if (stackSizeForThisWeenieId > 1)
+                    loot.SetStackSize(stackSizeForThisWeenieId);
+
+                player.TryCreateInInventoryWithNetworking(loot);
+            }
         }
 
         static void SpendAllXp(Player player)

@@ -256,8 +256,6 @@ namespace ACE.Server.WorldObjects
 
             var equippedArmor = GetEquippedClothingArmor((CoverageMask)CoverageMaskHelper.Outerwear);
 
-
-
             // wait for the death animation to finish
             var dieChain = new ActionChain();
             var animLength = DatManager.PortalDat.ReadFromDat<MotionTable>(MotionTableId).GetAnimationLength(MotionCommand.Dead);
@@ -268,10 +266,13 @@ namespace ACE.Server.WorldObjects
                 if (!duelRealm)
                     CreateCorpse(topDamager, hadVitae);
 
-                ThreadSafeTeleportOnDeath(); // enter portal space
-
                 if (IsPKDeath(topDamager) || IsPKLiteDeath(topDamager))
+                {
+                    HandlePkDeath(topDamager.Guid.Full, Guid.Full);
                     SetMinimumTimeSincePK();
+                }
+
+                ThreadSafeTeleportOnDeath(); // enter portal space
 
                 IsBusy = false;
             });
@@ -626,7 +627,7 @@ namespace ACE.Server.WorldObjects
             var isPkDeath = IsPKDeath(corpse.KillerId);
 
             if (isPkDeath)
-                HandlePKDeath(corpse);
+                HandlePKDeathCorpse(corpse);
 
             var equippedItems = EquippedObjects.Values.ToList();
 
@@ -664,12 +665,12 @@ namespace ACE.Server.WorldObjects
             return dropItems;
         }
 
-        private void HandlePKDeath(Corpse corpse)
+        private void HandlePkDeath(ulong killerGuid, ulong victimGuid)
         {
             try
             {
-                var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
-                var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
+                var killer = PlayerManager.FindByGuid(killerGuid);
+                var victim = PlayerManager.FindByGuid(victimGuid);
                 var isAlly = IsAlly(HomeRealm, killer);
 
                 Trace(new PlayerKillEntry(){
@@ -679,8 +680,26 @@ namespace ACE.Server.WorldObjects
                 });
 
                 if (!isAlly)
+                    TrackKill(HomeRealm, killerGuid, victimGuid);
+
+            } catch(Exception ex)
+            {
+                log.Error("Error: during pk death check");
+                log.Error(ex.Message);
+                log.Error(ex.StackTrace);
+            }
+        }
+
+        private void HandlePKDeathCorpse(Corpse corpse)
+        {
+            try
+            {
+                var killer = PlayerManager.FindByGuid(corpse.KillerId.Value);
+                var victim = PlayerManager.FindByGuid(corpse.VictimId.Value);
+                var isAlly = IsAlly(HomeRealm, killer);
+
+                if (!isAlly)
                 {
-                    TrackKill(corpse.KillerId.Value, corpse.VictimId.Value);
                     var mod = (double)victim.Level / (double)killer.Level;
                     var playerXp = (victim.GetProperty(PropertyInt64.TotalExperience) ?? 0) * 0.02;
                     var earnedPvpXp = playerXp * mod;
@@ -725,9 +744,9 @@ namespace ACE.Server.WorldObjects
             log.Debug(msg);
         }
 
-        public void TrackKill(ulong killerId, ulong victimId)
+        public void TrackKill(ushort homeRealmId, ulong killerId, ulong victimId)
         {
-            DatabaseManager.Shard.BaseDatabase.TrackPkStatsKill(killerId, victimId);
+            DatabaseManager.Shard.BaseDatabase.TrackPkStatsKill(homeRealmId, Location.RealmID, killerId, victimId);
         }
 
         public bool UpdatePkTrophies(ulong killerId, ulong victimId)

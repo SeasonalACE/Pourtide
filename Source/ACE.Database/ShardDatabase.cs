@@ -979,7 +979,7 @@ namespace ACE.Database
             }
         }
 
-        public PKStatsKill TrackPkStatsKill(ulong killerId, ulong victimId)
+        public PKStatsKill TrackPkStatsKill(ushort homeRealmId, ushort currentRealmId, ulong killerId, ulong victimId)
         {
             using (var context = new ShardDbContext())
             {
@@ -987,6 +987,8 @@ namespace ACE.Database
                 {
                     KillerId = killerId,
                     VictimId = victimId,
+                    HomeRealmId = homeRealmId,
+                    CurrentRealmId = currentRealmId,
                     EventTime = DateTime.UtcNow,
                 };
 

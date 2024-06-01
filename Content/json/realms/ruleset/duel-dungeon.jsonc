@@ -1,0 +1,8 @@
+{
+    "name": "Duel Dungeon",
+    "type": "Ruleset",
+    "properties": {
+        "Description": "This represents a duel dungeon landblock",
+        "IsNeutralZone": true
+    }
+}

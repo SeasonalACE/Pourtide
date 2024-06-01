@@ -1189,7 +1189,7 @@ namespace ACE.Server.WorldObjects
 
         public void TryBurnComponents(Spell spell)
         {
-            if (SafeSpellComponents || PropertyManager.GetBool("safe_spell_comps").Item)
+            if (CurrentLandblock.RealmHelpers.IsDuel || SafeSpellComponents || PropertyManager.GetBool("safe_spell_comps").Item)
                 return;
 
             var burned = spell.TryBurnComponents(this);
@@ -1237,7 +1237,7 @@ namespace ACE.Server.WorldObjects
         {
             spell.Formula.GetPlayerFormula(this);
 
-            if (!SpellComponentsRequired || !PropertyManager.GetBool("require_spell_comps").Item)
+            if (CurrentLandblock.RealmHelpers.IsDuel || !SpellComponentsRequired || !PropertyManager.GetBool("require_spell_comps").Item)
                 return true;
 
             var requiredComps = spell.Formula.GetRequiredComps();

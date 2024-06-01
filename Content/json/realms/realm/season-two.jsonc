@@ -1,0 +1,10 @@
+{
+  "name": "Season Two",
+  "type": "Realm",
+  "parent": "Modern Realm (PvP)",
+  "properties": {
+    "Description": "The second season of Pourtide",
+    "CanBeHomeworld": true,
+    "HideoutEnabled": false
+  }
+}

@@ -307,6 +307,14 @@ namespace ACE.Server.WorldObjects
                 var rift = rifts.GetRandom();
                 portalDest = new InstancedPosition(rift.DropPosition);
             }
+            else if (WeenieClassId > 607000 && WeenieClassId < 607999) // if Duel Dungeon Portal
+            {
+                var tempPosition = Destination.AsInstancedPosition(player.Location.Instance);
+                var dungeon = DuelRealmHelpers.GetDuelDungeon(tempPosition);
+                if (dungeon == null)
+                    return;
+                portalDest = new InstancedPosition(dungeon.Destination);
+            }
             else
                 portalDest = Destination.AsInstancedPosition(player, player.RealmRuleset.PortalInstanceSelectMode);
 

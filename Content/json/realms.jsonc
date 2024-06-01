@@ -5,6 +5,7 @@
   "Modern Realm (PvP)": 4,
   "Duels Only": 5,
   "Season One": 6,
+  "Season Two": 7,
   "pvp-ruleset": 1000,
   "random-test": 1001,
   "creature-attribute-randomizer": 1002,
@@ -21,5 +22,6 @@
   "No Movement Fizzles": 1013,
   "Increased Movement Fizzles": 1014,
   "Reduced Projectile Accuracy": 1015,
-  "Rift": 1016
+  "Rift": 1016,
+  "Duel Dungeon": 1017
 }

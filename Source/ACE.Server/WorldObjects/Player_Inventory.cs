@@ -310,8 +310,9 @@ namespace ACE.Server.WorldObjects
 
             TryShuffleStance(wieldedLocation);
 
+            var isDuel = CurrentLandblock.RealmRuleset.GetProperty(RealmPropertyBool.IsDuelingRealm);
             // handle item spells
-            if (item.ItemCurMana > 0)
+            if (isDuel || item.ItemCurMana > 0)
                 TryActivateSpells(item);
 
             // handle equipment sets
