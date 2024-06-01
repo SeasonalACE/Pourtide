@@ -133,6 +133,12 @@ namespace ACE.Server.Features.Xp
             foreach (var player in players)
                 SetPlayerXpCap(player);
         }
+        public static void ResetPlayersForDaily(string name)
+        {
+            var player = PlayerManager.FindByName(name);
+            if (player != null)
+                SetPlayerXpCap(player);
+        }
 
         public static void SetPlayerXpCap(IPlayer player)
         {
