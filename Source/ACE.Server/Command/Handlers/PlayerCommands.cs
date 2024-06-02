@@ -28,7 +28,15 @@ namespace ACE.Server.Command.Handlers
             "")]
         public static void HandlePop(Session session, params string[] parameters)
         {
-            CommandHandlerHelper.WriteOutputInfo(session, $"Current world population: {PlayerManager.GetOnlineCount():N0}", ChatMessageType.Broadcast);
+            if (session != null)
+            {
+                var realmId = session.Player.Location.RealmID;
+                CommandHandlerHelper.WriteOutputInfo(session, $"Current world population: {PlayerManager.GetOnlineCount(realmId):N0}", ChatMessageType.Broadcast);
+            } else
+            {
+                CommandHandlerHelper.WriteOutputInfo(session, $"Current world population: {PlayerManager.GetOnlineCount():N0}", ChatMessageType.Broadcast);
+            }
+
         }
 
         // quest info (uses GDLe formatting to match plugin expectations)
