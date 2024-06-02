@@ -1032,7 +1032,7 @@ namespace ACE.Server.WorldObjects
 
                 if (lb.RealmHelpers.IsRift)
                 {
-                    if (RiftManager.TryGetActiveRift(HomeRealm, Location.LandblockHex, out Rift activeRift))
+                    if (RiftManager.TryGetActiveRift(HomeRealm, newPosition.LandblockHex, out Rift activeRift))
                         return activeRift.ValidateTimedOutPlayer(this);
                     else
                         return false;
