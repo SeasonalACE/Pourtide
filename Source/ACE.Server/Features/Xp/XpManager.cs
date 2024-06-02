@@ -152,6 +152,8 @@ namespace ACE.Server.Features.Xp
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.QuestXpDailyMax, (long)(diff * 0.4));
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.MonsterXpDailyMax, (long)(diff * 0.4));
             player.SetProperty(ACE.Entity.Enum.Properties.PropertyInt64.PvpXpDailyMax, (long)(diff * 0.2));
+
+            player.SaveBiotaToDatabase();
         }
 
         public static double? MaxLevel = null;
