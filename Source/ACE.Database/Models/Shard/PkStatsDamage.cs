@@ -1,3 +1,4 @@
+using ACE.Entity.Enum;
 using System;
 
 namespace ACE.Database.Models.Shard // Adjust namespace as per your project structure
@@ -10,6 +11,11 @@ namespace ACE.Database.Models.Shard // Adjust namespace as per your project stru
         public int DamageAmount { get; set; }
         public ushort HomeRealmId { get; set; }
         public ushort CurrentRealmId { get; set; }
+
+        public bool IsCrit { get; set; }
+
+        public uint CombatMode { get; set; }
+
 
         public DateTime EventTime { get; set; }
     }

@@ -997,8 +997,11 @@ namespace ACE.Database
                 return kill;
             }
         }
-        public void TrackPkStatsDamage(uint attackerId, uint defenderId, int damageAmount)
+        public void TrackPkStatsDamage(ushort homeRealmId, ushort currentRealmId, uint attackerId, uint defenderId, int damageAmount, bool isCrit, uint combatType)
         {
+            if (damageAmount <= 0)
+                return;
+
             using (var context = new ShardDbContext())
             {
                 var newPKStatsDamage = new PKStatsDamage
@@ -1006,6 +1009,10 @@ namespace ACE.Database
                     AttackerId = attackerId,
                     DefenderId = defenderId,
                     DamageAmount = damageAmount,
+                    HomeRealmId = homeRealmId,
+                    CurrentRealmId = currentRealmId,
+                    IsCrit = isCrit,
+                    CombatMode = combatType,
                     EventTime = DateTime.Now
                 };
 

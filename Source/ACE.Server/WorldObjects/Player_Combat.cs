@@ -13,6 +13,7 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Network.Enum;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
+using ACE.Database;
 
 namespace ACE.Server.WorldObjects
 {
@@ -471,13 +472,13 @@ namespace ACE.Server.WorldObjects
 
         public int TakeDamage(WorldObject source, DamageEvent damageEvent)
         {
-            return TakeDamage(source, damageEvent.DamageType, damageEvent.Damage, damageEvent.BodyPart, damageEvent.IsCritical, damageEvent.AttackConditions);
+            return TakeDamage(source, damageEvent.DamageType, damageEvent.Damage, damageEvent.BodyPart, damageEvent.IsCritical, damageEvent.CombatType, damageEvent.AttackConditions);
         }
 
         /// <summary>
         /// Applies damages to a player from a physical damage source
         /// </summary>
-        public int TakeDamage(WorldObject source, DamageType damageType, float _amount, BodyPart bodyPart, bool crit = false, AttackConditions attackConditions = AttackConditions.None)
+        public int TakeDamage(WorldObject source, DamageType damageType, float _amount, BodyPart bodyPart, bool crit = false, CombatType combatType = default, AttackConditions attackConditions = AttackConditions.None)
         {
             if (Invincible || IsDead) return 0;
 
@@ -515,6 +516,9 @@ namespace ACE.Server.WorldObjects
             // update health
             var damageTaken = (uint)-UpdateVitalDelta(Health, (int)-amount);
             DamageHistory.Add(source, damageType, damageTaken);
+
+            if (source is Player)
+                DatabaseManager.Shard.BaseDatabase.TrackPkStatsDamage(HomeRealm, Location.RealmID, (uint)source.Guid.Full, (uint)Guid.Full, (int)damageTaken, crit, (uint)combatType);
 
             // update stamina
             if (CombatMode != CombatMode.NonCombat)

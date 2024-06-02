@@ -531,7 +531,11 @@ namespace ACE.Server.WorldObjects
                     if (boost >= 0)
                         targetCreature.DamageHistory.OnHeal((uint)boost);
                     else
+                    {
                         targetCreature.DamageHistory.Add(this, DamageType.Health, (uint)-boost);
+                        if (this is Player attacker && targetCreature is Player victim)
+                            DatabaseManager.Shard.BaseDatabase.TrackPkStatsDamage(attacker.HomeRealm, attacker.Location.RealmID, (uint)attacker.Guid.Full, (uint)victim.Guid.Full, (int)(uint)-boost, false, (uint)CombatType.Magic);
+                    }
 
                     //if (targetPlayer != null && targetPlayer.Fellowship != null)
                     //targetPlayer.Fellowship.OnVitalUpdate(targetPlayer);
@@ -786,6 +790,10 @@ namespace ACE.Server.WorldObjects
 
                     transferSource.DamageHistory.Add(this, DamageType.Health, srcVitalChange);
 
+                    if (this is Player attacker && caster is Player victim)
+                        DatabaseManager.Shard.BaseDatabase.TrackPkStatsDamage(attacker.HomeRealm, attacker.Location.RealmID, (uint)attacker.Guid.Full, (uint)victim.Guid.Full, -(int)srcVitalChange, false, (uint)CombatType.Magic);
+
+
                     //var sourcePlayer = source as Player;
                     //if (sourcePlayer != null && sourcePlayer.Fellowship != null)
                     //sourcePlayer.Fellowship.OnVitalUpdate(sourcePlayer);
@@ -921,6 +929,9 @@ namespace ACE.Server.WorldObjects
                     damage = (uint)-caster.UpdateVitalDelta(caster.Health, -tryDamage);
                     caster.DamageHistory.Add(this, DamageType.Health, damage);
                     damageType = DamageType.Health;
+
+                    if (this is Player attacker && caster is Player victim)
+                        DatabaseManager.Shard.BaseDatabase.TrackPkStatsDamage(attacker.HomeRealm, attacker.Location.RealmID, (uint)attacker.Guid.Full, (uint)victim.Guid.Full, (int)damage, false, (uint)CombatType.Magic);
 
                     //if (player != null && player.Fellowship != null)
                     //player.Fellowship.OnVitalUpdate(player);

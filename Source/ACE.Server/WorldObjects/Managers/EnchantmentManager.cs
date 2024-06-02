@@ -14,6 +14,7 @@ using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.Structure;
 using ACE.Server.WorldObjects.Entity;
+using ACE.Database;
 
 namespace ACE.Server.WorldObjects.Managers
 {
@@ -1381,6 +1382,9 @@ namespace ACE.Server.WorldObjects.Managers
                     damagers.Add(damager, tickAmount);
 
                 creature.DamageHistory.Add(damager, damageType, (uint)Math.Round(tickAmount));
+
+                if (damager is Player attacker && creature is Player victim)
+                    DatabaseManager.Shard.BaseDatabase.TrackPkStatsDamage(attacker.HomeRealm, attacker.Location.RealmID, (uint)attacker.Guid.Full, (uint)victim.Guid.Full, (int)(uint)Math.Round(tickAmount), false, (uint)CombatType.Magic);
 
                 tickAmountTotal += tickAmount;
 

@@ -1630,6 +1630,8 @@ namespace ACE.Database.Models.Shard
                 entity.Property(e => e.HomeRealmId).HasColumnName("home_realm_id"); // Map HomeRealmId to home_realm_id column
                 entity.Property(e => e.CurrentRealmId).HasColumnName("current_realm_id"); // Map CurrentRealmId to current_realm_id column
                 entity.Property(e => e.EventTime).HasColumnName("event_time"); // Map EventTime to event_time column
+                entity.Property(e => e.IsCrit).HasColumnName("is_crit"); // Map IsCrit to is_crit column
+                entity.Property(e => e.CombatMode).HasColumnName("combat_mode"); // Map CombatMode to combat_mode column
             });
 
             modelBuilder.Entity<PKStatsKill>(entity =>
