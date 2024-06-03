@@ -5,8 +5,8 @@ namespace ACE.Server.Network.GameEvent.Events
     /// </summary>
     public class GameEventPortalStormImminent : GameEventMessage
     {
-        public GameEventPortalStormImminent(Session session, float extent = 0.6f)
-            : base(GameEventType.MiscPortalStormImminent, GameMessageGroup.UIQueue, session)
+        public GameEventPortalStormImminent(ISession session, float extent = 0.6f)
+            : base(GameEventType.MiscPortalStormImminent, GameMessageGroup.UIQueue, session, 8)
         {
             Writer.Write(extent);
         }

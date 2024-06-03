@@ -24,7 +24,7 @@ namespace ACE.Server.WorldObjects
 {
     partial class Player
     {
-        private static readonly LocalPosition MarketplaceDrop = new LocalPosition(DatabaseManager.World.GetCachedWeenie("portalmarketplace")?.GetPosition(PositionType.Destination)) ?? new LocalPosition(0x016C01BC, 49.206f, -31.935f, 0.005f, 0, 0, -0.707107f, 0.707107f);
+        public static readonly LocalPosition MarketplaceDrop = new LocalPosition(DatabaseManager.World.GetCachedWeenie("portalmarketplace")?.GetPosition(PositionType.Destination)) ?? new LocalPosition(0x016C01BC, 49.206f, -31.935f, 0.005f, 0, 0, -0.707107f, 0.707107f);
 
         private uint HideoutInstanceId
         {
@@ -805,14 +805,14 @@ namespace ACE.Server.WorldObjects
                     return;
             }
 
-            if (RealmManager.GetRealm(newPosition.RealmID) == null)
+            if (RealmManager.GetRealm(newPosition.RealmID, includeRulesets: true) == null)
             {
                 Session.Network.EnqueueSend(new GameMessageSystemChat($"Error: Realm at destination location does not exist.", ChatMessageType.System));
                 return;
             }
             if (!ValidatePlayerRealmPosition(newPosition))
             {
-                if (IsAdmin)
+                if (IsAdmin && !PropertyManager.GetBool("acr_validate_realm_position_for_admins").Item)
                 {
                     Session.Network.EnqueueSend(new GameMessageSystemChat($"Admin bypassing realm restriction.", ChatMessageType.System));
                 }
@@ -885,8 +885,8 @@ namespace ACE.Server.WorldObjects
         // Assumes instance is loaded! Do not call directly
         private bool OnTransitionToNewRealm(ushort prevRealmId, ushort newRealmId, InstancedPosition newLocation)
         {
-            var prevrealm = RealmManager.GetRealm(prevRealmId);
-            var newRealm = RealmManager.GetRealm(newRealmId);
+            var prevrealm = RealmManager.GetRealm(prevRealmId, includeRulesets: true);
+            var newRealm = RealmManager.GetRealm(newRealmId, includeRulesets: true);
 
             if (newLocation.IsEphemeralRealm && !Location.IsEphemeralRealm)
             {
@@ -927,7 +927,7 @@ namespace ACE.Server.WorldObjects
             {
                 if (prevrealm.Realm.Id != HomeRealm)
                 {
-                    if (newRealm == RealmManager.CurrentSeason && prevrealm.GetDefaultInstanceID(this) == Account.AccountId)
+                    if (newRealm == RealmManager.CurrentSeason && prevrealm.StandardRules.GetDefaultInstanceID(this, Location.AsLocalPosition()) == Account.AccountId)
                         Session.Network.EnqueueSend(new GameMessageSystemChat($"You have chosen {newRealm.Realm.Name} as your home realm.", ChatMessageType.System));
                     else
                         Session.Network.EnqueueSend(new GameMessageSystemChat($"You are temporarily leaving your home realm.", ChatMessageType.System));
@@ -970,7 +970,7 @@ namespace ACE.Server.WorldObjects
 
         public void ValidateCurrentRealm()
         {
-            if (IsAdmin)
+            if (IsAdmin && !PropertyManager.GetBool("acr_validate_realm_position_for_admins").Item)
                 return;
             if (!ValidatePlayerRealmPosition(Location))
                 TeleportToHomeRealm();
@@ -999,16 +999,18 @@ namespace ACE.Server.WorldObjects
         public bool ValidatePlayerRealmPosition(InstancedPosition newPosition)
         {
             Position.ParseInstanceID(newPosition.Instance, out var isTemporaryRuleset, out ushort newRealmId, out ushort shortInstanceId);
-            var homerealm = RealmManager.GetRealm(HomeRealm);
-            var destrealm = RealmManager.GetRealm(newPosition.RealmID);
+            var homerealm = RealmManager.GetRealm(HomeRealm, includeRulesets: false);
+            var destrealm = RealmManager.GetRealm(newPosition.RealmID, includeRulesets: isTemporaryRuleset);
             if (destrealm == null)
                 return false;
             if (RealmManager.TryParseReservedRealm(destrealm.Realm.Id, out var reservedRealm))
             {
+                if (homerealm == destrealm)
+                    return true;
                 switch (reservedRealm)
                 {
-                    case ReservedRealm.@default:
-                        if (homerealm.Realm.Id != (ushort)ReservedRealm.@default)
+                    case ReservedRealm.NULL:
+                        if (homerealm.Realm.Id != (ushort)ReservedRealm.NULL)
                             return false;
                         return shortInstanceId == Account.AccountId;
                     case ReservedRealm.hideout:

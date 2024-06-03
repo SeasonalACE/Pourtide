@@ -1,16 +1,26 @@
-﻿using System;
+using ACE.Database.Adapter;
+using ACE.Entity.ACRealms;
+using ACE.Entity.Enum.Properties;
+using ACE.Entity.Models;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ACE.Database.Models.World
 {
-    public partial class RealmPropertiesBool
+    public sealed partial class RealmPropertiesBool : RealmPropertiesBase
     {
-        public ushort RealmId { get; set; }
-        public ushort Type { get; set; }
         public bool Value { get; set; }
-        public bool Locked { get; set; }
-        public double? Probability { get; set; }
 
-        public virtual Realm Realm { get; set; }
+        static Type EnumType = typeof(RealmPropertyBool);
+
+        public override AppliedRealmProperty<bool> ConvertRealmProperty()
+        {
+            var @enum = (RealmPropertyBool)Type;
+            
+            var att = RealmConverter.PropertyDefinitionsBool[@enum];
+            var prop = new RealmPropertyOptions<bool>(@enum.ToString(), Realm.Name, att.DefaultValue, Value, Locked, Probability, EnumType, Type);
+            return new AppliedRealmProperty<bool>(RulesetCompilationContext.DefaultShared, Type, prop);
+        }
     }
 }

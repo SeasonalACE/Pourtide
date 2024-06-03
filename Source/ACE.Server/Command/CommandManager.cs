@@ -19,7 +19,7 @@ namespace ACE.Server.Command
 
         public static readonly bool NonInteractiveConsole = Convert.ToBoolean(Environment.GetEnvironmentVariable("ACE_NONINTERACTIVE_CONSOLE"));
 
-        private static Dictionary<string, CommandHandlerInfo> commandHandlers;
+        private static Dictionary<string, CommandHandlerInfo> commandHandlers = new Dictionary<string, CommandHandlerInfo>(StringComparer.OrdinalIgnoreCase);
 
         public static IEnumerable<CommandHandlerInfo> GetCommands()
         {
@@ -31,7 +31,7 @@ namespace ACE.Server.Command
             return commandHandlers.Select(p => p.Value).Where(p => p.Attribute.Command == commandname);
         }
 
-        public static CommandHandler GetDelegate(Action<Session, string[]> handler) => (CommandHandler)Delegate.CreateDelegate(typeof(CommandHandler), handler.Method);
+        public static CommandHandler GetDelegate(Action<ISession, string[]> handler) => (CommandHandler)Delegate.CreateDelegate(typeof(CommandHandler), handler.Method);
 
         public static bool TryAddCommand(MethodInfo handler, string command, AccessLevel access, CommandHandlerFlag flags = CommandHandlerFlag.None, string description = "", string usage = "", bool overrides = true)
         {
@@ -45,7 +45,7 @@ namespace ACE.Server.Command
             return TryAddCommand(info, overrides);
         }
 
-        public static bool TryAddCommand(Action<Session, string[]> handler, string command, AccessLevel access, CommandHandlerFlag flags = CommandHandlerFlag.None, string description = "", string usage = "", bool overrides = true)
+        public static bool TryAddCommand(Action<ISession, string[]> handler, string command, AccessLevel access, CommandHandlerFlag flags = CommandHandlerFlag.None, string description = "", string usage = "", bool overrides = true)
         {
             var del = (CommandHandler)Delegate.CreateDelegate(typeof(CommandHandler), handler.Method);
             var info = new CommandHandlerInfo()
@@ -97,7 +97,6 @@ namespace ACE.Server.Command
 
         public static void Initialize()
         {
-            commandHandlers = new Dictionary<string, CommandHandlerInfo>(StringComparer.OrdinalIgnoreCase);
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
             {
                 foreach (var method in type.GetMethods())
@@ -239,7 +238,7 @@ namespace ACE.Server.Command
             }
         }
 
-        public static CommandHandlerResponse GetCommandHandler(Session session, string command, string[] parameters, out CommandHandlerInfo commandInfo)
+        public static CommandHandlerResponse GetCommandHandler(ISession session, string command, string[] parameters, out CommandHandlerInfo commandInfo)
         {
             if (command == null || parameters == null)
             {

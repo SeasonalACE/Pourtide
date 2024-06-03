@@ -5,8 +5,8 @@ namespace ACE.Server.Network.GameEvent.Events
         public static readonly uint EmpyreanMaleMotionDID   = 0x0900020E;
         public static readonly uint EmpyreanFemaleMotionDID = 0x0900020D;
 
-        public GameEventStartBarber(Session session)
-            : base(GameEventType.StartBarber, GameMessageGroup.UIQueue, session)
+        public GameEventStartBarber(ISession session)
+            : base(GameEventType.StartBarber, GameMessageGroup.UIQueue, session, 68)
         {
             var player = Session.Player;
 

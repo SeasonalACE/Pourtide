@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Platforms>x64</Platforms>
   </PropertyGroup>
 
@@ -18,18 +18,20 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Authors>ACEmulator Contributors</Authors>
+    <Authors>ACRealms and ACEmulator Contributors</Authors>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/ACEmulator/ACE</RepositoryUrl>
+    <RepositoryUrl>https://github.com/ACRealms/ACRealms.WorldServer</RepositoryUrl>
     <PackageProjectUrl>https://emulator.ac</PackageProjectUrl>
-    <Copyright>© 2017-2022 ACEmulator Team and Contributors</Copyright>
+    <Copyright>© 2024 ACRealms</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Description>Asheron's Call server emulator</Description>
     <Company>ACEmulator</Company>
-    <Version>1.1.0</Version>
-    <PackageIcon>ace-retro-icon2.png</PackageIcon>
+    <Version>2.0.0</Version>
+    <PackageIcon>acrealms-icon.jpg</PackageIcon>
     <PackageIconUrl />
-    <ApplicationIcon>images\ace_retro_icon_2.ico</ApplicationIcon>
+    <ApplicationIcon>images\acrealms-icon.ico</ApplicationIcon>
+    <Product>ACRealms.WorldServer</Product>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
 
   <ItemGroup>
@@ -130,6 +132,8 @@
     <None Remove="Entity\Mutations\Recipes\3800004E - Sandstone.txt" />
     <None Remove="Entity\Mutations\Recipes\39000000 - Paragon Weapons.txt" />
     <None Remove="Entity\Mutations\Recipes\39000001 - Lucky White Rabbit%27s Foot.txt" />
+    <None Remove="Realms\reserved_realms\NULL.jsonc" />
+    <None Remove="Realms\reserved_realms\RealmSelector.jsonc" />
     <None Include="..\..\LICENSE">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
@@ -140,57 +144,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Realms\reserved_realms\hideout.jsonc" />
     <EmbeddedResource Include="Realms\reserved_realms\default.jsonc" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\ArmorLevel\armor_level_extremity.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\ArmorLevel\armor_level_non_extremity.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\ArmorLevel\covenant_armor.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\ArmorLevel\covenant_shield.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\ArmorLevel\olthoi_armor.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\ArmorLevel\olthoi_shield.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\ArmorLevel\shield_level.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\Casters\caster.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\Casters\caster_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\Casters\caster_non_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\Casters\weapon_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_axe.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_dagger.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_dagger_ms.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_mace.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_spear.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_staff.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_sword.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_sword_ms.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\heavy_unarmed.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_axe.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_dagger.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_dagger_ms.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_mace.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_mace_jitte.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_spear.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_staff.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_sword.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_sword_ms.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\light_finesse_unarmed.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\two_handed_cleaver.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\Damage_WieldDifficulty_DamageVariance\two_handed_spear.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\axe_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\dagger_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\mace_jitte_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\mace_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\spear_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\staff_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\sword_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\two_handed_axe_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\two_handed_mace_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\two_handed_spear_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\two_handed_sword_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MeleeWeapons\WeaponOffense_WeaponDefense\unarmed_offense_defense.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MissileWeapons\atlatl_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MissileWeapons\atlatl_non_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MissileWeapons\bow_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MissileWeapons\bow_non_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MissileWeapons\crossbow_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MissileWeapons\crossbow_non_elemental.txt" />
-    <EmbeddedResource Include="Factories\Entity\Mutations\MissileWeapons\weapon_defense.txt" />
     <EmbeddedResource Include="Entity\Mutations\ArmorLevel\armor_level_extremity.txt" />
     <EmbeddedResource Include="Entity\Mutations\ArmorLevel\armor_level_non_extremity.txt" />
     <EmbeddedResource Include="Entity\Mutations\ArmorLevel\covenant_armor.txt" />
@@ -286,22 +239,24 @@
     <EmbeddedResource Include="Entity\Mutations\Recipes\3800004E - Sandstone.txt" />
     <EmbeddedResource Include="Entity\Mutations\Recipes\39000000 - Paragon Weapons.txt" />
     <EmbeddedResource Include="Entity\Mutations\Recipes\39000001 - Lucky White Rabbit's Foot.txt" />
+    <EmbeddedResource Include="Realms\reserved_realms\RealmSelector.jsonc" />
+    <EmbeddedResource Include="Realms\reserved_realms\NULL.jsonc" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="3.14.1" />
-    <PackageReference Include="Lib.Harmony" Version="2.3.0-prerelease.4" />
-    <PackageReference Include="log4net" Version="2.0.15" />
-    <PackageReference Include="Log4Net.Async.Standard" Version="3.1.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.2.6">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
-    <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
-    <PackageReference Include="MySqlConnector" Version="2.3.4" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="6.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Discord.Net" Version="3.15.0" />
+        <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+        <PackageReference Include="log4net" Version="2.0.17" />
+        <PackageReference Include="Log4Net.Async.Standard" Version="3.1.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.2.6">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+        <PackageReference Include="McMaster.NETCore.Plugins" Version="1.4.0" />
+        <PackageReference Include="MySqlConnector" Version="2.3.7" />
+        <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+    </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ACE.Adapter\ACE.Adapter.csproj" />
@@ -309,6 +264,7 @@
     <ProjectReference Include="..\ACE.Database\ACE.Database.csproj" />
     <ProjectReference Include="..\ACE.DatLoader\ACE.DatLoader.csproj" />
     <ProjectReference Include="..\ACE.Entity\ACE.Entity.csproj" />
+    <ProjectReference Include="..\ACRealms.JsonSchemaGenerator\ACRealms.JsonSchemaGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -318,6 +274,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Config.realms.js.docker">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Config.realms.js.example">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Config.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -350,6 +312,7 @@
 
   <ItemGroup>
     <None Include="..\..\Content\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Content\" />
+    <None Include="..\..\Database\ACRealms\**" CopyToOutputDirectory="PreserveNewest" LinkBase="DatabaseSetupScripts\ACRealms\" />
     <None Include="..\..\Database\Archive\**" CopyToOutputDirectory="PreserveNewest" LinkBase="DatabaseSetupScripts\Archive\" />
     <None Include="..\..\Database\Base\**" CopyToOutputDirectory="PreserveNewest" LinkBase="DatabaseSetupScripts\Base\" />
     <None Include="..\..\Database\Updates\**" CopyToOutputDirectory="PreserveNewest" LinkBase="DatabaseSetupScripts\Updates\" />
@@ -364,6 +327,7 @@
     <EmbeddedResource Remove="Realms\Constants\**" />
     <None Remove="Factories\Entity\Mutations\**" />
     <None Remove="Realms\Constants\**" />
+    <Folder Include="Realms\Constants\" />
   </ItemGroup>
 
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
@@ -371,4 +335,34 @@
     <Exec Command="if [ -f &quot;$(ProjectDir)Config.js&quot; ] ; then cp &quot;$(ProjectDir)Config.js&quot; &quot;$(TargetDir)Config.js&quot; ; fi&#xD;&#xA;if [ ! -f &quot;$(ProjectDir)log4net.config&quot; ] &amp;&amp; [ -f &quot;$(TargetDir)log4net.config&quot; ] ; then cp &quot;$(TargetDir)log4net.config&quot; &quot;$(ProjectDir)log4net.config&quot; ; fi&#xD;&#xA;if [ -f &quot;$(ProjectDir)log4net.config&quot; ] ; then cp &quot;$(ProjectDir)log4net.config&quot; &quot;$(TargetDir)log4net.config&quot; ; fi" Condition="'$(OS)' != 'Windows_NT'" />
   </Target>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="dotnet $(TargetDir)ACRealms.JsonSchemaGenerator.dll" />
+  </Target>
+  <Target Name="GetGitHash" BeforeTargets="WriteGitHash" Condition="'$(BuildHash)' == ''">
+    <PropertyGroup>
+      <VerFile>$(IntermediateOutputPath)gitver</VerFile>
+    </PropertyGroup>
+    <Exec Command="git -C $(ProjectDir) describe --long --always --dirty &gt; $(VerFile)" />
+    <ReadLinesFromFile File="$(VerFile)">
+      <Output TaskParameter="Lines" ItemName="GitVersion" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <BuildHash>@(GitVersion)</BuildHash>
+    </PropertyGroup>
+  </Target>
+  <Target Name="WriteGitHash" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <CustomAssemblyInfoFile>$(IntermediateOutputPath)CustomAssemblyInfo.cs</CustomAssemblyInfoFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <Compile Include="$(CustomAssemblyInfoFile)" />
+    </ItemGroup>
+    <ItemGroup>
+      <AssemblyAttributes Include="AssemblyMetadata">
+        <_Parameter1>GitHash</_Parameter1>
+        <_Parameter2>$(BuildHash)</_Parameter2>
+      </AssemblyAttributes>
+    </ItemGroup>
+    <WriteCodeFragment Language="C#" OutputFile="$(CustomAssemblyInfoFile)" AssemblyAttributes="@(AssemblyAttributes)" />
+  </Target>
 </Project>

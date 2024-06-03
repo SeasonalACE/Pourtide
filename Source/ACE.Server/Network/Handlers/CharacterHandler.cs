@@ -25,7 +25,7 @@ namespace ACE.Server.Network.Handlers
         private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         [GameMessage(GameMessageOpcode.CharacterCreate, SessionState.AuthConnected)]
-        public static void CharacterCreate(ClientMessage message, Session session)
+        public static void CharacterCreate(ClientMessage message, ISession session)
         {
             string clientString = message.Payload.ReadString16L();
 
@@ -44,11 +44,16 @@ namespace ACE.Server.Network.Handlers
                 session.SendCharacterError(CharacterError.LogonServerFull);
         }
 
-        private static void CharacterCreateEx(ClientMessage message, Session session)
+        private static void CharacterCreateEx(ClientMessage message, ISession session)
         {
             var characterCreateInfo = new CharacterCreateInfo();
             characterCreateInfo.Unpack(message.Payload);
-            
+            CharacterCreateEx(characterCreateInfo, session);
+
+        }
+
+        public static void CharacterCreateEx(CharacterCreateInfo characterCreateInfo, ISession session)
+        { 
             if (PropertyManager.GetBool("taboo_table").Item && DatManager.PortalDat.TabooTable.ContainsBadWord(characterCreateInfo.Name.ToLowerInvariant()))
             {
                 SendCharacterCreateResponse(session, CharacterGenerationVerificationResponse.NameBanned);
@@ -175,14 +180,14 @@ namespace ACE.Server.Network.Handlers
             });
         }
 
-        private static void SendCharacterCreateResponse(Session session, CharacterGenerationVerificationResponse response, ObjectGuid guid = default(ObjectGuid), string charName = "")
+        private static void SendCharacterCreateResponse(ISession session, CharacterGenerationVerificationResponse response, ObjectGuid guid = default(ObjectGuid), string charName = "")
         {
             session.Network.EnqueueSend(new GameMessageCharacterCreateResponse(response, guid, charName));
         }
 
 
         [GameMessage(GameMessageOpcode.CharacterEnterWorldRequest, SessionState.AuthConnected)]
-        public static void CharacterEnterWorldRequest(ClientMessage message, Session session)
+        public static void CharacterEnterWorldRequest(ClientMessage message, ISession session)
         {
             if (ServerManager.ShutdownInProgress)
             {
@@ -197,102 +202,24 @@ namespace ACE.Server.Network.Handlers
         }
 
         [GameMessage(GameMessageOpcode.CharacterEnterWorld, SessionState.AuthConnected)]
-        public static void CharacterEnterWorld(ClientMessage message, Session session)
+        public static void CharacterEnterWorld(ClientMessage message, ISession session)
         {
             var guid = message.Payload.ReadUInt32();
-
             string clientString = message.Payload.ReadString16L();
 
-            if (ServerManager.ShutdownInProgress)
-            {
-                session.SendCharacterError(CharacterError.LogonServerFull);
-                return;
-            }
-
-            if (clientString != session.Account)
-            {
-                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
-                return;
-            }
-
-            var character = session.Characters.SingleOrDefault(c => c.Id == guid);
-            if (character == null)
-            {
-                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
-                return;
-            }
-
-            if (character.IsDeleted || character.DeleteTime > 0)
-            {
-                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
-                return;
-            }
-
-            if (PlayerManager.GetOnlinePlayer(guid) != null)
-            {
-                // If this happens, it could be that the previous session for this Player terminated in a way that didn't transfer the player to offline via PlayerManager properly.
-                session.SendCharacterError(CharacterError.EnterGameCharacterInWorld);
-                return;
-            }
-
-            var offlinePlayer = PlayerManager.GetOfflinePlayer(guid);
-
-            if (offlinePlayer == null)
-            {
-                // This would likely only happen if the account tried to log in a character that didn't exist.
-                session.SendCharacterError(CharacterError.EnterGameGeneric);
-                return;
-            }
-
-            if (offlinePlayer.IsDeleted || offlinePlayer.IsPendingDeletion)
-            {
-                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
-                return;
-            }
-
-            if ((offlinePlayer.Heritage == (int)HeritageGroup.Olthoi || offlinePlayer.Heritage == (int)HeritageGroup.OlthoiAcid) && PropertyManager.GetBool("olthoi_play_disabled").Item)
-            {
-                session.SendCharacterError(CharacterError.EnterGameCouldntPlaceCharacter);
-                return;
-            }
-
-            session.InitSessionForWorldLogin();
-
-            session.State = SessionState.WorldConnected;
-
-            WorldManager.PlayerEnterWorld(session, character);
-
-            try
-            {
-                var homeRealmId = offlinePlayer.GetProperty(ACE.Entity.Enum.Properties.PropertyInt.HomeRealm);
-
-                if (homeRealmId == null)
-                    homeRealmId = 0;
-
-                var playerLocation = offlinePlayer.Biota.GetPosition(ACE.Entity.Enum.Properties.PositionType.Location, offlinePlayer.BiotaDatabaseLock);
-
-                var currentRealmId = playerLocation?.RealmID ?? 0;
-
-                DatabaseManager.Shard.BaseDatabase.LogCharacterLogin((ushort)homeRealmId, currentRealmId, session.AccountId, session.Account, session.EndPointC2S.Address.ToString(), character.Id, character.Name);
-                PlayerManager.UpdatePlayerToIpMap((ushort)homeRealmId, session.EndPointC2S.Address.ToString(), character.Id);
-
-            }
-            catch (Exception ex)
-            {
-                log.Error($"Exception logging character login. Ex: {ex}");
-            }
+            WorldManager.PlayerInitForWorld(session, guid, clientString);
         }
 
 
         [GameMessage(GameMessageOpcode.CharacterLogOff, SessionState.WorldConnected)]
-        public static void CharacterLogOff(ClientMessage message, Session session)
+        public static void CharacterLogOff(ClientMessage message, ISession session)
         {
             session.LogOffPlayer();
         }
 
 
         [GameMessage(GameMessageOpcode.CharacterDelete, SessionState.AuthConnected)]
-        public static void CharacterDelete(ClientMessage message, Session session)
+        public static void CharacterDelete(ClientMessage message, ISession session)
         {
             string clientString = message.Payload.ReadString16L();
             uint characterSlot = message.Payload.ReadUInt32();
@@ -350,7 +277,7 @@ namespace ACE.Server.Network.Handlers
         }
 
         [GameMessage(GameMessageOpcode.CharacterRestore, SessionState.AuthConnected)]
-        public static void CharacterRestore(ClientMessage message, Session session)
+        public static void CharacterRestore(ClientMessage message, ISession session)
         {
             var guid = message.Payload.ReadUInt32();
 

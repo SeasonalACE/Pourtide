@@ -62,12 +62,16 @@ namespace ACE.Server.Realms
                         return AsInstancedPosition(player, backupMode);
                     break;
                 case PlayerInstanceSelectMode.RealmDefaultInstanceID:
-                    instanceId = player.RealmRuleset.GetDefaultInstanceID(); break;
+                    // Warning! May have unintended results if using from an ephemeral realm
+                    instanceId = player.RealmRuleset.GetDefaultInstanceID(player, this); break;
                 case PlayerInstanceSelectMode.HomeRealm:
-                    instanceId = Position.InstanceIDFromVars(player.HomeRealm, 0, false); break;
+                    var realm = RealmManager.GetRealm(player.HomeRealm, includeRulesets: false);
+                    instanceId = realm.StandardRules.GetDefaultInstanceID(player, this);
+                    break;
                 case PlayerInstanceSelectMode.PersonalRealm:
-                    var realm = RealmManager.GetReservedRealm(ReservedRealm.hideout);
-                    instanceId = Position.InstanceIDFromVars(realm.Realm.Id, (ushort)(player.Account.AccountId), false); break;
+                    var hideoutRealm = RealmManager.GetReservedRealm(ReservedRealm.hideout);
+                    instanceId = hideoutRealm.StandardRules.GetDefaultInstanceID(player, this);
+                    break;
                 default: throw new NotImplementedException();
             }
 
@@ -84,7 +88,7 @@ namespace ACE.Server.Realms
                 case WorldObjectInstanceSelectMode.Same:
                     instanceId = obj.Location.Instance; break;
                 case WorldObjectInstanceSelectMode.RealmDefaultInstanceID:
-                    instanceId = obj.RealmRuleset.GetDefaultInstanceID(); break;
+                    instanceId = obj.RealmRuleset.GetDefaultInstanceID(obj.Location?.AsLocalPosition()); break;
                 default: throw new NotImplementedException();
             }
             

@@ -13,6 +13,7 @@ using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
 using ACE.Server.WorldObjects;
+using System.Diagnostics;
 using ACE.Server.Realms;
 using ACE.Server.Network.GameAction.Actions;
 
@@ -28,7 +29,7 @@ namespace ACE.Server.Managers
         /// <summary>
         /// Locking mechanism provides concurrent access to collections
         /// </summary>
-        public static readonly object landblockMutex = new object();
+        public static readonly ReaderWriterLockSlim landblockLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private static readonly object ephemeralInstanceMutex = new object();
 
         //Important: As of AC Realms, reading and writing to this must be done via LandblockDictFetch and LandblockDictCommit
@@ -52,9 +53,29 @@ namespace ACE.Server.Managers
         {
             get
             {
-                lock (landblockMutex)
+                landblockLock.EnterReadLock();
+                try
+                {
                     return landblockGroups.Count;
+                }
+                finally
+                {
+                    landblockLock.ExitReadLock();
+                }
             }
+        }
+
+        public static List<LandblockGroup> GetLoadedLandblockGroups()
+        {
+                landblockLock.EnterReadLock();
+                try
+                {
+                    return landblockGroups.ToList();
+                }
+                finally
+                {
+                    landblockLock.ExitReadLock();
+                }
         }
 
         /// <summary>
@@ -181,7 +202,8 @@ namespace ACE.Server.Managers
             if (landblockGroupPendingAdditions.Count == 0)
                 return;
 
-            lock (landblockMutex)
+            landblockLock.EnterWriteLock();
+            try
             {
                 for (int i = landblockGroupPendingAdditions.Count - 1; i >= 0; i--)
                 {
@@ -201,7 +223,7 @@ namespace ACE.Server.Managers
                             if (landblockGroups[j].IsDungeon)
                                 continue;
 
-                            var distance = landblockGroups[j].BoundaryDistance(landblockGroupPendingAdditions[i]);
+                            var distance = landblockGroups[j].ClosestLandblock(landblockGroupPendingAdditions[i]);
 
                             if (distance < LandblockGroup.LandblockGroupMinSpacing)
                                 landblockGroupsIndexMatchesByDistance.Add(j);
@@ -243,10 +265,27 @@ namespace ACE.Server.Managers
                 if (count != loadedLandblocks.Count)
                     log.Error($"[LANDBLOCK GROUP] ProcessPendingAdditions count ({count}) != loadedLandblocks.Count ({loadedLandblocks.Count})");
             }
+            finally
+            {
+                landblockLock.ExitWriteLock();
+            }
         }
+
+        public class ThreadTickInformation
+        {
+            public int NumberOfParalellHits;
+            public int NumberOfLandblocksInThisThread;
+            public TimeSpan TotalTickDuration;
+            public TimeSpan LongestTickedLandblockGroup;
+        }
+        public static ThreadLocal<ThreadTickInformation> TickPhysicsInformation = new ThreadLocal<ThreadTickInformation>(true);
+        public static ThreadLocal<ThreadTickInformation> TickMultiThreadedWorkInformation = new ThreadLocal<ThreadTickInformation>(true);
 
         public static void Tick(double portalYearTicks)
         {
+            TickPhysicsInformation = new ThreadLocal<ThreadTickInformation>(true);
+            TickMultiThreadedWorkInformation = new ThreadLocal<ThreadTickInformation>(true);
+
             // update positions through physics engine
             ServerPerformanceMonitor.RestartEvent(ServerPerformanceMonitor.MonitorType.LandblockManager_TickPhysics);
             TickPhysics(portalYearTicks);
@@ -289,12 +328,32 @@ namespace ACE.Server.Managers
             {
                 CurrentlyTickingLandblockGroupsMultiThreaded = true;
 
-                Parallel.ForEach(landblockGroups, ConfigManager.Config.Server.Threading.LandblockManagerParallelOptions, landblockGroup =>
+                var partitioner = Partitioner.Create(landblockGroups.OrderByDescending(r => r.TickPhysicsTracker.Elapsed));//, EnumerablePartitionerOptions.NoBuffering);
+
+                //Parallel.ForEach(landblockGroups, ConfigManager.Config.Server.Threading.LandblockManagerParallelOptions, landblockGroup =>
+                Parallel.ForEach(partitioner, ConfigManager.Config.Server.Threading.LandblockManagerParallelOptions, landblockGroup =>
                 {
                     CurrentMultiThreadedTickingLandblockGroup.Value = landblockGroup;
 
+                    var value = TickPhysicsInformation.Value;
+                    if (value == null)
+                    {
+                        value = new ThreadTickInformation();
+                        TickPhysicsInformation.Value = value;
+                    }
+                    value.NumberOfParalellHits++;
+                    value.NumberOfLandblocksInThisThread += landblockGroup.Count;
+                    var sw = new Stopwatch();
+                    sw.Start();
+
                     foreach (var landblock in landblockGroup)
                         landblock.TickPhysics(portalYearTicks, movedObjects);
+
+                    sw.Stop();
+                    value.TotalTickDuration += sw.Elapsed;
+                    if (sw.Elapsed > value.LongestTickedLandblockGroup) value.LongestTickedLandblockGroup = sw.Elapsed;
+
+                    landblockGroup.TickPhysicsTracker.Add(sw.Elapsed);
 
                     CurrentMultiThreadedTickingLandblockGroup.Value = null;
                 });
@@ -330,12 +389,32 @@ namespace ACE.Server.Managers
             {
                 CurrentlyTickingLandblockGroupsMultiThreaded = true;
 
-                Parallel.ForEach(landblockGroups, ConfigManager.Config.Server.Threading.LandblockManagerParallelOptions, landblockGroup =>
+                var partitioner = Partitioner.Create(landblockGroups.OrderByDescending(r => r.TickMultiThreadedWorkTracker.Elapsed));//, EnumerablePartitionerOptions.NoBuffering);
+
+                //Parallel.ForEach(landblockGroups, ConfigManager.Config.Server.Threading.LandblockManagerParallelOptions, landblockGroup =>
+                Parallel.ForEach(partitioner, ConfigManager.Config.Server.Threading.LandblockManagerParallelOptions, landblockGroup =>
                 {
                     CurrentMultiThreadedTickingLandblockGroup.Value = landblockGroup;
 
+                    var value = TickMultiThreadedWorkInformation.Value;
+                    if (value == null)
+                    {
+                        value = new ThreadTickInformation();
+                        TickMultiThreadedWorkInformation.Value = value;
+                    }
+                    value.NumberOfParalellHits++;
+                    value.NumberOfLandblocksInThisThread += landblockGroup.Count;
+                    var sw = new Stopwatch();
+                    sw.Start();
+
                     foreach (var landblock in landblockGroup)
                         landblock.TickMultiThreadedWork(Time.GetUnixTime());
+
+                    sw.Stop();
+                    value.TotalTickDuration += sw.Elapsed;
+                    if (sw.Elapsed > value.LongestTickedLandblockGroup) value.LongestTickedLandblockGroup = sw.Elapsed;
+
+                    landblockGroup.TickMultiThreadedWorkTracker.Add(sw.Elapsed);
 
                     CurrentMultiThreadedTickingLandblockGroup.Value = null;
                 });
@@ -398,7 +477,15 @@ namespace ACE.Server.Managers
 
         public static bool IsLoaded(LandblockId landblockId, uint instance)
         {
-            return LandblockDictFetch(landblockId.Raw, instance) != null;
+            landblockLock.EnterReadLock();
+            try
+            {
+                return LandblockDictFetch(landblockId.Raw, instance) != null;
+            }
+            finally
+            {
+                landblockLock.ExitReadLock();
+            }
         }
 
         public static Landblock GetLandblockUnsafe(LandblockId landblockId, uint instance)
@@ -428,8 +515,9 @@ namespace ACE.Server.Managers
             }
 
             Landblock landblock;
-            
-            lock (landblockMutex)
+
+            landblockLock.EnterUpgradeableReadLock();
+            try
             {
                 bool setAdjacents = false;
 
@@ -439,22 +527,30 @@ namespace ACE.Server.Managers
                 
                 if (landblock == null)
                 {
-                    // load up this landblock
-                    landblock = new Landblock(landblockIdClean, instance);
-                    LandblockDictCommit(landblockIdClean.Raw, instance, landblock);
-
-                    if (!loadedLandblocks.Add(landblock))
+                    landblockLock.EnterWriteLock();
+                    try
                     {
-                        log.Error($"LandblockManager: failed to add {LandblockKey(landblockIdClean.Raw, instance):X8} to active landblocks!");
-                        return landblock;
-                    }
-                    if (ephemeralRealm != null && !ephemeralInstanceLandblocks.TryAdd(landblock.Instance, landblock))
-                    {
-                        log.Error($"LandblockManager: failed to add {instance:X8} to ephemeral landblocks!");
-                        return landblock;
-                    }
+                        // load up this landblock
+                        landblock = new Landblock(landblockIdClean, instance);
+                        LandblockDictCommit(landblockIdClean.Raw, instance, landblock);
 
-                    landblockGroupPendingAdditions.Add(landblock);
+                        if (!loadedLandblocks.Add(landblock))
+                        {
+                            log.Error($"LandblockManager: failed to add {LandblockKey(landblockIdClean.Raw, instance):X8} to active landblocks!");
+                            return landblock;
+                        }
+                        if (ephemeralRealm != null && !ephemeralInstanceLandblocks.TryAdd(landblock.Instance, landblock))
+                        {
+                            log.Error($"LandblockManager: failed to add {instance:X8} to ephemeral landblocks!");
+                            return landblock;
+                        }
+
+                        landblockGroupPendingAdditions.Add(landblock);
+                    }
+                    finally
+                    {
+                        landblockLock.ExitWriteLock();
+                    }
 
                     if (wait)
                         SetAdjacents(landblock, true, true);
@@ -462,6 +558,8 @@ namespace ACE.Server.Managers
                         setAdjacents = true;
 
                     landblock.Init(ephemeralRealm, wait: wait);
+
+                    setAdjacents = true;
                 }
 
                 if (permaload)
@@ -484,6 +582,10 @@ namespace ACE.Server.Managers
                 if (pendingInstanceIds.Contains(instance))
                     pendingInstanceIds.Remove(instance);
             }
+            finally
+            {
+                landblockLock.ExitUpgradeableReadLock();
+            }
 
             return landblock;
         }
@@ -493,8 +595,15 @@ namespace ACE.Server.Managers
         /// </summary>
         public static List<Landblock> GetLoadedLandblocks()
         {
-            lock (landblockMutex)
+            landblockLock.EnterReadLock();
+            try
+            {
                 return loadedLandblocks.ToList();
+            }
+            finally
+            {
+                landblockLock.ExitReadLock();
+            }
         }
 
         /// <summary>
@@ -642,7 +751,8 @@ namespace ACE.Server.Managers
 
                     bool unloadFailed = false;
 
-                    lock (landblockMutex)
+                    landblockLock.EnterWriteLock();
+                    try
                     {
                         // remove from list of managed landblocks
                         if (loadedLandblocks.Remove(landblock))
@@ -663,22 +773,22 @@ namespace ACE.Server.Managers
                                         swTrySplitEach.Stop();
 
                                         if (swTrySplitEach.Elapsed.TotalMilliseconds > 3)
-                                            log.Warn($"[LANDBLOCK GROUP] TrySplit for {landblockGroups[i]} took: {swTrySplitEach.Elapsed.TotalMilliseconds:N2} ms");
+                                            log.WarnFormat("[LANDBLOCK GROUP] TrySplit for {0} took: {1:N2} ms", landblockGroups[i], swTrySplitEach.Elapsed.TotalMilliseconds);
                                         else if (swTrySplitEach.Elapsed.TotalMilliseconds > 1)
-                                            log.Debug($"[LANDBLOCK GROUP] TrySplit for {landblockGroups[i]} took: {swTrySplitEach.Elapsed.TotalMilliseconds:N2} ms");
+                                            log.DebugFormat("[LANDBLOCK GROUP] TrySplit for {0} took: {1:N2} ms", landblockGroups[i], swTrySplitEach.Elapsed.TotalMilliseconds);
 
                                         if (splits != null)
                                         {
                                             if (splits.Count > 0)
                                             {
-                                                log.Debug($"[LANDBLOCK GROUP] TrySplit resulted in {splits.Count} split(s) and took: {swTrySplitEach.Elapsed.TotalMilliseconds:N2} ms");
-                                                log.Debug($"[LANDBLOCK GROUP] split for old: {landblockGroups[i]}");
+                                                log.DebugFormat("[LANDBLOCK GROUP] TrySplit resulted in {0} split(s) and took: {1:N2} ms", splits.Count, swTrySplitEach.Elapsed.TotalMilliseconds);
+                                                log.DebugFormat("[LANDBLOCK GROUP] split for old: {0}", landblockGroups[i]);
                                             }
 
                                             foreach (var split in splits)
                                             {
                                                 landblockGroups.Add(split);
-                                                log.Debug($"[LANDBLOCK GROUP] split and new: {split}");
+                                                log.DebugFormat("[LANDBLOCK GROUP] split and new: {0}", split);
                                             }
                                         }
                                     }
@@ -691,6 +801,10 @@ namespace ACE.Server.Managers
                         }
                         else
                             unloadFailed = true;
+                    }
+                    finally
+                    {
+                        landblockLock.ExitWriteLock();
                     }
 
                     if (unloadFailed)
@@ -716,10 +830,15 @@ namespace ACE.Server.Managers
         /// </summary>
         public static void AddAllActiveLandblocksToDestructionQueue()
         {
-            lock (landblockMutex)
+            landblockLock.EnterWriteLock();
+            try
             {
                 foreach (var landblock in loadedLandblocks)
                     AddToDestructionQueue(landblock);
+            }
+            finally
+            {
+                landblockLock.ExitWriteLock();
             }
         }
 
@@ -750,18 +869,24 @@ namespace ACE.Server.Managers
 
         public static void DoEnvironChange(EnvironChangeType environChangeType)
         {
-            lock (landblockMutex)
+            landblockLock.EnterReadLock();
+            try
             {
                 if (environChangeType.IsFog())
                     SetGlobalFogColor(environChangeType);
                 else
                     SendGlobalEnvironSound(environChangeType);
             }
+            finally
+            {
+                landblockLock.ExitReadLock();
+            }
         }
 
         public static uint RequestNewRealmInstanceID(ushort realmId, LandblockId landblock)
         {
-            lock (landblockMutex)
+            landblockLock.EnterReadLock();
+            try
             {
                 uint iid;
                 do
@@ -771,6 +896,10 @@ namespace ACE.Server.Managers
                 while (LandblockDictFetch(landblock.Raw, iid) != null || pendingInstanceIds.Contains(iid));
                 pendingInstanceIds.Add(iid);
                 return iid;
+            }
+            finally
+            {
+                landblockLock.ExitReadLock();
             }
         }
 

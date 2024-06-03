@@ -4,8 +4,8 @@ namespace ACE.Server.Network.GameEvent.Events
 {
     public class GameEventHouseUpdateRentTime : GameEventMessage
     {
-        public GameEventHouseUpdateRentTime(Session session)
-            : base(GameEventType.UpdateRentTime, GameMessageGroup.UIQueue, session)
+        public GameEventHouseUpdateRentTime(ISession session)
+            : base(GameEventType.UpdateRentTime, GameMessageGroup.UIQueue, session, 8)
         {
             //Console.WriteLine("Sending 0x227 - House - UpdateRentTime");
 

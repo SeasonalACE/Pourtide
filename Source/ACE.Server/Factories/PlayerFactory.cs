@@ -15,6 +15,7 @@ using ACE.Server.WorldObjects;
 using ACE.Server.Managers;
 using ACE.Server.Features.Xp;
 using ACE.Server.Realms;
+using ACE.Common.ACRealms;
 
 namespace ACE.Server.Factories
 {
@@ -80,9 +81,9 @@ namespace ACE.Server.Factories
             if (weenieType == WeenieType.Admin)
                 player = new Admin(weenie, guid, accountId, RealmManager.CurrentSeason.StandardRules);
             else if (weenieType == WeenieType.Sentinel)
-                player = new Sentinel(weenie, guid, accountId, RealmManager.CurrentSeason.StandardRules);
+                player = new Sentinel(weenie, guid, accountId);
             else
-                player = new Player(weenie, guid, accountId, RealmManager.CurrentSeason.StandardRules);
+                player = new Player(weenie, guid, accountId, RealmManager.DefaultRealmConfigured.StandardRules);
 
             player.SetProperty(PropertyInt.HeritageGroup, (int)characterCreateInfo.Heritage);
             player.SetProperty(PropertyString.HeritageGroup, heritageGroup.Name);
@@ -397,47 +398,71 @@ namespace ACE.Server.Factories
             player.Character.Name = characterCreateInfo.Name;
 
             // Index used to determine the starting location
-            /*
-            var startArea = characterCreateInfo.StartArea;
-
-            var starterArea = DatManager.PortalDat.CharGen.StarterAreas[(int)startArea];
-
-            player.Location = new Position(starterArea.Locations[0].ObjCellID,
-                starterArea.Locations[0].Frame.Origin.X, starterArea.Locations[0].Frame.Origin.Y, starterArea.Locations[0].Frame.Origin.Z,
-                starterArea.Locations[0].Frame.Orientation.X, starterArea.Locations[0].Frame.Orientation.Y, starterArea.Locations[0].Frame.Orientation.Z, starterArea.Locations[0].Frame.Orientation.W);
-
-            var instantiation = new Position(0xA9B40019, 84, 7.1f, 94, 0, 0, -0.0784591f, 0.996917f); // ultimate fallback.
-            var spellFreeRide = new Database.Models.World.Spell();
-            switch (starterArea.Name)
+            if (!ACRealmsConfigManager.Config.CharacterCreationOptions.UseRealmSelector)
             {
-                case "OlthoiLair": //todo: check this when olthoi play is allowed in ace
-                    spellFreeRide = null; // no training area for olthoi, so they start and fall back to same place.
-                    instantiation = new Position(player.Location);
-                    break;
-                case "Shoushi":
-                    spellFreeRide = DatabaseManager.World.GetCachedSpell(3813); // Free Ride to Shoushi
-                    break;
-                case "Yaraq":
-                    spellFreeRide = DatabaseManager.World.GetCachedSpell(3814); // Free Ride to Yaraq
-                    break;
-                case "Sanamar":
-                    spellFreeRide = DatabaseManager.World.GetCachedSpell(3535); // Free Ride to Sanamar
-                    break;
-                case "Holtburg":
-                default:
-                    spellFreeRide = DatabaseManager.World.GetCachedSpell(3815); // Free Ride to Holtburg
-                    break;
+                WorldRealm defaultRealm;
+                if (ACRealmsConfigManager.Config.OptOutOfRealms)
+                    defaultRealm = RealmManager.GetReservedRealm(ReservedRealm.@default);
+                else
+                    defaultRealm = RealmManager.GetRealmByName(ACRealmsConfigManager.Config.DefaultRealm, includeRulesets: false);
+
+                var startArea = characterCreateInfo.StartArea;
+                var starterArea = DatManager.PortalDat.CharGen.StarterAreas[(int)startArea];
+                var startLoc = new LocalPosition(starterArea.Locations[0].ObjCellID,
+                    starterArea.Locations[0].Frame.Origin.X, starterArea.Locations[0].Frame.Origin.Y, starterArea.Locations[0].Frame.Origin.Z,
+                    starterArea.Locations[0].Frame.Orientation.X, starterArea.Locations[0].Frame.Orientation.Y, starterArea.Locations[0].Frame.Orientation.Z, starterArea.Locations[0].Frame.Orientation.W);
+                var iid = defaultRealm.StandardRules.GetDefaultInstanceID(player, startLoc);
+
+                RealmManager.SetHomeRealm(player, defaultRealm.Realm.Id, settingFromRealmSelector: false, saveImmediately: false); // Will crash if teleportToDefaultLoc is true
+                player.Location = new InstancedPosition(startLoc, iid);
+                
+
+                var instantiation = new InstancedPosition(new LocalPosition(0xA9B40019, 84, 7.1f, 94, 0, 0, -0.0784591f, 0.996917f), iid); // ultimate fallback.
+                
+                var spellFreeRide = new Database.Models.World.Spell();
+                switch (starterArea.Name)
+                {
+                    case "OlthoiLair": //todo: check this when olthoi play is allowed in ace
+                        spellFreeRide = null; // no training area for olthoi, so they start and fall back to same place.
+                        instantiation = new InstancedPosition(player.Location);
+                        break;
+                    case "Shoushi":
+                        spellFreeRide = DatabaseManager.World.GetCachedSpell(3813); // Free Ride to Shoushi
+                        break;
+                    case "Yaraq":
+                        spellFreeRide = DatabaseManager.World.GetCachedSpell(3814); // Free Ride to Yaraq
+                        break;
+                    case "Sanamar":
+                        spellFreeRide = DatabaseManager.World.GetCachedSpell(3535); // Free Ride to Sanamar
+                        break;
+                    case "Holtburg":
+                    default:
+                        spellFreeRide = DatabaseManager.World.GetCachedSpell(3815); // Free Ride to Holtburg
+                        break;
+                }
+                if (spellFreeRide != null && spellFreeRide.Name != "")
+                    instantiation =
+                        new InstancedPosition(new LocalPosition(
+                            spellFreeRide.PositionObjCellId.Value, spellFreeRide.PositionOriginX.Value, spellFreeRide.PositionOriginY.Value, spellFreeRide.PositionOriginZ.Value,
+                            spellFreeRide.PositionAnglesX.Value, spellFreeRide.PositionAnglesY.Value, spellFreeRide.PositionAnglesZ.Value, spellFreeRide.PositionAnglesW.Value), iid);
             }
-            if (spellFreeRide != null && spellFreeRide.Name != "")
-                instantiation = new Position(spellFreeRide.PositionObjCellId.Value, spellFreeRide.PositionOriginX.Value, spellFreeRide.PositionOriginY.Value, spellFreeRide.PositionOriginZ.Value, spellFreeRide.PositionAnglesX.Value, spellFreeRide.PositionAnglesY.Value, spellFreeRide.PositionAnglesZ.Value, spellFreeRide.PositionAnglesW.Value);
-            */
-
-            if (!player.IsOlthoiPlayer)
+            else
             {
-                player.Location = new InstancedPosition(0x8903012E, 87.738312f, -47.704556f, .005f, 0.0f, 0.0f, -0.926821f, 0.375504f, accountId);
-                player.Instantiation = new InstancedPosition(player.Location);
+                var realmSelector = RealmManager.GetReservedRealm(ReservedRealm.RealmSelector);
+                var blaineRoom = new LocalPosition(0xB96F0100, 83.7821f, 107.123f, 10.005f, 0f, 0f, -0.068597f, -0.997645f);
+                var iid = realmSelector.StandardRules.GetDefaultInstanceID(player, blaineRoom);
+                var startPos = blaineRoom.AsInstancedPosition(iid);
+                RealmManager.SetHomeRealm(player, realmSelector.Realm.Id, false, saveImmediately: false);
+                player.Location = startPos;
+                player.Instantiation = startPos;
                 player.Sanctuary = player.Location.AsLocalPosition();
                 player.SetProperty(PropertyBool.RecallsDisabled, true);
+
+                var token = WorldObjectFactory.CreateNewWorldObject((uint)WeenieClassName.W_TOKENTRAININGEXIT_CLASS, realmSelector.StandardRules);
+                if (token == null)
+                    throw new InvalidOperationException("Academy Exit Token Weenie not found.");
+                player.TryAddToInventory(token);
+            }
 
                 /*
                 if (PropertyManager.GetBool("pk_server").Item)
@@ -451,7 +476,6 @@ namespace ACE.Server.Factories
                     player.SetProperty(PropertyInt.PlayerKillerStatus, (int)PlayerKillerStatus.NPK);
                 }
                 */
-            }
 
             if (player is Sentinel || player is Admin)
             {
@@ -472,7 +496,7 @@ namespace ACE.Server.Factories
             if (weenie == null)
                 return null;
 
-            var worldObject = (Clothing)WorldObjectFactory.CreateNewWorldObject(weenie, RealmManager.CurrentSeason.StandardRules);
+            var worldObject = (Clothing)WorldObjectFactory.CreateNewWorldObject(weenie, RealmManager.DefaultRealmConfigured.StandardRules);
 
             worldObject.SetProperties((int)palette, shade);
 

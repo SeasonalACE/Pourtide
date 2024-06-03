@@ -73,7 +73,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("import-json", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Imports json data from the Content folder", "<type> <wcid>\n<type> - landblock, quest, recipe, spell, weenie (default if not specified)\n<wcid> - filename prefix to search for. can be 'all' to import all files for this content type")]
-        public static void HandleImportJson(Session session, params string[] parameters)
+        public static void HandleImportJson(ISession session, params string[] parameters)
         {
             var param = parameters[0];
             var contentType = FileType.Weenie;
@@ -82,6 +82,11 @@ namespace ACE.Server.Command.Handlers.Processors
             {
                 contentType = GetContentType(parameters, ref param);
 
+                if (contentType == FileType.Realm)
+                {
+                    CommandHandlerHelper.WriteOutputInfo(session, $"Realms may not be imported individually. Use /import-realms instead to fully reload the ruleset and realm files.");
+                    return;
+                }
                 if (contentType == FileType.Undefined)
                 {
                     CommandHandlerHelper.WriteOutputInfo(session, $"Unknown content type '{parameters[1]}'");
@@ -105,30 +110,35 @@ namespace ACE.Server.Command.Handlers.Processors
                 case FileType.Weenie:
                     ImportJsonWeenie(session, param);
                     break;
-
-                case FileType.Realm:
-                    //ImportJsonRealm(session, param);
-                    return;
             }
         }
 
-        [CommandHandler("import-realms", AccessLevel.Developer, CommandHandlerFlag.None, 0, "Imports all json realms from the Content folder")]
-        public static void HandleImportRealms(Session session, params string[] parameters)
+        public static void ImportJsonWeenie(ISession session, string wcid)
         {
-            DateTime now = DateTime.Now;
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
 
             var sep = Path.DirectorySeparatorChar;
 
-            var realms_index = $"{di.FullName}{sep}json{sep}realms.jsonc";
-            var json_folder = $"{di.FullName}{sep}json{sep}realms{sep}";
+            var json_folder = $"{di.FullName}{sep}json{sep}weenies{sep}";
 
-            var realms = ImportJsonRealmsFolder(session, json_folder);
-            if (realms != null)
-                ImportJsonRealmsIndex(session, realms_index, realms);
+            var prefix = wcid + " - ";
 
-            session?.Network.EnqueueSend(new GameMessageSystemChat($"Synced {realms.Count} realms in {(DateTime.Now - now).TotalSeconds} seconds.", ChatMessageType.Broadcast));
+            if (wcid.Equals("all", StringComparison.OrdinalIgnoreCase))
+                prefix = "";
+
+            di = new DirectoryInfo(json_folder);
+
+            var files = di.Exists ? di.GetFiles($"{prefix}*.json") : null;
+
+            if (files == null || files.Length == 0)
+            {
+                CommandHandlerHelper.WriteOutputInfo(session, $"Couldn't find {json_folder}{prefix}*.json");
+                return;
+            }
+
+            foreach (var file in files)
+                ImportJsonWeenie(session, json_folder, file.Name);
         }
 
         private static List<RealmToImport> ImportJsonRealmsFromSubFolder(Session session, string json_folder)
@@ -144,7 +154,7 @@ namespace ACE.Server.Command.Handlers.Processors
             }
 
             List<RealmToImport> list = new List<RealmToImport>();
-            foreach (var file in files)
+            foreach(var file in files)
             {
                 var jsondata = File.ReadAllText(file.FullName);
                 var realmToImport = RealmManager.DeserializeRealmJson(session, file.FullName, jsondata);
@@ -200,7 +210,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 }
 
                 //Map parents
-                foreach (var item in result)
+                foreach(var item in result)
                 {
                     var importItem = realmsDict[item.Key];
                     if (importItem.Realm.ParentRealmName != null)
@@ -270,7 +280,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 ImportJsonWeenie(session, json_folder, file.Name);
         }
 
-        public static void ImportJsonRecipe(Session session, string recipeId)
+        public static void ImportJsonRecipe(ISession session, string recipeId)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -298,7 +308,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 ImportJsonRecipe(session, json_folder, file.Name);
         }
 
-        public static void ImportJsonLandblock(Session session, string landblockId)
+        public static void ImportJsonLandblock(ISession session, string landblockId)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -326,7 +336,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 ImportJsonLandblock(session, json_folder, file.Name);
         }
 
-        public static void ImportJsonQuest(Session session, string questName)
+        public static void ImportJsonQuest(ISession session, string questName)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -355,14 +365,14 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("import-sql-folders", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Imports all weenie sql data from the Content folder and all sub-folders", "<wcid>\n<wcid> - wcid prefix to search for. can be 'all' to import everything")]
-        public static void HandleImportSQLFolders(Session session, params string[] parameters)
+        public static void HandleImportSQLFolders(ISession session, params string[] parameters)
         {
             var param = parameters[0];
             ImportSQLWeenie(session, param, true);
         }
 
         [CommandHandler("import-sql", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Imports sql data from the Content folder", "<type> <wcid>\n<type> - landblock, quest, recipe, spell, weenie (default if not specified)\n<wcid> - filename prefix to search for. can be 'all' to import all files for this content type")]
-        public static void HandleImportSQL(Session session, params string[] parameters)
+        public static void HandleImportSQL(ISession session, params string[] parameters)
         {
             var param = parameters[0];
             var contentType = FileType.Weenie;
@@ -371,6 +381,11 @@ namespace ACE.Server.Command.Handlers.Processors
             {
                 contentType = GetContentType(parameters, ref param);
 
+                if (contentType == FileType.Realm)
+                {
+                    CommandHandlerHelper.WriteOutputInfo(session, $"Realm SQL files are not importable (and it is not recommended to try to do this manually).");
+                    return;
+                }
                 if (contentType == FileType.Undefined)
                 {
                     CommandHandlerHelper.WriteOutputInfo(session, $"Unknown content type '{parameters[1]}'");
@@ -412,7 +427,7 @@ namespace ACE.Server.Command.Handlers.Processors
             }
         }
 
-        public static void ImportSQLWeenie(Session session, string wcid, bool withFolders = false)
+        public static void ImportSQLWeenie(ISession session, string wcid, bool withFolders = false)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -443,7 +458,7 @@ namespace ACE.Server.Command.Handlers.Processors
 
         }
 
-        public static void ImportSQLRecipe(Session session, string recipeId)
+        public static void ImportSQLRecipe(ISession session, string recipeId)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -471,35 +486,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 ImportSQLRecipe(session, sql_folder, file.Name);
         }
 
-        public static void ImportSQLRealm(Session session, string realmId)
-        {
-            DirectoryInfo di = VerifyContentFolder(session);
-            if (!di.Exists) return;
-
-            var sep = Path.DirectorySeparatorChar;
-
-            var sql_folder = $"{di.FullName}{sep}sql{sep}realms{sep}";
-
-            var prefix = realmId + " ";
-
-            if (realmId.Equals("all", StringComparison.OrdinalIgnoreCase))
-                prefix = "";
-
-            di = new DirectoryInfo(sql_folder);
-
-            var files = di.Exists ? di.GetFiles($"{prefix}*.sql") : null;
-
-            if (files == null || files.Length == 0)
-            {
-                CommandHandlerHelper.WriteOutputInfo(session, $"Couldn't find {sql_folder}{prefix}*.sql");
-                return;
-            }
-
-            foreach (var file in files)
-                ImportSQLRealm(session, sql_folder, file.Name);
-        }
-
-        public static void ImportSQLLandblock(Session session, string landblockId)
+        public static void ImportSQLLandblock(ISession session, string landblockId)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -527,7 +514,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 ImportSQLLandblock(session, sql_folder, file.Name);
         }
 
-        public static void ImportSQLQuest(Session session, string questName)
+        public static void ImportSQLQuest(ISession session, string questName)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -555,7 +542,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 ImportSQLQuest(session, sql_folder, file.Name);
         }
 
-        public static void ImportSQLSpell(Session session, string spellId)
+        public static void ImportSQLSpell(ISession session, string spellId)
         {
             DirectoryInfo di = VerifyContentFolder(session);
             if (!di.Exists) return;
@@ -586,7 +573,7 @@ namespace ACE.Server.Command.Handlers.Processors
         /// <summary>
         /// Returns the absolute content folder path, and verifies it exists
         /// </summary>
-        private static DirectoryInfo VerifyContentFolder(Session session, bool showError = true)
+        public static DirectoryInfo VerifyContentFolder(ISession session, bool showError = true)
         {
             var content_folder = PropertyManager.GetString("content_folder").Item;
 
@@ -612,7 +599,7 @@ namespace ACE.Server.Command.Handlers.Processors
         /// <summary>
         /// Converts JSON to SQL, imports to database, and clears the weenie cache
         /// </summary>
-        private static void ImportJsonWeenie(Session session, string json_folder, string json_file)
+        private static void ImportJsonWeenie(ISession session, string json_folder, string json_file)
         {
             if (!uint.TryParse(Regex.Match(json_file, @"\d+").Value, out var wcid))
             {
@@ -633,7 +620,7 @@ namespace ACE.Server.Command.Handlers.Processors
             DatabaseManager.World.ClearCachedWeenie(wcid);
         }
 
-        private static void ImportJsonRecipe(Session session, string json_folder, string json_file)
+        private static void ImportJsonRecipe(ISession session, string json_folder, string json_file)
         {
             if (!uint.TryParse(Regex.Match(json_file, @"\d+").Value, out var recipeId))
             {
@@ -654,7 +641,7 @@ namespace ACE.Server.Command.Handlers.Processors
             DatabaseManager.World.ClearCookbookCache();
         }
 
-        private static void ImportJsonLandblock(Session session, string json_folder, string json_file)
+        private static void ImportJsonLandblock(ISession session, string json_folder, string json_file)
         {
             if (!ushort.TryParse(Regex.Match(json_file, @"[0-9A-F]{4}", RegexOptions.IgnoreCase).Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var landblockId))
             {
@@ -675,7 +662,7 @@ namespace ACE.Server.Command.Handlers.Processors
             DatabaseManager.World.ClearCachedInstancesByLandblock(landblockId);
         }
 
-        private static void ImportJsonQuest(Session session, string json_folder, string json_file)
+        private static void ImportJsonQuest(ISession session, string json_folder, string json_file)
         {
             var questName = json_file.TrimEnd(".json");
 
@@ -697,7 +684,7 @@ namespace ACE.Server.Command.Handlers.Processors
         /// <summary>
         /// Converts a json file to sql file
         /// </summary>
-        public static string json2sql_weenie(Session session, string folder, string json_filename)
+        public static string json2sql_weenie(ISession session, string folder, string json_filename)
         {
             var json_file = folder + json_filename;
 
@@ -775,9 +762,8 @@ namespace ACE.Server.Command.Handlers.Processors
         public static CookBookSQLWriter CookBookSQLWriter;
         public static RecipeSQLWriter RecipeSQLWriter;
         public static SpellSQLWriter SpellSQLWriter;
-        public static RealmSQLWriter RealmSQLWriter;
 
-        public static string json2sql_recipe(Session session, string folder, string json_filename)
+        public static string json2sql_recipe(ISession session, string folder, string json_filename)
         {
             var json_file = folder + json_filename;
 
@@ -860,7 +846,7 @@ namespace ACE.Server.Command.Handlers.Processors
             return sqlFilename;
         }
 
-        public static string json2sql_landblock(Session session, string folder, string json_filename)
+        public static string json2sql_landblock(ISession session, string folder, string json_filename)
         {
             var json_file = folder + json_filename;
 
@@ -957,7 +943,7 @@ namespace ACE.Server.Command.Handlers.Processors
 
         public static QuestSQLWriter QuestSQLWriter;
 
-        public static string json2sql_quest(Session session, string folder, string json_filename)
+        public static string json2sql_quest(ISession session, string folder, string json_filename)
         {
             var json_file = folder + json_filename;
 
@@ -1020,7 +1006,7 @@ namespace ACE.Server.Command.Handlers.Processors
         /// <summary>
         /// Converts SQL to JSON, imports to database, clears the weenie cache
         /// </summary>
-        private static void ImportSQLWeenie(Session session, string sql_folder, string sql_file)
+        private static void ImportSQLWeenie(ISession session, string sql_folder, string sql_file)
         {
             if (!uint.TryParse(Regex.Match(sql_file, @"\d+").Value, out var wcid))
             {
@@ -1047,7 +1033,7 @@ namespace ACE.Server.Command.Handlers.Processors
             sql2json_weenie(session, weenie, sql_folder, sql_file);
         }
 
-        private static void ImportSQLRecipe(Session session, string sql_folder, string sql_file)
+        private static void ImportSQLRecipe(ISession session, string sql_folder, string sql_file)
         {
             if (!uint.TryParse(Regex.Match(sql_file, @"\d+").Value, out var recipeId))
             {
@@ -1074,29 +1060,7 @@ namespace ACE.Server.Command.Handlers.Processors
             sql2json_recipe(session, cookbooks, sql_folder, sql_file);
         }
 
-        private static void ImportSQLRealm(Session session, string sql_folder, string sql_file)
-        {
-            if (!uint.TryParse(Regex.Match(sql_file, @"\d+").Value, out var realmId))
-            {
-                CommandHandlerHelper.WriteOutputInfo(session, $"Couldn't find realm id from {sql_file}");
-                return;
-            }
-
-            ImportSQL(sql_folder + sql_file);
-            CommandHandlerHelper.WriteOutputInfo(session, $"Imported {sql_file}");
-
-            RealmManager.ClearCache();
-
-            var realm = DatabaseManager.World.GetRealm(realmId);
-
-            if (realm == null)
-            {
-                CommandHandlerHelper.WriteOutputInfo(session, $"Couldn't load realm {realmId} from db");
-                return;
-            }
-        }
-
-        private static void ImportSQLLandblock(Session session, string sql_folder, string sql_file)
+        private static void ImportSQLLandblock(ISession session, string sql_folder, string sql_file)
         {
             if (!ushort.TryParse(Regex.Match(sql_file, @"[0-9A-F]{4}", RegexOptions.IgnoreCase).Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var landblockId))
             {
@@ -1118,7 +1082,7 @@ namespace ACE.Server.Command.Handlers.Processors
             sql2json_landblock(session, instances, sql_folder, sql_file);
         }
 
-        private static void ImportSQLQuest(Session session, string sql_folder, string sql_file)
+        private static void ImportSQLQuest(ISession session, string sql_folder, string sql_file)
         {
             // import sql to db
             ImportSQL(sql_folder + sql_file);
@@ -1135,7 +1099,7 @@ namespace ACE.Server.Command.Handlers.Processors
             sql2json_quest(session, quest, sql_folder, sql_file);
         }
 
-        private static void ImportSQLSpell(Session session, string sql_folder, string sql_file)
+        private static void ImportSQLSpell(ISession session, string sql_folder, string sql_file)
         {
             if (!uint.TryParse(Regex.Match(sql_file, @"\d+").Value, out var spellId))
             {
@@ -1158,7 +1122,7 @@ namespace ACE.Server.Command.Handlers.Processors
         /// <summary>
         /// Converts a sql file to json file
         /// </summary>
-        public static bool sql2json_weenie(Session session, Weenie weenie, string sql_folder, string sql_filename)
+        public static bool sql2json_weenie(ISession session, Weenie weenie, string sql_folder, string sql_filename)
         {
             if (!LifestonedConverter.TryConvertACEWeenieToLSDJSON(weenie, out var json, out var json_weenie))
             {
@@ -1194,7 +1158,7 @@ namespace ACE.Server.Command.Handlers.Processors
             return true;
         }
 
-        public static bool sql2json_recipe(Session session, List<CookBook> cookbooks, string sql_folder, string sql_filename)
+        public static bool sql2json_recipe(ISession session, List<CookBook> cookbooks, string sql_folder, string sql_filename)
         {
             if (!GDLEConverter.TryConvert(cookbooks, out var result))
             {
@@ -1227,7 +1191,7 @@ namespace ACE.Server.Command.Handlers.Processors
             return true;
         }
 
-        public static bool sql2json_landblock(Session session, List<LandblockInstance> instances, string sql_folder, string sql_filename)
+        public static bool sql2json_landblock(ISession session, List<LandblockInstance> instances, string sql_folder, string sql_filename)
         {
             if (GDLEConverter.WeenieNames == null)
                 GDLEConverter.WeenieNames = DatabaseManager.World.GetAllWeenieNames();
@@ -1258,7 +1222,7 @@ namespace ACE.Server.Command.Handlers.Processors
             return true;
         }
 
-        public static bool sql2json_quest(Session session, Quest quest, string sql_folder, string sql_filename)
+        public static bool sql2json_quest(ISession session, Quest quest, string sql_folder, string sql_filename)
         {
             if (!GDLEConverter.TryConvert(quest, out var result))
             {
@@ -1301,21 +1265,10 @@ namespace ACE.Server.Command.Handlers.Processors
                 ctx.Database.ExecuteSqlRaw(sqlCommands);
         }
 
-        /// <summary>
-        /// Imports an SQL file into the database
-        /// </summary>
-        public static void ImportSQLShard(string sqlFile)
-        {
-            var sqlCommands = File.ReadAllText(sqlFile);
-
-            using (var ctx = new ShardDbContext())
-                ctx.Database.ExecuteSqlRaw(sqlCommands);
-        }
-
         public static LandblockInstanceWriter LandblockInstanceWriter;
 
         [CommandHandler("createinst", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 1, "Spawns a new wcid or classname as a landblock instance", "<wcid or classname>\n\nTo create a parent/child relationship: /createinst -p <parent guid> -c <wcid or classname>\nTo automatically get the parent guid from the last appraised object: /createinst -p -c <wcid or classname>\n\nTo manually specify a start guid: /createinst <wcid or classname> <start guid>\nStart guids can be in the range 0x000-0xFFF, or they can be prefixed with 0x7<landblock id>")]
-        public static void HandleCreateInst(Session session, params string[] parameters)
+        public static void HandleCreateInst(ISession session, params string[] parameters)
         {
             var loc = new InstancedPosition(session.Player.Location);
 
@@ -1509,7 +1462,7 @@ namespace ACE.Server.Command.Handlers.Processors
         /// Serializes landblock instances to XXYY.sql file,
         /// import into database, and clears the cached landblock instances
         /// </summary>
-        public static void SyncInstances(Session session, ushort landblock, List<LandblockInstance> instances)
+        public static void SyncInstances(ISession session, ushort landblock, List<LandblockInstance> instances)
         {
             // serialize to .sql file
             var contentFolder = VerifyContentFolder(session, false);
@@ -1549,7 +1502,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 File.Delete(sqlFilename);
 
                 using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
-                    ctx.Database.ExecuteSqlRaw($"DELETE FROM landblock_instance WHERE landblock={landblock};");
+                    ctx.Database.ExecuteSqlInterpolated($"DELETE FROM landblock_instance WHERE landblock={landblock};");
             }
 
             // clear landblock instances for this landblock (again)
@@ -1619,12 +1572,12 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("removeinst", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Removes the last appraised object from the current landblock instances")]
-        public static void HandleRemoveInst(Session session, params string[] parameters)
+        public static void HandleRemoveInst(ISession session, params string[] parameters)
         {
             RemoveInstance(session);
         }
 
-        public static void RemoveInstance(Session session, bool confirmed = false)
+        public static void RemoveInstance(ISession session, bool confirmed = false)
         {
             var wo = CommandHandlerHelper.GetLastAppraisedObject(session);
 
@@ -1700,7 +1653,7 @@ namespace ACE.Server.Command.Handlers.Processors
             session.Network.EnqueueSend(new GameMessageSystemChat($"Removed {(instance.IsLinkChild ? "child " : "")}{wo.WeenieClassId} - {wo.Name} (0x{guid:X8}) from landblock instances", ChatMessageType.Broadcast));
         }
 
-        public static int GetNumChilds(Session session, LandblockInstanceLink link, List<LandblockInstance> instances)
+        public static int GetNumChilds(ISession session, LandblockInstanceLink link, List<LandblockInstance> instances)
         {
             var child = instances.FirstOrDefault(i => i.Guid == link.ChildGuid);
 
@@ -1718,7 +1671,7 @@ namespace ACE.Server.Command.Handlers.Processors
             return numChilds;
         }
 
-        public static void RemoveChild(Session session, LandblockInstanceLink link, List<LandblockInstance> instances)
+        public static void RemoveChild(ISession session, LandblockInstanceLink link, List<LandblockInstance> instances)
         {
             var child = instances.FirstOrDefault(i => i.Guid == link.ChildGuid);
 
@@ -1751,7 +1704,7 @@ namespace ACE.Server.Command.Handlers.Processors
         /// Serializes encounters to XXYY.sql file,
         /// import into database, and clears the cached encounters
         /// </summary>
-        public static void SyncEncounters(Session session, ushort landblock, List<Encounter> encounters)
+        public static void SyncEncounters(ISession session, ushort landblock, List<Encounter> encounters)
         {
             // serialize to .sql file
             var contentFolder = VerifyContentFolder(session, false);
@@ -1791,7 +1744,7 @@ namespace ACE.Server.Command.Handlers.Processors
                 File.Delete(sqlFilename);
 
                 using (var ctx = DatabaseManager.World.ContextFactory.CreateDbContext())
-                    ctx.Database.ExecuteSqlRaw($"DELETE FROM encounter WHERE landblock={landblock};");
+                    ctx.Database.ExecuteSqlInterpolated($"DELETE FROM encounter WHERE landblock={landblock};");
             }
 
             // clear the encounters for this landblock (again)
@@ -1799,7 +1752,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("removeenc", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Removes the last appraised object from the encounters table")]
-        public static void HandleRemoveEnc(Session session, params string[] parameters)
+        public static void HandleRemoveEnc(ISession session, params string[] parameters)
         {
             var obj = CommandHandlerHelper.GetLastAppraisedObject(session);
 
@@ -1863,14 +1816,14 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("export-json-folders", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Exports content from database to JSON file in a WeenieType/ItemType folder structure", "<wcid>")]
-        public static void HandleExportJsonFolder(Session session, params string[] parameters)
+        public static void HandleExportJsonFolder(ISession session, params string[] parameters)
         {
             var param = parameters[0];
             ExportJsonWeenie(session, param, true);
         }
 
         [CommandHandler("export-json", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Exports content from database to JSON file", "<optional type> <id>\n<optional type> - landblock, quest, recipe, spell, weenie (default if not specified)\n<id> - wcid or content id to export")]
-        public static void HandleExportJson(Session session, params string[] parameters)
+        public static void HandleExportJson(ISession session, params string[] parameters)
         {
             var param = parameters[0];
             var contentType = FileType.Weenie;
@@ -1878,6 +1831,12 @@ namespace ACE.Server.Command.Handlers.Processors
             if (parameters.Length > 1)
             {
                 contentType = GetContentType(parameters, ref param);
+
+                if (contentType == FileType.Realm)
+                {
+                    CommandHandlerHelper.WriteOutputInfo(session, $"Realms may not be exported to JSON. The raw data can be exported (but not re-imported) with /export-sql realm");
+                    return;
+                }
 
                 if (contentType == FileType.Undefined)
                 {
@@ -1905,7 +1864,7 @@ namespace ACE.Server.Command.Handlers.Processors
             }
         }
 
-        public static void ExportJsonWeenie(Session session, string param, bool withFolders = false)
+        public static void ExportJsonWeenie(ISession session, string param, bool withFolders = false)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -1980,7 +1939,7 @@ namespace ACE.Server.Command.Handlers.Processors
             CommandHandlerHelper.WriteOutputInfo(session, $"Exported {json_folder}{json_filename}");
         }
 
-        public static void ExportJsonRecipe(Session session, string param)
+        public static void ExportJsonRecipe(ISession session, string param)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2029,7 +1988,7 @@ namespace ACE.Server.Command.Handlers.Processors
             CommandHandlerHelper.WriteOutputInfo(session, $"Exported {json_folder}{json_filename}");
         }
 
-        public static void ExportJsonLandblock(Session session, string param)
+        public static void ExportJsonLandblock(ISession session, string param)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2076,7 +2035,7 @@ namespace ACE.Server.Command.Handlers.Processors
             CommandHandlerHelper.WriteOutputInfo(session, $"Exported {json_folder}{json_filename}");
         }
 
-        public static void ExportJsonQuest(Session session, string questName)
+        public static void ExportJsonQuest(ISession session, string questName)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2113,14 +2072,14 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("export-sql-folders", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Exports weenie content from database to an SQL file in a WeenieType/ItemType folder structure", "<wcid>")]
-        public static void HandleExportSqlFolder(Session session, params string[] parameters)
+        public static void HandleExportSqlFolder(ISession session, params string[] parameters)
         {
             var param = parameters[0];
             ExportSQLWeenie(session, param, true);
         }
 
         [CommandHandler("export-sql", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Exports content from database to SQL file", "<optional type> <id>\n<optional type> - landblock, quest, recipe, spell, weenie (default if not specified)\n<id> - wcid or content id to export")]
-        public static void HandleExportSql(Session session, params string[] parameters)
+        public static void HandleExportSql(ISession session, params string[] parameters)
         {
             var param = parameters[0];
             var contentType = FileType.Weenie;
@@ -2158,12 +2117,12 @@ namespace ACE.Server.Command.Handlers.Processors
                     break;
 
                 case FileType.Realm:
-                    ExportSQLRealm(session, param);
+                    RealmDataHelpers.ExportSQLRealm(session, param);
                     break;
             }
         }
 
-        public static void ExportSQLWeenie(Session session, string param, bool withFolders = false)
+        public static void ExportSQLWeenie(ISession session, string param, bool withFolders = false)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2251,7 +2210,7 @@ namespace ACE.Server.Command.Handlers.Processors
             CommandHandlerHelper.WriteOutputInfo(session, $"Exported {sql_folder}{sql_filename}");
         }
 
-        public static void ExportSQLRecipe(Session session, string param)
+        public static void ExportSQLRecipe(ISession session, string param)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2321,62 +2280,7 @@ namespace ACE.Server.Command.Handlers.Processors
             CommandHandlerHelper.WriteOutputInfo(session, $"Exported {sql_folder}{sql_filename}");
         }
 
-        public static void ExportSQLRealm(Session session, string param)
-        {
-            DirectoryInfo di = VerifyContentFolder(session, false);
-
-            var sep = Path.DirectorySeparatorChar;
-
-            if (!uint.TryParse(param, out var realmId))
-            {
-                CommandHandlerHelper.WriteOutputInfo(session, $"{param} not a valid realm id");
-                return;
-            }
-
-            var realm = DatabaseManager.World.GetRealm(realmId);
-            if (realm == null)
-            {
-                CommandHandlerHelper.WriteOutputInfo(session, $"Couldn't find realm id {realmId}");
-                return;
-            }
-
-            var sql_folder = $"{di.FullName}{sep}sql{sep}realms{sep}";
-
-            di = new DirectoryInfo(sql_folder);
-
-            if (!di.Exists)
-                di.Create();
-
-            if (RealmSQLWriter == null)
-            {
-                RealmSQLWriter = new RealmSQLWriter();
-            }
-
-            var sql_filename = RealmSQLWriter.GetDefaultFileName(realm);
-
-            try
-            {
-                var sqlFile = new StreamWriter(sql_folder + sql_filename);
-
-                RealmSQLWriter.CreateSQLDELETEStatement(realm, sqlFile);
-                sqlFile.WriteLine();
-
-                RealmSQLWriter.CreateSQLINSERTStatement(realm, sqlFile);
-                sqlFile.WriteLine();
-
-                sqlFile.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                CommandHandlerHelper.WriteOutputInfo(session, $"Failed to export {sql_folder}{sql_filename}");
-                return;
-            }
-
-            CommandHandlerHelper.WriteOutputInfo(session, $"Exported {sql_folder}{sql_filename}");
-        }
-
-        public static void ExportSQLLandblock(Session session, string param)
+        public static void ExportSQLLandblock(ISession session, string param)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2431,7 +2335,7 @@ namespace ACE.Server.Command.Handlers.Processors
             CommandHandlerHelper.WriteOutputInfo(session, $"Exported {sql_folder}{sql_filename}");
         }
 
-        public static void ExportSQLQuest(Session session, string questName)
+        public static void ExportSQLQuest(ISession session, string questName)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2479,7 +2383,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
 
-        public static void ExportSQLSpell(Session session, string param)
+        public static void ExportSQLSpell(ISession session, string param)
         {
             DirectoryInfo di = VerifyContentFolder(session, false);
 
@@ -2533,7 +2437,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("clearcache", AccessLevel.Developer, CommandHandlerFlag.None, "Clears the various database caches. This enables live editing of the database information")]
-        public static void HandleClearCache(Session session, params string[] parameters)
+        public static void HandleClearCache(ISession session, params string[] parameters)
         {
             var mode = CacheType.All;
             if (parameters.Length > 0)
@@ -2669,7 +2573,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("nudge", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Adjusts the spawn position of a landblock instance", "<dir> <amount>\nDirections: x, y, z, north, south, west, east, northwest, northeast, southwest, southeast, n, s, w, e, nw, ne, sw, se, up, down, here")]
-        public static void HandleNudge(Session session, params string[] parameters)
+        public static void HandleNudge(ISession session, params string[] parameters)
         {
             WorldObject obj = null;
 
@@ -2880,7 +2784,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("rotate", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Adjusts the rotation of a landblock instance", "<dir>\nDirections: north, south, west, east, northwest, northeast, southwest, southeast, n, s, w, e, nw, ne, sw, se, -or-\n0-360, with 0 being north, and 90 being west")]
-        public static void HandleRotate(Session session, params string[] parameters)
+        public static void HandleRotate(ISession session, params string[] parameters)
         {
             WorldObject obj = null;
 
@@ -2995,24 +2899,24 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("rotate-x", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Adjusts the rotation of a landblock instance along the x-axis", "<degrees>")]
-        public static void HandleRotateX(Session session, params string[] parameters)
+        public static void HandleRotateX(ISession session, params string[] parameters)
         {
             HandleRotateAxis(session, Vector3.UnitX, parameters);
         }
 
         [CommandHandler("rotate-y", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Adjusts the rotation of a landblock instance along the y-axis", "<degrees>")]
-        public static void HandleRotateY(Session session, params string[] parameters)
+        public static void HandleRotateY(ISession session, params string[] parameters)
         {
             HandleRotateAxis(session, Vector3.UnitY, parameters);
         }
 
         [CommandHandler("rotate-z", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Adjusts the rotation of a landblock instance along the z-axis", "<degrees>")]
-        public static void HandleRotateZ(Session session, params string[] parameters)
+        public static void HandleRotateZ(ISession session, params string[] parameters)
         {
             HandleRotateAxis(session, Vector3.UnitZ, parameters);
         }
 
-        public static void HandleRotateAxis(Session session, Vector3 axis, params string[] parameters)
+        public static void HandleRotateAxis(ISession session, Vector3 axis, params string[] parameters)
         {
             WorldObject obj = null;
 
@@ -3101,7 +3005,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("generate-classnames", AccessLevel.Developer, CommandHandlerFlag.None, "Generates WeenieClassName.cs from current world database")]
-        public static void HandleGenerateClassNames(Session session, params string[] parameters)
+        public static void HandleGenerateClassNames(ISession session, params string[] parameters)
         {
             var lines = new List<string>();
 
@@ -3152,7 +3056,7 @@ namespace ACE.Server.Command.Handlers.Processors
         }
 
         [CommandHandler("vloc2loc", AccessLevel.Developer, CommandHandlerFlag.None, 1, "Output a set of LOCs for a given landblock found in the VLOCS dataset", "<LandblockID>\nExample: @vloc2loc 0x0007\n         @vloc2loc 0xCE95")]
-        public static void HandleVLOCtoLOC(Session session, params string[] parameters)
+        public static void HandleVLOCtoLOC(ISession session, params string[] parameters)
         {
             var hex = parameters[0];
 

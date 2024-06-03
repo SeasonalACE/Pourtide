@@ -9,8 +9,8 @@ namespace ACE.Server.Network.GameEvent.Events
     /// </summary>
     public class GameEventOpponentStalemate : GameEventMessage
     {
-        public GameEventOpponentStalemate(Session session, ObjectGuid boardGuid, ChessColor color, bool stalemate)
-            : base(GameEventType.OpponentStalemate, GameMessageGroup.UIQueue, session)
+        public GameEventOpponentStalemate(ISession session, ObjectGuid boardGuid, ChessColor color, bool stalemate)
+            : base(GameEventType.OpponentStalemate, GameMessageGroup.UIQueue, session, 16)
         {
             Writer.Write(boardGuid.ClientGUID);
             Writer.Write((int)color);

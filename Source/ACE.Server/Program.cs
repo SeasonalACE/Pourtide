@@ -16,14 +16,16 @@ using ACE.Server.Managers;
 using ACE.Server.Mods;
 using ACE.Server.Network.Managers;
 using Microsoft.Extensions.DependencyInjection;
-using ACE.Server.Features.HotDungeons.Managers;
-using ACE.Server.Features.Xp;
-using ACE.Server.Features.Discord;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("ACRealms.Tests")]
+
 
 namespace ACE.Server
 {
     partial class Program
     {
+
 
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 

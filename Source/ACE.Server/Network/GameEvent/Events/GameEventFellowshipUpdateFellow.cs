@@ -6,8 +6,8 @@ namespace ACE.Server.Network.GameEvent.Events
 {
     public class GameEventFellowshipUpdateFellow : GameEventMessage
     {
-        public GameEventFellowshipUpdateFellow(Session session, Player player, bool shareLoot, FellowUpdateType fellowUpdateType = FellowUpdateType.Full)
-            : base(GameEventType.FellowshipUpdateFellow, GameMessageGroup.UIQueue, session)
+        public GameEventFellowshipUpdateFellow(ISession session, Player player, bool shareLoot, FellowUpdateType fellowUpdateType = FellowUpdateType.Full)
+            : base(GameEventType.FellowshipUpdateFellow, GameMessageGroup.UIQueue, session, 84) // 84 is the max seen in retail pcaps
         {
             // Information about fellow being added
             Writer.Write(player.Guid.ClientGUID);

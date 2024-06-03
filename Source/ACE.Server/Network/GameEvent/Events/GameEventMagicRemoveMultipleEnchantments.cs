@@ -8,8 +8,8 @@ namespace ACE.Server.Network.GameEvent.Events
     /// </summary>
     public class GameEventMagicRemoveMultipleEnchantments : GameEventMessage
     {
-        public GameEventMagicRemoveMultipleEnchantments(Session session, List<LayeredSpell> spells)
-            : base(GameEventType.MagicRemoveMultipleEnchantments, GameMessageGroup.UIQueue, session)
+        public GameEventMagicRemoveMultipleEnchantments(ISession session, List<LayeredSpell> spells)
+            : base(GameEventType.MagicRemoveMultipleEnchantments, GameMessageGroup.UIQueue, session, 56) // 56 is the max seen in retail pcaps
         {
             Writer.Write(spells);
         }

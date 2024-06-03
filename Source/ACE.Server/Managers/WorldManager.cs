@@ -5,13 +5,7 @@ using System.Threading;
 
 using log4net;
 
-using ACE.Common;
-using ACE.Common.Performance;
-using ACE.Database;
-using ACE.Database.Entity;
-using ACE.Entity.Enum;
-using ACE.Entity.Enum.Properties;
-using ACE.Entity.Models;
+
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.WorldObjects;
@@ -23,11 +17,20 @@ using ACE.Server.Physics;
 using ACE.Server.Physics.Common;
 
 using Character = ACE.Database.Models.Shard.Character;
-using Position = ACE.Entity.Position;
 using ACE.Server.Realms;
-using ACE.Entity.Enum.RealmProperties;
 using ACE.Server.Factories;
-using ACE.Server.Features.Rifts;
+using ACE.Server.Network.Enum;
+using System.Linq;
+using ACRealms.Server.Network.TraceMessages.Messages;
+using ACE.Common;
+using ACE.Database;
+using ACE.Entity.Models;
+using ACE.Database.Entity;
+using ACE.Entity.Enum;
+using ACE.Entity.Enum.Properties;
+using ACE.Common.ACRealms;
+using ACE.Entity.Enum.RealmProperties;
+using ACE.Common.Performance;
 
 namespace ACE.Server.Managers
 {
@@ -69,7 +72,7 @@ namespace ACE.Server.Managers
             thread.Priority = ThreadPriority.AboveNormal;
             thread.Start();
             log.DebugFormat("ServerTime initialized to {0}", Timers.WorldStartLoreTime);
-            log.DebugFormat($"Current maximum allowed sessions: {ConfigManager.Config.Server.Network.MaximumAllowedSessions}");
+            log.DebugFormat("Current maximum allowed sessions: {0}", ConfigManager.Config.Server.Network.MaximumAllowedSessions);
 
             log.Info($"World started and is currently {WorldStatus.ToString()}{(PropertyManager.GetBool("world_closed", false).Item ? "" : " and will open automatically when server startup is complete.")}");
             if (WorldStatus == WorldStatusState.Closed)
@@ -95,7 +98,147 @@ namespace ACE.Server.Managers
                 PlayerManager.BootAllPlayers();
         }
 
-        public static void PlayerEnterWorld(Session session, Character character)
+        public static void PlayerInitForWorld(ISession session, uint guid, string clientString)
+        {
+            if (ServerManager.ShutdownInProgress)
+            {
+                session.SendCharacterError(CharacterError.LogonServerFull);
+                return;
+            }
+
+            if (clientString != session.Account)
+            {
+                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
+                return;
+            }
+
+            var character = session.Characters.SingleOrDefault(c => c.Id == guid);
+            if (character == null)
+            {
+                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
+                return;
+            }
+
+            if (character.IsDeleted || character.DeleteTime > 0)
+            {
+                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
+                return;
+            }
+
+            if (PlayerManager.GetOnlinePlayer(guid) != null)
+            {
+                // If this happens, it could be that the previous session for this Player terminated in a way that didn't transfer the player to offline via PlayerManager properly.
+                session.SendCharacterError(CharacterError.EnterGameCharacterInWorld);
+                return;
+            }
+
+            var offlinePlayer = PlayerManager.GetOfflinePlayer(guid);
+
+            if (offlinePlayer == null)
+            {
+                // This would likely only happen if the account tried to log in a character that didn't exist.
+                session.SendCharacterError(CharacterError.EnterGameGeneric);
+                return;
+            }
+
+            if (offlinePlayer.IsDeleted || offlinePlayer.IsPendingDeletion)
+            {
+                session.SendCharacterError(CharacterError.EnterGameCharacterNotOwned);
+                return;
+            }
+
+            if ((offlinePlayer.Heritage == (int)HeritageGroup.Olthoi || offlinePlayer.Heritage == (int)HeritageGroup.OlthoiAcid) && PropertyManager.GetBool("olthoi_play_disabled").Item)
+            {
+                session.SendCharacterError(CharacterError.EnterGameCouldntPlaceCharacter);
+                return;
+            }
+
+            var homeRealm = offlinePlayer.GetProperty(PropertyInt.HomeRealm);
+            if (!homeRealm.HasValue || homeRealm.Value == (ushort)ReservedRealm.NULL)
+            {
+                var migrationOpts = ACRealmsConfigManager.Config.CharacterMigrationOptions;
+
+                bool ASSIGNING_HOME_REALM = migrationOpts.AutoAssignHomeRealm && migrationOpts.AutoAssignToRealm != "NULL";
+                if (ASSIGNING_HOME_REALM)
+                {
+                    var realmNameToAssign = migrationOpts.AutoAssignToRealm;
+                    WorldRealm realm;
+                    if (Enum.TryParse(realmNameToAssign, true, out ReservedRealm reservedRealm))
+                    {
+                        realm = reservedRealm switch
+                        {
+                            ReservedRealm.hideout => null,
+                            ReservedRealm.@default => ACRealmsConfigManager.Config.OptOutOfRealms ? RealmManager.GetReservedRealm(ReservedRealm.@default) : null,
+                            _ => RealmManager.GetRealmByName(reservedRealm.ToString(), includeRulesets: false)
+                        };
+                    }
+                    else
+                        realm = RealmManager.GetRealmByName(realmNameToAssign, includeRulesets: false);
+
+                    if (realm == null)
+                    {
+                        log.Error($"Couldn't place homeless character '{offlinePlayer.Name}' in realm '{realmNameToAssign}'. Realm name is not valid. Make sure Config.realms.js is valid. Rejecting login!");
+                        session.SendCharacterError(CharacterError.EnterGameCouldntPlaceCharacter);
+                        return;
+                    }
+
+                    RealmManager.SetHomeRealm(offlinePlayer, realm);
+                }
+                else
+                {
+                    log.Error($"Missing Config.realms.js configuration for AssignHomeRealm and HomeRealm is null for '{offlinePlayer.Name}'. Rejecting login!");
+                    session.SendCharacterError(CharacterError.EnterGameCouldntPlaceCharacter);
+                    return;
+                }
+            }
+
+            // Verify that home realm has a valid range
+            homeRealm = offlinePlayer.GetProperty(PropertyInt.HomeRealm).Value;
+            if (homeRealm < 0 || homeRealm > 0x7FFF)
+            {
+                log.Error($"HomeRealm ID {homeRealm} out of range for '{offlinePlayer.Name}'. Rejecting login!");
+                session.SendCharacterError(CharacterError.EnterGameCouldntPlaceCharacter);
+                return;
+            }
+
+            // Verify that home realm actually exists
+            var scopedHomeRealmId = (ushort)homeRealm;
+            var worldRealm = RealmManager.GetRealm(scopedHomeRealmId, includeRulesets: false);
+            if (worldRealm == null)
+            {
+                log.Error($"HomeRealm ID {scopedHomeRealmId} for player '{offlinePlayer.Name}' does not reference a valid realm. Rejecting login!");
+                session.SendCharacterError(CharacterError.EnterGameCouldntPlaceCharacter);
+                return;
+            }
+
+            session.InitSessionForWorldLogin();
+
+            session.State = SessionState.WorldConnected;
+
+            PlayerEnterWorld(session, character);
+
+            try
+            {
+                var homeRealmId = offlinePlayer.GetProperty(ACE.Entity.Enum.Properties.PropertyInt.HomeRealm);
+
+                if (homeRealmId == null)
+                    homeRealmId = 0;
+
+                var playerLocation = offlinePlayer.GetPositionUnsafe(ACE.Entity.Enum.Properties.PositionType.Location);
+
+                var currentRealmId = playerLocation?.RealmID ?? 0;
+
+                DatabaseManager.Shard.BaseDatabase.LogCharacterLogin((ushort)homeRealmId, currentRealmId, session.AccountId, session.Account, session.EndPointC2S.Address.ToString(), character.Id, character.Name);
+                PlayerManager.UpdatePlayerToIpMap((ushort)homeRealmId, session.EndPointC2S.Address.ToString(), character.Id);
+
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Exception logging character login. Ex: {ex}");
+            }
+        }
+
+        public static void PlayerEnterWorld(ISession session, Character character)
         {
             var offlinePlayer = PlayerManager.GetOfflinePlayer(character.Id);
 
@@ -108,13 +251,13 @@ namespace ACE.Server.Managers
             var start = DateTime.UtcNow;
             DatabaseManager.Shard.GetPossessedBiotasInParallel(character.Id, biotas =>
             {
-                log.Debug($"GetPossessedBiotasInParallel for {character.Name} took {(DateTime.UtcNow - start).TotalMilliseconds:N0} ms");
+                log.DebugFormat("GetPossessedBiotasInParallel for {0} took {1:N0} ms", character.Name, (DateTime.UtcNow - start).TotalMilliseconds);
 
                 ActionQueue.EnqueueAction(new ActionEventDelegate(() => DoPlayerEnterWorld(session, character, offlinePlayer.Biota, biotas)));
             });
         }
 
-        private static void DoPlayerEnterWorld(Session session, Character character, Biota playerBiota, PossessedBiotas possessedBiotas)
+        private static void DoPlayerEnterWorld(ISession session, Character character, Biota playerBiota, PossessedBiotas possessedBiotas)
         {
             Player player;
 
@@ -218,7 +361,7 @@ namespace ACE.Server.Managers
                 if (session.Player.Instantiation != null)
                     session.Player.Location = session.Player.Instantiation;
                 else
-                    session.Player.Location = RealmManager.GetRealm(session.Player.HomeRealm).DefaultStartingLocation(session.Player);  // realm fallback
+                    session.Player.Location = RealmManager.GetRealm(session.Player.HomeRealm, includeRulesets: false).DefaultStartingLocation(session.Player);  // realm fallback
             }
 
             //var realm = RealmManager.GetRealm(session.Player.Location.RealmID);
@@ -235,9 +378,9 @@ namespace ACE.Server.Managers
             //}
             if (!session.Player.ValidatePlayerRealmPosition(session.Player.Location))
             {
-                var homerealm = RealmManager.GetRealm(session.Player.HomeRealm);
+                var homerealm = RealmManager.GetRealm(session.Player.HomeRealm, includeRulesets: false);
                 if (homerealm == null)
-                    homerealm = RealmManager.GetRealm((ushort)ReservedRealm.@default);
+                    homerealm = RealmManager.GetRealm((ushort)ReservedRealm.NULL, includeRulesets: false);
                 if (session.Player.GetPosition(PositionType.EphemeralRealmExitTo) != null)
                 {
                     session.Network.EnqueueSend(new GameMessageSystemChat($"The instance you were in has expired and you have been transported outside!", ChatMessageType.System));
@@ -265,7 +408,7 @@ namespace ACE.Server.Managers
             if (!success)
             {
                 // send to lifestone, or fallback location
-                var fixLoc = (session.Player.Sanctuary ?? RealmManager.GetRealm(session.Player.HomeRealm).DefaultStartingLocation(session.Player).AsLocalPosition())
+                var fixLoc = (session.Player.Sanctuary ?? RealmManager.GetRealm(session.Player.HomeRealm, includeRulesets: false).DefaultStartingLocation(session.Player).AsLocalPosition())
                     .AsInstancedPosition(session.Player, PlayerInstanceSelectMode.HomeRealm);
 
                 log.Error($"WorldManager.DoPlayerEnterWorld: failed to spawn {session.Player.Name}, relocating to {fixLoc.ToLOCString()}");
@@ -321,7 +464,9 @@ namespace ACE.Server.Managers
             if (olthoiPlayerReturnedToLifestone)
                 session.Network.EnqueueSend(new GameMessageSystemChat("You have returned to the Olthoi Queen to serve the hive.", ChatMessageType.Broadcast));
             else if (playerLoggedInOnNoLogLandblock) // see http://acpedia.org/wiki/Mount_Elyrii_Hive
-                session.Network.EnqueueSend(new GameMessageSystemChat("The currents of portal space cannot return you from whence you came. Your previous location forbids login.", ChatMessageType.Broadcast));            
+                session.Network.EnqueueSend(new GameMessageSystemChat("The currents of portal space cannot return you from whence you came. Your previous location forbids login.", ChatMessageType.Broadcast));
+
+            session.Network.EnqueueSend(new TraceMessageEnterWorldComplete());
         }
 
         private static string AppendLines(params string[] lines)
@@ -407,7 +552,7 @@ namespace ACE.Server.Managers
                 ServerPerformanceMonitor.RegisterEventEnd(ServerPerformanceMonitor.MonitorType.PlayerManager_Tick);
 
                 ServerPerformanceMonitor.RestartEvent(ServerPerformanceMonitor.MonitorType.NetworkManager_InboundClientMessageQueueRun);
-                NetworkManager.InboundMessageQueue.RunActions();
+                NetworkManager.Instance.InboundMessageQueue.RunActions();
                 ServerPerformanceMonitor.RegisterEventEnd(ServerPerformanceMonitor.MonitorType.NetworkManager_InboundClientMessageQueueRun);
 
                 // This will consist of PlayerEnterWorld actions, as well as other game world actions that require thread safety
@@ -424,7 +569,7 @@ namespace ACE.Server.Managers
                 ServerPerformanceMonitor.RegisterEventEnd(ServerPerformanceMonitor.MonitorType.UpdateGameWorld);
 
                 ServerPerformanceMonitor.RestartEvent(ServerPerformanceMonitor.MonitorType.NetworkManager_DoSessionWork);
-                int sessionCount = NetworkManager.DoSessionWork();
+                int sessionCount = NetworkManager.Instance.DoSessionWork();
                 ServerPerformanceMonitor.RegisterEventEnd(ServerPerformanceMonitor.MonitorType.NetworkManager_DoSessionWork);
 
                 ServerPerformanceMonitor.Tick();

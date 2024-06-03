@@ -130,11 +130,11 @@ namespace ACE.Server.WorldObjects
                     {
                         globalPKDe = $"{lastDamager.Name} has defeated {Name}!";
                         if (RiftManager.TryGetActiveRift(HomeRealm, Location.LandblockHex, out Rift ActiveRift) && Location.Instance == ActiveRift.Instance)
-                            globalPKDe += $" The kill occured at Rift {ActiveRift.Name} in realm {RealmManager.GetRealm((ushort)HomeRealm).Realm.Name}";
+                            globalPKDe += $" The kill occured at Rift {ActiveRift.Name} in realm {RealmManager.GetRealm((ushort)HomeRealm, includeRulesets: true).Realm.Name}";
                         else if (DungeonManager.TryGetDungeonLandblock(Location.LandblockHex, out DungeonLandblock landblock))
-                            globalPKDe += $" The kill occured at Dungeon {landblock.Name} in realm {RealmManager.GetRealm((ushort)HomeRealm).Realm.Name}";
+                            globalPKDe += $" The kill occured at Dungeon {landblock.Name} in realm {RealmManager.GetRealm((ushort)HomeRealm, includeRulesets: true).Realm.Name}";
                         else if (!Location.Indoors)
-                            globalPKDe += $" The kill occured at {Location.GetMapCoordStr()} in realm {RealmManager.GetRealm((ushort)HomeRealm).Realm.Name}";
+                            globalPKDe += $" The kill occured at {Location.GetMapCoordStr()} in realm {RealmManager.GetRealm((ushort)HomeRealm, includeRulesets: true).Realm.Name}";
                     }
 
                     globalPKDe += "\n[PKDe]";
@@ -240,7 +240,7 @@ namespace ACE.Server.WorldObjects
 
             // update vitae
             // players who died in a PKLite fight do not accrue vitae
-            var duelRealm = RealmManager.GetRealm(HomeRealm)?.StandardRules?.GetProperty(RealmPropertyBool.IsDuelingRealm) == true ||
+            var duelRealm = RealmManager.GetRealm(HomeRealm, includeRulesets: false)?.StandardRules?.GetProperty(RealmPropertyBool.IsDuelingRealm) == true ||
                 RealmRuleset?.GetProperty(RealmPropertyBool.IsDuelingRealm) == true;
             if (!duelRealm && !IsPKLiteDeath(topDamager))
                 InflictVitaePenalty();
@@ -252,7 +252,11 @@ namespace ACE.Server.WorldObjects
                 Session.Network.EnqueueSend(msgPurgeEnchantments);
             }
             else
-                Session.Network.EnqueueSend(new GameMessageSystemChat("Your augmentation prevents the tides of death from ripping away your current enchantments!", ChatMessageType.Broadcast));
+            {
+                var msgPurgeBadEnchantments = new GameEventMagicPurgeBadEnchantments(Session);
+                EnchantmentManager.RemoveAllBadEnchantments();
+                Session.Network.EnqueueSend(msgPurgeBadEnchantments, new GameMessageSystemChat("Your augmentation prevents the tides of death from ripping away your current enchantments!", ChatMessageType.Broadcast));
+            }
 
             var equippedArmor = GetEquippedClothingArmor((CoverageMask)CoverageMaskHelper.Outerwear);
 

@@ -1,4 +1,5 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
+ARG TARGETARCH
 WORKDIR /Source
 
 ADD Content /ace/Content
@@ -15,14 +16,14 @@ COPY ./Source/ACE.Entity/*.csproj ./ACE.Entity/
 COPY ./Source/ACE.Server/*.csproj ./ACE.Server/
 COPY ./Source/ACE.Server.Tests/*.csproj ./ACE.Server.Tests/
 
-RUN dotnet restore ACE.sln
+RUN dotnet restore -a $TARGETARCH
 
 # copy and publish app and libraries
 COPY . ../.
-RUN dotnet publish ./ACE.Server/ACE.Server.csproj -c release -o /ace --no-restore
+RUN dotnet publish ./ACE.Server/ACE.Server.csproj -a $TARGETARCH -c release -o /ace --no-restore
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/runtime:6.0-bullseye-slim
+FROM mcr.microsoft.com/dotnet/runtime:8.0-jammy
 ARG DEBIAN_FRONTEND="noninteractive"
 WORKDIR /ace
 
@@ -38,11 +39,13 @@ RUN apt-get update && \
 
 # add app from build
 COPY --from=build /ace .
+
+# run app
 ENTRYPOINT ["dotnet", "ACE.Server.dll"]
 
 # ports and volumes
 EXPOSE 9000-9001/udp
-VOLUME /ace/Config /ace/Dats /ace/Logs /ace/Mods
+VOLUME /ace/Config /ace/Content /ace/Dats /ace/Logs /ace/Mods
 
 # health check
 HEALTHCHECK --start-period=5m --interval=1m --timeout=3s \

@@ -15,7 +15,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// A new biota be created taking all of its values from weenie.
         /// </summary>
-        public Sentinel(Weenie weenie, ObjectGuid guid, uint accountId, AppliedRuleset ruleset) : base(weenie, guid, accountId, ruleset)
+        public Sentinel(Weenie weenie, ObjectGuid guid, uint accountId) : base(weenie, guid, accountId, RealmManager.DefaultRealmConfigured.StandardRules)
         {
             if (!Character.IsPlussed)
             {
@@ -29,7 +29,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Restore a WorldObject from the database.
         /// </summary>
-        public Sentinel(Biota biota, IEnumerable<ACE.Database.Models.Shard.Biota> inventory, IEnumerable<ACE.Database.Models.Shard.Biota> wieldedItems, Character character, Session session) : base(biota, inventory, wieldedItems, character, session)
+        public Sentinel(Biota biota, IEnumerable<ACE.Database.Models.Shard.Biota> inventory, IEnumerable<ACE.Database.Models.Shard.Biota> wieldedItems, Character character, ISession session) : base(biota, inventory, wieldedItems, character, session)
         {
             if (!Character.IsPlussed)
             {

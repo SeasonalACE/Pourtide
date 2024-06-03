@@ -1,10 +1,37 @@
-# SeasonalACE
+# ACRealms V2.1
 
-## Summary
+This is a fork of https://github.com/ACEmulator/ACE/. The repo was not originally set up a fork and therefore could not be turned into one, but there is a mirror repo here for visibility https://github.com/ACRealms/ACRealmsForkMirror.
 
-Seasonal ACE is a fork of [ACEmulator](https://github.com/ACEmulator/ACE) and  [ACRealms](https://github.com/ACRealms/ACRealms.WorldServer). It comes with instancing functionality, specifically realms, also known as "seasons". A season can be thought of as an instance of an entire AC world server, however, Seasonal ACE can support multiple seasons on a single server simultaneously. Additionally, a season also has the capability to support instance dungeon landblocks, where multiple dungeons of the same landblock can exist, with their own rules. 
+It is recommended to fork from the mirror repo instead of this one. The mirror repo may eventually become the main one. 
 
-This project is experimental, and exists as a base for any projects that wish to have instancing with Asheron's Call, and can be played the same as any other ACE server. 
+# Looking to get started?
+
+Before you do anything, note that the master branch in this project is a development branch and is not considered to be stable. Please use the latest even-numbered versioned branch for the most stability.
+
+Currently, that branch is `v2.0`  
+
+
+# Mission Statement
+
+**The mission of ACRealms is to be the recommended Asheron's Call server emulator for servers with heavy customization needs.**
+
+Focus areas:
+ - Instanced Landblocks (multiple logical dungeons in same 'physical' landblock space)
+ - Ruleset Composition (Realms are composed of ruleset definitions chained together recursively)
+ - Ephemeral Realms (Temporary landblocks that may be assigned additional rulesets, including those defined by the player through crafting, inspired by the map device in Path of Exile)
+ - Automated testing - ACE traditionally lacked this capability. Due to the sheer amount and complexity of changes, and customizability of rulesets, automated tests are more important here.
+ 
+
+## Contributing
+
+Contributions (time and development, **not money**) and feedback greatly appreciated. Contributors and server operators will have more of a say in development direction and priorities.
+
+The best way to start contributing is to join the discord (https://discord.gg/pN65pYqZeS) and introduce yourself. Or alternatively, clone the repo and review the implementation and start experimenting!
+You'll likely find something that can be improved. There are still many features not implemented as a realm property. 
+
+For complex changes, it is recommended to get in touch via Discord before attempting them.
+
+If you don't use Discord and want to contribute, email me and let me know what mode of communication works best for you.
 
 
 ## Caveats
@@ -14,13 +41,24 @@ This project is experimental, and exists as a base for any projects that wish to
 3. There are still unforseen bugs. ACRealms never had much exposure and is not very battle tested but there should be no serious impact on performance or player experience. 
 
 
-## Custom Realm Config
-* The `Content\json\realms.jsonc` is your root config file. In this file you define key/value pairs, where the key is the name of a realm you have created (more on this next), and the value is the realm identifier that is used internally.
-* The `Content\json\realms\realm` directory is where your realm JSON files exist, these are what I would describe as your seasons. Realms have a parent/child relationship, multiple realms can inherit rules from other realms. You will find many config files that you can use as a foundation and example to learn from. 
+#### Realms.jsonc
+UPDATE May 2024: This file is now auto generated and doesn't need to be edited manually.  
+
+Previously:
+
+realms.jsonc contains a list of realm and ruleset names mapped to realm ids. These ids can be changed to anything between 1 and 0x7FFE (32766), and may not be changed to new values after the first run of the server.  
+New realms can still be added to the list as long as they are not changed after the next time the server is started.
+The realm name must match the name specified in the realm file (not the filename).
+If a realm file exists, it must have a corresponding entry in this file, and vice versa. It's not the most user-friendly process but there is room for improvement.
 
 For example the default season for SeasonalACE is the `realms-pvp.jsonc` file:
 
-This realm inherits from the `Modern Realm`.
+It is recommended to use visual studio code to edit these files, using the "Content" folder as the root. A json-schema folder exists and realm properties will be populated in this schema after successful build of the ACE.Server project.  
+This allows for autocomplete and tooltip functionality to be integrated with the editor. 
+
+A realm file exists under `Content/json/realms/realm/xxx.jsonc`, and a ruleset file exists under `Content/json/realms/ruleset/xxx.jsonc`. They have the same basic structure.
+The key difference between a realm and a ruleset is that a realm may exist as a permanent home location for a player. A ruleset does not. Rulesets are intended to be composed on top of realms, to produce "ephemeral realms" (temporary rulesets).
+Realm definitions may also be composed in a similar manner, but the result is a permanent world
 
 ```json
 {
@@ -35,7 +73,20 @@ This realm inherits from the `Modern Realm`.
 ```
 
 
-* The `Custom\json\realms\rulesets` directory contains rulesets config files. Rulesets should be used for dungeon landblock instancing only. Rulesets are unique as they can be composed with other rulesets, and the values for certain rules can be applied with RNG values.
+Property entry hash valid keys:
+- `value`: A default value, matching the type of the corresponding property. May not be present if `low` or `high` is present. This takes precedence over the default value defined in the enum type.
+- `low`: The minimum value when rerolled. If present, `high` must also be defined. The absolute minimum defined in the enum type will take precedence if there is a conflict. 
+- `high`: The maximum value when rerolled. If present, `low` must also be defined. The absolute maximum defined in the enum type will take precedence if there is a conflict.
+- `reroll`: One of:
+  - `landblock` (default): Reroll once during landblock load
+  - `always`: Reroll each time the property is accessed by game logic
+  - `never`: Use the default value
+- `compose`: One of:
+  - `add`: Add the result of the two rulesets together
+  - `multiply`: Multiply the result of the two rulesets together
+  - `replace`: Discard the previous value and replace it with the result from this ruleset.
+- `locked`: Rulesets that inherit from this ruleset will ignore any properties that are locked here instead of composing them. If applying a ruleset with `apply_rulesets` or `apply_rulesets_random`, that value will become locked if specified.
+- `probability`: A floating-point number between 0 and 1 representing the probability of this property taking effect.
 
 #### RealmProperty Enums
 
@@ -60,14 +111,13 @@ These are shared by all realms, application-wide, and list the possible realm pr
 
 ## Known Issues
 
-- Housing is working, but not tested in full yet. Purchasing houses, abandoning houses, villa portals, villa storage have been tested. I haven't tried mansions, apartments, allegiance housing, booting, or permissions yet. I'm sure not everything works yet but it is just a matter of fixing minor things. The hard technical problems related to housing have already been solved, however.
 - Ruleset and realm files were originally intended to be updatable without a restart of the server, and a very early version of this project allowed it, but there were issues with caching. I still want to fix that because restarting the server is not convenient when experimenting with ideas for new rulesets.
-- The ruleset specification is complex and not covered by any unit tests. If you notice any unexpected behavior with rulesets, please report it!
-- landblock content files are global and cannot be defined on a realm by realm basis yet. This is something I've wanted to address for a very long time now but it hasn't been done yet because of priorities.
+- The ruleset specification is complex and not yet fully covered by unit tests, but progress is being made here. If you notice any unexpected behavior with rulesets, please report it!
+- landblock content files are global and cannot be defined on a realm by realm basis yet. This is something I've wanted to address for a very long time now but it hasn't been done yet because of priorities. (UPDATE: This is now scheduled for the v2.3 milestone)
 
 ## Developer notes
 
-Property IDs (ACE.Entity.Enum.Properties.PropertyXXX) from 42000-42999 are reserved by AC Realms Core. 
+Property IDs (ACE.Entity.Enum.Properties.PropertyXXX) and PositionTypes from 42000-42999 are reserved by AC Realms Core. 
 
 Realm Property IDs (ACE.Entity.Enum.Properties.RealmPropertyXXX) from 0-9999 are reserved by AC Realms Core in a similar manner.
 

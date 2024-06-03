@@ -1286,7 +1286,7 @@ namespace ACE.Server.WorldObjects
             }
             .Select(GetProperty)
             .Where(x => x.HasValue)
-            .Select(x => RealmManager.GetRealm((ushort)x))
+            .Select(x => RealmManager.GetRealm((ushort)x, includeRulesets: true))
             .ToList();
         }
 

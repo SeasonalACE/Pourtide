@@ -20,20 +20,29 @@ namespace ACE.Server.Realms
             this.RulesetTemplate = template;
         }
 
-        public static EphemeralRealm Initialize(WorldRealm baseRealm, List<Realm> appliedRealms)
+        public static EphemeralRealm Initialize(WorldRealm baseRealm, List<Realm> appliedRealms, bool useCache = true, bool full_trace = false)
         {
             string key = baseRealm.Realm.Id.ToString();
             RulesetTemplate template = null;
             RulesetTemplate prevTemplate = baseRealm.RulesetTemplate;
+            if (full_trace)
+            {
+                useCache = false;
+                prevTemplate = prevTemplate.RebuildTemplateWithContext(prevTemplate.Context.WithTrace(deriveNewSeedEachPhase: false));
+            }
             for(int i = 0; i < appliedRealms.Count; i++)
             {
                 var appliedRealm = appliedRealms[i];
-                key += $".{appliedRealm.Id}";
-                template = RealmManager.GetEphemeralRealmRulesetTemplate(key);
+                if (useCache)
+                {
+                    key += $".{appliedRealm.Id}";
+                    template = RealmManager.GetEphemeralRealmRulesetTemplate(key);
+                }
                 if (template == null)
                 {
-                    template = RulesetTemplate.MakeRuleset(prevTemplate, appliedRealm);
-                    RealmManager.CacheEphemeralRealmTemplate(key, template);
+                    template = RulesetTemplate.MakeRuleset(prevTemplate, appliedRealm, prevTemplate.Context);
+                    if (useCache)
+                        RealmManager.CacheEphemeralRealmTemplate(key, template);
                 }
                 prevTemplate = template;
             }

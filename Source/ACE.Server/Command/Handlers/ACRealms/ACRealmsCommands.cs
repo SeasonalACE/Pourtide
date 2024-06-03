@@ -2,6 +2,7 @@ using ACE.Common;
 using ACE.Database;
 using ACE.Database.Models.Shard;
 using ACE.Entity;
+using ACE.Entity.ACRealms;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Entity.Models;
@@ -18,75 +19,53 @@ using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Physics.Common;
 using ACE.Server.Realms;
 using ACE.Server.WorldObjects;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace ACE.Server.Command.Handlers
 {
-    public static class CustomCommands
+    public static class ACRealmsCommands
     {
         [CommandHandler("season-info", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Get info about the current season your character belongs to.")]
-        public static void HandleSeasonInfo(Session session, params string[] paramters)
+        public static void HandleSeasonInfo(ISession session, params string[] paramters)
         {
-            var player  = session?.Player;
+            var player = session?.Player;
             var season = RealmManager.CurrentSeason;
-            
+
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Season Information>", ChatMessageType.System));
-            session.Network.EnqueueSend(new GameMessageSystemChat($"\n{season.Realm.Name} - Id: {season.Realm.Id} - Instance: {season.StandardRules.GetDefaultInstanceID()}", ChatMessageType.System));
+            session.Network.EnqueueSend(new GameMessageSystemChat($"\n{season.Realm.Name} - Id: {season.Realm.Id} - Instance: {season.StandardRules.GetDefaultInstanceID(player, player.Location.AsLocalPosition())}", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n{season.StandardRules.DebugOutputString()}", ChatMessageType.System));
         }
 
         [CommandHandler("season-list", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available seasons to choose from.")]
-        public static void HandleSeasonList(Session session, params string[] paramters)
+        public static void HandleSeasonList(ISession session, params string[] paramters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Season List>", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n{RealmManager.GetSeasonList()}", ChatMessageType.System));
         }
 
         [CommandHandler("realm-list", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available realms stored in RealmManager.")]
-        public static void HandleRealmList(Session session, params string[] paramters)
+        public static void HandleRealmList(ISession session, params string[] paramters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Realm List>", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n{RealmManager.GetRealmList()}", ChatMessageType.System));
         }
 
         [CommandHandler("ruleset-list", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available rulesets stored in RealmManager.")]
-        public static void HandleRulesetList(Session session, params string[] paramters)
+        public static void HandleRulesetList(ISession session, params string[] paramters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Ruleset List>", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n{RealmManager.GetRulesetsList()}", ChatMessageType.System));
 
         }
 
-        [CommandHandler("set-home-realm", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Sets the home realm of a player.")]
-        public static void HandleSetHomeRealm(Session session, params string[] parameters)
-        {
-            if (parameters.Length < 1)
-                return;
-            if (!ushort.TryParse(parameters[0], out var realmid))
-                return;
-
-            var objectId = ObjectGuid.Invalid;
-
-            var target = session.Player.CurrentAppraisalTarget;
-
-            if (target.HasValue)
-                objectId = new ObjectGuid((uint)session.Player.CurrentAppraisalTarget);
-            else
-                objectId = new ObjectGuid((uint)session.Player.Guid.Full);
-
-            var wo = session.Player.CurrentLandblock?.GetObject(objectId);
-            if (wo != null && wo is Player player)
-            {
-                var positionMessage = new GameMessageSystemChat($"Setting home realm of {player.Name} to realm {realmid}.", ChatMessageType.Broadcast);
-                session.Network.EnqueueSend(positionMessage);
-                RealmManager.SetHomeRealm(player, realmid);
-            }
-        }
-
         [CommandHandler("telerealm", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Teleports the current player to another realm.")]
-        public static void HandleMoveRealm(Session session, params string[] parameters)
+        public static void HandleMoveRealm(ISession session, params string[] parameters)
         {
             if (parameters.Length < 1)
                 return;
@@ -102,7 +81,7 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("realm-info", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Lists all properties for the current realm.")]
-        public static void HandleZoneInfo(Session session, params string[] parameters)
+        public static void HandleZoneInfo(ISession session, params string[] parameters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Realm Information>", ChatMessageType.System));
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n{session.Player.CurrentLandblock.RealmRuleset.Realm.Name} - Id: {session.Player.CurrentLandblock.RealmRuleset.Realm.Id} - Instance: {session.Player.Location.Instance} ", ChatMessageType.System));
@@ -110,48 +89,49 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("exitinstance", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Leaves the current instance, if the player is currently in one.")]
-        public static void HandleExitInstance(Session session, params string[] parameters)
+        public static void HandleExitInstance(ISession session, params string[] parameters)
         {
             session.Player.ExitInstance();
         }
 
         [CommandHandler("exitinst", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Leaves the current instance, if the player is currently in one.")]
-        public static void HandleExitInst(Session session, params string[] parameters)
+        public static void HandleExitInst(ISession session, params string[] parameters)
         {
             session.Player.ExitInstance();
         }
 
 
         [CommandHandler("exiti", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Leaves the current instance, if the player is currently in one.")]
-        public static void HandleExitI(Session session, params string[] parameters)
+        public static void HandleExitI(ISession session, params string[] parameters)
         {
             session.Player.ExitInstance();
         }
 
         [CommandHandler("leaveinstance", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Leaves the current instance, if the player is currently in one.")]
-        public static void HandleLeaveInstance(Session session, params string[] parameters)
+        public static void HandleLeaveInstance(ISession session, params string[] parameters)
         {
             session.Player.ExitInstance();
         }
 
         [CommandHandler("leaveinst", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Leaves the current instance, if the player is currently in one.")]
-        public static void HandleLeaveInst(Session session, params string[] parameters)
+        public static void HandleLeaveInst(ISession session, params string[] parameters)
         {
             session.Player.ExitInstance();
         }
 
         [CommandHandler("leavei", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, "Leaves the current instance, if the player is currently in one.")]
-        public static void HandleLeaveI(Session session, params string[] parameters)
+        public static void HandleLeaveI(ISession session, params string[] parameters)
         {
             session.Player.ExitInstance();
         }
-      
+
+        // Requires IsDuelingRealm and HomeRealm to be set
         [CommandHandler("rebuff", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0,
             "Buffs you with all beneficial spells. Only usable in certain realms.")]
-        public static void HandleRebuff(Session session, params string[] parameters)
+        public static void HandleRebuff(ISession session, params string[] parameters)
         {
             var player = session.Player;
-            var realm = RealmManager.GetRealm(player.HomeRealm);
+            var realm = RealmManager.GetRealm(player.HomeRealm, includeRulesets: false);
             if (realm == null) return;
             if (!realm.StandardRules.GetProperty(RealmPropertyBool.IsDuelingRealm)) return;
             var ts = player.GetProperty(PropertyInt.LastRebuffTimestamp);
@@ -172,7 +152,7 @@ namespace ACE.Server.Command.Handlers
 
         [CommandHandler("rifts", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
         [CommandHandler("dungeons", AccessLevel.Player, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
-        public static void HandleCheckDungeons(Session session, params string[] parameters)
+        public static void HandleCheckDungeons(ISession session, params string[] parameters)
         {
             ulong discordChannel = 0;
             if (parameters.Length > 1 && parameters[0] == "discord")
@@ -189,7 +169,7 @@ namespace ACE.Server.Command.Handlers
                 var oreSlayerDropChance = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSlayerDropChance);
                 var oreSalvageDropAmount = rift.LandblockInstance.RealmRuleset.GetProperty(RealmPropertyInt.OreSalvageDropAmount);
                 Position.ParseInstanceID(rift.HomeInstance, out var isEphemeralRealm, out var realmId, out var instanceId);
-                var realm = RealmManager.GetRealm(realmId).Realm;
+                var realm = RealmManager.GetRealm(realmId, includeRulesets: true).Realm;
                 message.Append($"Rift {rift.Name} from realm {realm.Name} is active!\n");
                 message.Append($"With an xp bonus of {rift.BonuxXp.ToString("0.00")}x.\n");
                 message.Append($"With an ore drop chance of 1/{oreDropChance}.\n");
@@ -212,19 +192,19 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("reset-dungeons", AccessLevel.Admin, CommandHandlerFlag.None, 0, "Get a list of available dungeons.")]
-        public static void HandleResetDungeons(Session session, params string[] paramters)
+        public static void HandleResetDungeons(ISession session, params string[] paramters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Resettinga Hot Dungeons>", ChatMessageType.System));
             DungeonManager.Reset(true);
         }
 
         [CommandHandler("dungeons-potential", AccessLevel.Developer, CommandHandlerFlag.None, 0, "Get a list of available potential dungeons.")]
-        public static void HandleCheckDungeonsPotential(Session session, params string[] paramters)
+        public static void HandleCheckDungeonsPotential(ISession session, params string[] paramters)
         {
             session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Active Potential Dungeon List>", ChatMessageType.System));
             foreach (var (realmId, dungeon) in DungeonManager.GetPotentialDungeons())
             {
-                var realm = RealmManager.GetRealm(realmId).Realm.Name;
+                var realm = RealmManager.GetRealm(realmId, includeRulesets: true).Realm.Name;
                 if (realm == null)
                     continue;
 
@@ -251,7 +231,7 @@ namespace ACE.Server.Command.Handlers
 
         [CommandHandler("fi", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Resends all visible items and creatures to the client")]
         [CommandHandler("fixinvisible", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Resends all visible items and creatures to the client")]
-        public static void HandleFixInvisible(Session session, params string[] parameters)
+        public static void HandleFixInvisible(ISession session, params string[] parameters)
         {
             session.Player.FixInvis();
 
@@ -259,7 +239,7 @@ namespace ACE.Server.Command.Handlers
 
         /** Xp Cap Start **/
         [CommandHandler("reset-xp", AccessLevel.Admin, CommandHandlerFlag.None, 0, "Reset xp cap.")]
-        public static void HandleResetXpCap(Session session, params string[] parameters)
+        public static void HandleResetXpCap(ISession session, params string[] parameters)
         {
             var playerName = "";
             if (parameters.Length > 0)
@@ -269,7 +249,8 @@ namespace ACE.Server.Command.Handlers
             {
                 session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Resetting Daily Xp Cap for {playerName}>", ChatMessageType.System));
                 XpManager.ResetPlayersForDaily(playerName);
-            } else
+            }
+            else
             {
                 session.Network.EnqueueSend(new GameMessageSystemChat($"\n<Resetting Daily Xp Cap for all players>", ChatMessageType.System));
                 XpManager.ResetPlayersForDaily();
@@ -277,10 +258,10 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("show-xp", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show xp cap information.")]
-        public static void HandleShowXp(Session session, params string[] paramters)
+        public static void HandleShowXp(ISession session, params string[] paramters)
         {
             var player = session.Player;
-            var realm = RealmManager.GetRealm(player.Location.RealmID);
+            var realm = RealmManager.GetRealm(player.Location.RealmID, includeRulesets: true);
             if (realm.Realm.Id != RealmManager.CurrentSeason.Realm.Id)
                 return;
 
@@ -309,7 +290,7 @@ namespace ACE.Server.Command.Handlers
 
         /** Leaderboards/Stats Start **/
         [CommandHandler("leaderboards-kills", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 kills leaderboard.")]
-        public static void HandleLeaderboardsKills(Session session, params string[] parameters)
+        public static void HandleLeaderboardsKills(ISession session, params string[] parameters)
         {
             if (session != null)
             {
@@ -351,7 +332,7 @@ namespace ACE.Server.Command.Handlers
 
         /** Leaderboards/Stats Start **/
         [CommandHandler("my-kills", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show my kills.")]
-        public static void HandlePersonalKills(Session session, params string[] parameters)
+        public static void HandlePersonalKills(ISession session, params string[] parameters)
         {
             if (session != null)
             {
@@ -400,7 +381,7 @@ namespace ACE.Server.Command.Handlers
 
         /** Leaderboards/Stats Start **/
         [CommandHandler("leaderboards-deaths", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 pvp deaths leaderboard.")]
-        public static void HandleLeaderboardsDeaths(Session session, params string[] parameters)
+        public static void HandleLeaderboardsDeaths(ISession session, params string[] parameters)
         {
             if (session != null)
             {
@@ -443,7 +424,7 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("leaderboards-Xp", AccessLevel.Player, CommandHandlerFlag.None, 0, "Show top 10 Levels leaderboard.")]
-        public static void HandleLeaderboardsXp(Session session, params string[] parameters)
+        public static void HandleLeaderboardsXp(ISession session, params string[] parameters)
         {
             if (session != null)
             {
@@ -495,7 +476,7 @@ namespace ACE.Server.Command.Handlers
         /** Player Utility Commands Start **/
         [CommandHandler("fl", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Force log off of a character that's stuck in game. Is only allowed when initiated from a character that is on the same account as the target character.")]
         [CommandHandler("ForceLogoffStuckCharacter", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Force log off of character that's stuck in game. Is only allowed when initiated from a character that is on the same account as the target character.")]
-        public static void HandleForceLogoffStuckCharacter(Session session, params string[] parameters)
+        public static void HandleForceLogoffStuckCharacter(ISession session, params string[] parameters)
         {
             try
             {
@@ -549,7 +530,8 @@ namespace ACE.Server.Command.Handlers
                     return;
                 }
 
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 CommandHandlerHelper.WriteOutputError(session, $"Error: Failed to force logout player");
                 CommandHandlerHelper.WriteOutputError(session, ex.Message);
@@ -561,7 +543,7 @@ namespace ACE.Server.Command.Handlers
         /// List online players within the character's allegiance.
         /// </summary>
         [CommandHandler("who", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "List online players within the character's allegiance.")]
-        public static void HandleWho(Session session, params string[] parameters)
+        public static void HandleWho(ISession session, params string[] parameters)
         {
             if (!PropertyManager.GetBool("command_who_enabled").Item)
             {
@@ -603,8 +585,9 @@ namespace ACE.Server.Command.Handlers
         }
         /** Player Utility Commands End **/
 
+
         [CommandHandler("bounty", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Get bounty information from Pour Collector")]
-        public static void HandleBountyInfo(Session session, params string[] paramters)
+        public static void HandleBountyInfo(ISession session, params string[] paramters)
         {
             var player = session?.Player;
             var holtburg = DatabaseManager.World.GetCachedPointOfInterest("holtburg");
@@ -632,7 +615,7 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("reload-all-landblocks", AccessLevel.Admin, CommandHandlerFlag.None, 0, "Reloads all landblocks currently loaded.")]
-        public static void HandleReloadAllLandblocks(Session session, params string[] parameters)
+        public static void HandleReloadAllLandblocks(ISession session, params string[] parameters)
         {
             ActionChain lbResetChain = new ActionChain();
             var lbs = LandblockManager.GetLoadedLandblocks().Select(x => (id: x.Id, instance: x.Instance));
@@ -660,9 +643,111 @@ namespace ACE.Server.Command.Handlers
             lbResetChain.EnqueueChain();
         }
 
+        [CommandHandler("compile-ruleset", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, 1, "Gives a diagnostic trace of a ruleset compilation for the current landblock",
+                    "(required) { full | landblock | ephemeral-new | ephemeral-cached | all }\n" +
+                    "(optional) random seed")]
+        public static void HandleCompileRuleset(ISession session, params string[] parameters)
+        {
+            if (!PropertyManager.GetBool("acr_enable_ruleset_seeds").Item)
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat($"The server property 'acr_enable_ruleset_seeds' must be enabled to use this command.", ChatMessageType.Broadcast));
+                return;
+            }
+
+            string type = parameters[0];
+            int seed;
+            if (parameters.Length > 1)
+            {
+                if (!int.TryParse(parameters[1], out seed))
+                {
+                    session.Network.EnqueueSend(new GameMessageSystemChat($"Invalid random seed, must pass an integer", ChatMessageType.Broadcast));
+                    return;
+                }
+            }
+            else
+                seed = Random.Shared.Next();
+
+            string result;
+            switch (type)
+            {
+                case "all":
+                    HandleCompileRuleset(session, "landblock", seed.ToString());
+                    if (session.Player.CurrentLandblock.IsEphemeral)
+                    {
+                        HandleCompileRuleset(session, "ephemeral-cached", seed.ToString());
+                        HandleCompileRuleset(session, "ephemeral-new", seed.ToString());
+                    }
+                    HandleCompileRuleset(session, "full", seed.ToString());
+                    return;
+                default:
+                    result = CompileRulesetRaw(session, seed, type);
+                    break;
+            }
+
+            var filename = $"compile-ruleset-output-{session.Player.Name}-{type}.txt";
+            File.WriteAllText(filename, result);
+            session.Network.EnqueueSend(new GameMessageSystemChat($"Logged compilation output to {filename}", ChatMessageType.Broadcast));
+        }
+
+        public class InvalidCommandException() : Exception { }
+        public static string CompileRulesetRaw(ISession session, int seed, string type, DateTime? timeContext = null)
+        {
+            Ruleset ruleset;
+            var ctx = Ruleset.MakeDefaultContext().WithTrace(deriveNewSeedEachPhase: false).WithNewSeed(seed);
+            if (timeContext.HasValue)
+                ctx = ctx.WithTimeContext(timeContext.Value);
+
+            switch (type)
+            {
+                case "landblock":
+                    ruleset = AppliedRuleset.MakeRerolledRuleset(session.Player.RealmRuleset.Template, ctx);
+                    break;
+                case "ephemeral-new":
+                    if (!session.Player.CurrentLandblock.IsEphemeral)
+                    {
+                        session.Network.EnqueueSend(new GameMessageSystemChat($"The current landblock is not ephemeral.", ChatMessageType.Broadcast));
+                        throw new InvalidCommandException();
+                    }
+                    ruleset = AppliedRuleset.MakeRerolledRuleset(session.Player.CurrentLandblock.InnerRealmInfo.RulesetTemplate.RebuildTemplateWithContext(ctx), ctx);
+                    break;
+                case "ephemeral-cached":
+                    if (!session.Player.CurrentLandblock.IsEphemeral)
+                    {
+                        session.Network.EnqueueSend(new GameMessageSystemChat($"The current landblock is not ephemeral.", ChatMessageType.Broadcast));
+                        throw new InvalidCommandException();
+                    }
+                    ruleset = AppliedRuleset.MakeRerolledRuleset(session.Player.RealmRuleset.Template, ctx);
+                    break;
+                case "full":
+                    RulesetTemplate template;
+                    if (!session.Player.CurrentLandblock.IsEphemeral)
+                        template = RealmManager.BuildRuleset(session.Player.RealmRuleset.Realm, ctx);
+                    else
+                        template = session.Player.CurrentLandblock.InnerRealmInfo.RulesetTemplate.RebuildTemplateWithContext(ctx);
+                    ruleset = AppliedRuleset.MakeRerolledRuleset(template, ctx);
+                    break;
+                default:
+                    session.Network.EnqueueSend(new GameMessageSystemChat($"Unknown compilation type.", ChatMessageType.Broadcast));
+                    throw new InvalidCommandException();
+            }
+            return ruleset.Context.FlushLog();
+        }
+
+        [CommandHandler("ruleset-seed", AccessLevel.Envoy, CommandHandlerFlag.RequiresWorld, 0, "Shows the randomization seed for the current landblock's ruleset")]
+        public static void HandleRulesetSeed(ISession session, params string[] parameters)
+        {
+            if (!PropertyManager.GetBool("acr_enable_ruleset_seeds").Item)
+            {
+                session.Network.EnqueueSend(new GameMessageSystemChat($"The server property 'acr_enable_ruleset_seeds' must be enabled to use this command.", ChatMessageType.Broadcast));
+                return;
+            }
+
+            session.Network.EnqueueSend(new GameMessageSystemChat($"Ruleset seed: {session.Player.RealmRuleset.Context.RandomSeed}", ChatMessageType.Broadcast));
+        }
+
         [CommandHandler("spl", AccessLevel.Developer, CommandHandlerFlag.None, 0, "Show player locations.")]
         [CommandHandler("show-player-locations", AccessLevel.Developer, CommandHandlerFlag.RequiresWorld, 0, "Show player locations.")]
-        public static void HandleShowPlayerLocations(Session session, params string[] parameters)
+        public static void HandleShowPlayerLocations(ISession session, params string[] parameters)
         {
 
             foreach (var player in PlayerManager.GetAllOnline())
@@ -679,7 +764,7 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("scarabs", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Add scarabs to inventory.")]
-        public static void HandleAddScarabs(Session session, params string[] parameters)
+        public static void HandleAddScarabs(ISession session, params string[] parameters)
         {
             if (!session.Player.CurrentLandblock.RealmRuleset.GetProperty(RealmPropertyBool.IsDuelingRealm))
                 return;

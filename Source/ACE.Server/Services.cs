@@ -28,12 +28,17 @@ using Microsoft.Extensions.Logging;
 using ACE.Server.Features.HotDungeons.Managers;
 using ACE.Server.Features.Xp;
 using ACE.Server.Features.Discord;
+using System.Runtime;
+using ACE.Common.ACRealms;
 
 namespace ACE.Server
 {
     public static partial class Services
     {
-        public interface IACRealmsService { }
+        public interface IACRealmsService
+        {
+            bool IsDisposed { get; }
+        }
 
         /// <summary>
         /// The timeBeginPeriod function sets the minimum timer resolution for an application or device driver. Used to manipulate the timer frequency.
@@ -54,9 +59,8 @@ namespace ACE.Server
 
         public static void ConfigureServicesForLiveEnvironment()
         {
-            //var consoleTitle = $"AC Realms - v{ServerBuildInfo.FullVersion}";
-
-            //Console.Title = consoleTitle;
+            var consoleTitle = $"AC Realms - v{ServerBuildInfo.FullVersion}";
+            Console.Title = consoleTitle;
 
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnProcessExit);
@@ -164,10 +168,13 @@ namespace ACE.Server
                 }
             }
 
-            //consoleTitle = Console.Title;
-
             log.Info("Initializing ConfigManager...");
             ConfigManager.Initialize();
+            log.Info("Initializing ACRealmsConfigManager...");
+            ACRealmsConfigManager.Initialize();
+
+            log.Info("Initializing ModManager...");
+            ModManager.Initialize();
 
             if (ConfigManager.Config.Server.WorldName != "AC Realms")
             {
@@ -370,6 +377,7 @@ namespace ACE.Server
             InboundMessageManager.Initialize();
 
             log.Info("Initializing SocketManager...");
+            NetworkManager.Initialize(new NetworkManager());
             SocketManager.Initialize();
 
             log.Info("Initializing WorldManager...");
@@ -388,14 +396,22 @@ namespace ACE.Server
             // Free up memory before the server goes online. This can free up 6 GB+ on larger servers.
             log.Info("Forcing .net garbage collection...");
             for (int i = 0; i < 10; i++)
+            {
+                // https://learn.microsoft.com/en-us/dotnet/standard/garbage-collection/fundamentals
+                // https://learn.microsoft.com/en-us/dotnet/api/system.runtime.gcsettings.largeobjectheapcompactionmode
+                GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+
                 GC.Collect();
+            }
 
             // This should be last
             log.Info("Initializing CommandManager...");
             CommandManager.Initialize();
 
-            log.Info("Initializing ModManager...");
-            ModManager.Initialize();
+            //Register mod commands
+            log.Info("Registering ModManager commands...");
+            ModManager.RegisterCommands();
+            ModManager.ListMods();
 
             DiscordChatBridge.Start();
 

@@ -18,7 +18,7 @@ namespace ACE.Server.Network.Handlers
     public static class TurbineChatHandler
     {
         [GameMessage(GameMessageOpcode.TurbineChat, SessionState.WorldConnected)]
-        public static void TurbineChatReceived(ClientMessage clientMessage, Session session)
+        public static void TurbineChatReceived(ClientMessage clientMessage, ISession session)
         {
             if (!PropertyManager.GetBool("use_turbine_chat").Item)
                 return;
@@ -105,10 +105,10 @@ namespace ACE.Server.Network.Handlers
                 }
 
                 if (channelID != adjustedChannelID)
-                    log.Debug($"[CHAT] ChannelID ({channelID}) was adjusted to {adjustedChannelID} | ChatNetworkBlobDispatchType: {chatBlobDispatchType}");
+                    log.DebugFormat("[CHAT] ChannelID ({0}) was adjusted to {1} | ChatNetworkBlobDispatchType: {2}", channelID, adjustedChannelID, chatBlobDispatchType);
 
                 if (chatType != adjustedchatType)
-                    log.Debug($"[CHAT] ChatType ({chatType}) was adjusted to {adjustedchatType} | ChatNetworkBlobDispatchType: {chatBlobDispatchType}");
+                    log.DebugFormat("[CHAT] ChatType ({0}) was adjusted to {1} | ChatNetworkBlobDispatchType: {2}", chatType, adjustedchatType, chatBlobDispatchType);
 
                 var gameMessageTurbineChat = new GameMessageTurbineChat(ChatNetworkBlobType.NETBLOB_EVENT_BINARY, ChatNetworkBlobDispatchType.ASYNCMETHOD_SENDTOROOMBYNAME, adjustedChannelID, session.Player.Name, message, senderID, adjustedchatType);
 
@@ -284,7 +284,7 @@ namespace ACE.Server.Network.Handlers
                     var chat_requires_player_level = PropertyManager.GetLong("chat_requires_player_level").Item;
                     if (chat_requires_player_level > 0 && session.Player.Level < chat_requires_player_level)
                     {
-                        HandleChatReject(session, contextId, chatType, gameMessageTurbineChat, $"because this character has reached level {chat_requires_player_level}");
+                        HandleChatReject(session, contextId, chatType, gameMessageTurbineChat, $"because this character has not reached level {chat_requires_player_level}");
                         return;
                     }
 
@@ -335,7 +335,7 @@ namespace ACE.Server.Network.Handlers
                 Console.WriteLine($"Unhandled TurbineChatHandler ChatNetworkBlobType: 0x{(uint)chatBlobType:X4}");
         }
 
-        private static void HandleChatReject(Session session, uint contextId, ChatType chatType, GameMessageTurbineChat gameMessageTurbineChat, string rejectReason)
+        private static void HandleChatReject(ISession session, uint contextId, ChatType chatType, GameMessageTurbineChat gameMessageTurbineChat, string rejectReason)
         {
             if (PropertyManager.GetBool("chat_echo_reject").Item)
                 session.Network.EnqueueSend(gameMessageTurbineChat);

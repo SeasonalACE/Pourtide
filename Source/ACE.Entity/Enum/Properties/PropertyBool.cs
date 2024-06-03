@@ -214,6 +214,11 @@ namespace ACE.Entity.Enum.Properties
         /// </summary>
         IsEphemeralRealmPortal = 42003,
 
+        /// <summary>
+        /// Player will always be placed in a different instance ID according to their character ID. Mainly intended for testing 
+        /// </summary>
+        AttemptUniqueInstanceID = 42004,
+
         // Pourtide props
 
         IsRiftMonster                    = 60000,

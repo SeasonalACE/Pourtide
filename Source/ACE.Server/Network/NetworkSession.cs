@@ -17,26 +17,37 @@ using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.Network.Handlers;
 using ACE.Server.Network.Managers;
 using ACE.Server.Network.Packets;
-
+using ACRealms.Server.Network.TraceMessages;
 using log4net;
 
 namespace ACE.Server.Network
 {
-    public class NetworkSession
+    public interface INetworkSession
     {
-        private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-        private static readonly ILog packetLog = LogManager.GetLogger(System.Reflection.Assembly.GetEntryAssembly(), "Packets");
+        ushort ClientId { get; }
+        ushort ServerId { get; }
+        long TimeoutTick { get; set; }
+        bool sendResync { get; set; }
+        SessionConnectionData ConnectionData { get; }
+
+        void EnqueueSend(params GameMessage[] messages);
+        void EnqueueSend(IEnumerable<GameMessage> messages);
+        void EnqueueSend(params ServerPacket[] packets);
+        void ProcessPacket(ClientPacket packet);
+        void ReleaseResources();
+        void Update();
+    }
+
+    public abstract class NetworkSessionBase : INetworkSession
+    {
+        protected static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        protected static readonly ILog packetLog = LogManager.GetLogger(System.Reflection.Assembly.GetEntryAssembly(), "Packets");
 
         private const int minimumTimeBetweenBundles = 5; // 5ms
         private const int timeBetweenTimeSync = 20000; // 20s
         private const int timeBetweenAck = 2000; // 2s
 
-        private readonly Session session;
-        private readonly ConnectionListener connectionC2S; // This is the connection the client transmits on. In retail this would be port 9000 for GLS; For world servers, examples would be port 9002 / 9004 / 9006 / 9008.
-        private readonly ConnectionListener connectionS2C; // This is the connection the server transmits on. In retail this would be port 9001 for GLS; For world servers, examples would be port 9003 / 9005 / 9007 / 9009.
-
-        private readonly Object[] currentBundleLocks = new Object[(int)GameMessageGroup.QueueMax];
-        private readonly NetworkBundle[] currentBundles = new NetworkBundle[(int)GameMessageGroup.QueueMax];
+        protected readonly ISession session;
 
         private ConcurrentDictionary<uint, ClientPacket> outOfOrderPackets = new ConcurrentDictionary<uint, ClientPacket>();
         private ConcurrentDictionary<uint, MessageBuffer> partialFragments = new ConcurrentDictionary<uint, MessageBuffer>();
@@ -46,7 +57,7 @@ namespace ACE.Server.Network
 
         // Resync will be started after ConnectResponse, and should immediately be sent then, so no delay here.
         // Fun fact: even though we send the server time in the ConnectRequest, client doesn't seem to use it?  Therefore we must TimeSync early so client doesn't see a skew when we send it later.
-        public bool sendResync;
+        public bool sendResync { get; set; }
         private DateTime nextResync = DateTime.UtcNow;
 
         // Ack should be sent after a 2 second delay, so start enabled with the delay.
@@ -56,13 +67,6 @@ namespace ACE.Server.Network
 
         private uint lastReceivedPacketSequence = 1;
         private uint lastReceivedFragmentSequence;
-
-        /// <summary>
-        /// This is referenced from many threads:<para />
-        /// ConnectionListener.OnDataReceieve()->Session.HandlePacket()->This.HandlePacket(packet), This path can come from any client or other thinkable object.<para />
-        /// WorldManager.UpdateWorld()->Session.Update(lastTick)->This.Update(lastTick)
-        /// </summary>
-        private readonly ConcurrentDictionary<uint /*seq*/, ServerPacket> cachedPackets = new ConcurrentDictionary<uint /*seq*/, ServerPacket>();
 
         private static readonly TimeSpan cachedPacketPruneInterval = TimeSpan.FromSeconds(5);
         private DateTime lastCachedPacketPruneTime;
@@ -80,7 +84,18 @@ namespace ACE.Server.Network
         /// </summary>
         private readonly ConcurrentQueue<ServerPacket> packetQueue = new ConcurrentQueue<ServerPacket>();
 
-        public readonly SessionConnectionData ConnectionData = new SessionConnectionData();
+        /// <summary>
+        /// This is referenced from many threads:<para />
+        /// ConnectionListener.OnDataReceieve()->Session.HandlePacket()->This.HandlePacket(packet), This path can come from any client or other thinkable object.<para />
+        /// WorldManager.UpdateWorld()->Session.Update(lastTick)->This.Update(lastTick)
+        /// </summary>
+        protected readonly ConcurrentDictionary<uint /*seq*/, ServerPacket> cachedPackets = new ConcurrentDictionary<uint /*seq*/, ServerPacket>();
+
+        protected readonly Object[] currentBundleLocks = new Object[(int)GameMessageGroup.QueueMax];
+        protected readonly NetworkBundle[] currentBundles = new NetworkBundle[(int)GameMessageGroup.QueueMax];
+        protected bool isReleased;
+
+        public SessionConnectionData ConnectionData { get; } = new SessionConnectionData();
 
         /// <summary>
         /// Stores the tick value for the when an active session will timeout. If this value is in the past, the session is dead/inactive.
@@ -90,48 +105,8 @@ namespace ACE.Server.Network
         public ushort ClientId { get; }
         public ushort ServerId { get; }
 
-        public NetworkSession(Session session, ConnectionListener connectionListener, ushort clientId, ushort serverId)
-        {
-            this.session = session;
-            connectionC2S = connectionListener;
-            connectionS2C = SocketManager.GetMatchedConnectionListener(connectionC2S);
-
-            ClientId = clientId;
-            ServerId = serverId;
-
-            // New network auth session timeouts will always be low.
-            TimeoutTick = DateTime.UtcNow.AddSeconds(AuthenticationHandler.DefaultAuthTimeout).Ticks;
-
-            for (int i = 0; i < currentBundles.Length; i++)
-            {
-                currentBundleLocks[i] = new object();
-                currentBundles[i] = new NetworkBundle();
-            }
-        }
-
-        /// <summary>
-        /// Enequeues a GameMessage for sending to this client.
-        /// This may be called from many threads.
-        /// </summary>
-        /// <param name="messages">One or more GameMessages to send</param>
-        public void EnqueueSend(params GameMessage[] messages)
-        {
-            if (isReleased) // Session has been removed
-                return;
-
-            foreach (var message in messages)
-            {
-                var grp = message.Group;
-                var currentBundleLock = currentBundleLocks[(int) grp];
-                lock (currentBundleLock)
-                {
-                    var currentBundle = currentBundles[(int) grp];
-                    currentBundle.EncryptedChecksum = true;
-                    packetLog.DebugFormat("[{0}] Enqueuing Message {1}", session.LoggingIdentifier, message.Opcode);
-                    currentBundle.Enqueue(message);
-                }
-            }
-        }
+        public abstract void EnqueueSend(params GameMessage[] messages);
+        public abstract void EnqueueSend(IEnumerable<GameMessage> messages);
 
         /// <summary>
         /// Enqueues a ServerPacket for sending to this client.
@@ -145,7 +120,8 @@ namespace ACE.Server.Network
 
             foreach (var packet in packets)
             {
-                packetLog.DebugFormat("[{0}] Enqueuing Packet {1}", session.LoggingIdentifier, packet.GetHashCode());
+                if (packetLog.IsDebugEnabled)
+                    packetLog.DebugFormat("[{0}] Enqueuing Packet {1}", session.LoggingIdentifier, packet.GetHashCode());
                 packetQueue.Enqueue(packet);
             }
         }
@@ -303,7 +279,7 @@ namespace ACE.Server.Network
             // Example: Applications that check uptime will stay in the AuthLoginRequest state.
             session.Network.TimeoutTick = (session.State == SessionState.AuthLoginRequest) ?
                 DateTime.UtcNow.AddSeconds(AuthenticationHandler.DefaultAuthTimeout).Ticks : // Default is 15s
-                DateTime.UtcNow.AddSeconds(NetworkManager.DefaultSessionTimeout).Ticks; // Default is 60s
+                DateTime.UtcNow.AddSeconds(NetworkManager.Instance.DefaultSessionTimeout).Ticks; // Default is 60s
 
             #endregion
 
@@ -395,7 +371,8 @@ namespace ACE.Server.Network
             EnqueueSend(reqPacket);
 
             LastRequestForRetransmitTime = DateTime.UtcNow;
-            packetLog.DebugFormat("[{0}] Requested retransmit of {1}", session.LoggingIdentifier, needSeq.Select(k => k.ToString()).Aggregate((a, b) => a + ", " + b));
+            if (packetLog.IsDebugEnabled)
+                packetLog.DebugFormat("[{0}] Requested retransmit of {1}", session.LoggingIdentifier, needSeq.Select(k => k.ToString()).Aggregate((a, b) => a + ", " + b));
             NetworkStatistics.S2C_RequestsForRetransmit_Aggregate_Increment();
         }
 
@@ -436,7 +413,7 @@ namespace ACE.Server.Network
             // In our current implimenation we handle all roles in this one server.
             if (packet.Header.HasFlag(PacketHeaderFlags.LoginRequest))
             {
-                packetLog.Debug($"[{session.LoggingIdentifier}] LoginRequest");
+                packetLog.DebugFormat("[{0}] LoginRequest", session.LoggingIdentifier);
                 AuthenticationHandler.HandleLoginRequest(packet, session);
                 return;
             }
@@ -646,7 +623,7 @@ namespace ACE.Server.Network
                 cachedPackets.TryRemove(key, out _);
         }
 
-        private bool Retransmit(uint sequence)
+        protected bool Retransmit(uint sequence)
         {
             if (cachedPackets.TryGetValue(sequence, out var cachedPacket))
             {
@@ -660,20 +637,23 @@ namespace ACE.Server.Network
                 return true;
             }
 
-            if (cachedPackets.Count > 0)
+            if (packetLog.IsDebugEnabled)
             {
-                // This is to catch a race condition between .Count and .Min() and .Max()
-                try
+                if (cachedPackets.Count > 0)
                 {
-                    log.Error($"Session {session.Network?.ClientId}\\{session.EndPointC2S} ({session.Account}:{session.Player?.Name}) retransmit requested packet {sequence} not in cache. Cache range {cachedPackets.Keys.Min()} - {cachedPackets.Keys.Max()}.");
+                    // This is to catch a race condition between .Count and .Min() and .Max()
+                    try
+                    {
+                        packetLog.DebugFormat("Session {0}\\{1} ({2}:{3}) retransmit requested packet {4} not in cache. Cache range {5} - {6}.", session.Network?.ClientId, session.EndPointC2S, session.Account, session.Player?.Name, sequence, cachedPackets.Keys.Min(), cachedPackets.Keys.Max());
+                    }
+                    catch
+                    {
+                        packetLog.DebugFormat("Session {0}\\{1} ({2}:{3}) retransmit requested packet {4} not in cache. Cache is empty. Race condition threw exception.", session.Network?.ClientId, session.EndPointC2S, session.Account, session.Player?.Name, sequence);
+                    }
                 }
-                catch
-                {
-                    log.Error($"Session {session.Network?.ClientId}\\{session.EndPointC2S} ({session.Account}:{session.Player?.Name}) retransmit requested packet {sequence} not in cache. Cache is empty. Race condition threw exception.");
-                }
+                else
+                    packetLog.DebugFormat("Session {0}\\{1} ({2}:{3}) retransmit requested packet {4} not in cache. Cache is empty.", session.Network?.ClientId, session.EndPointC2S, session.Account, session.Player?.Name, sequence);
             }
-            else
-                log.Error($"Session {session.Network?.ClientId}\\{session.EndPointC2S} ({session.Account}:{session.Player?.Name}) retransmit requested packet {sequence} not in cache. Cache is empty.");
 
             return false;
         }
@@ -705,68 +685,24 @@ namespace ACE.Server.Network
             }
         }
 
-        private void SendPacket(ServerPacket packet)
+        protected void SendPacket(ServerPacket packet)
         {
-            packetLog.DebugFormat("[{0}] Sending packet {1}", session.LoggingIdentifier, packet.GetHashCode());
+            if (packetLog.IsDebugEnabled)
+                packetLog.DebugFormat("[{0}] Sending packet {1}", session.LoggingIdentifier, packet.GetHashCode());
             NetworkStatistics.S2C_Packets_Aggregate_Increment();
 
             if (packet.Header.HasFlag(PacketHeaderFlags.EncryptedChecksum))
             {
                 uint issacXor = ConnectionData.IssacServer.Next();
-                packetLog.DebugFormat("[{0}] Setting Issac for packet {1} to {2}", session.LoggingIdentifier, packet.GetHashCode(), issacXor);
+                if (packetLog.IsDebugEnabled)
+                    packetLog.DebugFormat("[{0}] Setting Issac for packet {1} to {2}", session.LoggingIdentifier, packet.GetHashCode(), issacXor);
                 packet.IssacXor = issacXor;
             }
 
             SendPacketRaw(packet);
         }
 
-        private void SendPacketRaw(ServerPacket packet)
-        {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent((int)(PacketHeader.HeaderSize + (packet.Data?.Length ?? 0) + (packet.Fragments.Count * PacketFragment.MaxFragementSize)));
-
-            try
-            {
-                // On connection to server, client expects response on the connection it initiated, once that occurs, the client connects to the +1 port and then the server transmits on that connection, while the client continues to transmit on the initial port.
-                var socket = (session.EndPointS2C is null) ? connectionC2S.Socket : connectionS2C.Socket;
-                var endPoint = (session.EndPointS2C is null) ? session.EndPointC2S : session.EndPointS2C;
-
-                packet.CreateReadyToSendPacket(buffer, out var size);
-
-                packetLog.Debug(packet.ToString());
-
-                if (packetLog.IsDebugEnabled)
-                {
-                    var listenerEndpoint = (System.Net.IPEndPoint)socket.LocalEndPoint;
-                    var sb = new StringBuilder();
-                    sb.AppendLine(String.Format("[{5}] Sending Packet (Len: {0}) [{1}:{2}=>{3}:{4}]", size, listenerEndpoint.Address, listenerEndpoint.Port, endPoint.Address, endPoint.Port, session.Network.ClientId));
-                    sb.AppendLine(buffer.BuildPacketString(0, size));
-                    packetLog.Debug(sb.ToString());
-                }
-
-                try
-                {
-                    socket.SendTo(buffer, size, SocketFlags.None, endPoint);
-                }
-                catch (SocketException ex)
-                {
-                    // Unhandled Exception: System.Net.Sockets.SocketException: A message sent on a datagram socket was larger than the internal message buffer or some other network limit, or the buffer used to receive a datagram into was smaller than the datagram itself
-                    // at System.Net.Sockets.Socket.UpdateStatusAfterSocketErrorAndThrowException(SocketError error, String callerName)
-                    // at System.Net.Sockets.Socket.SendTo(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, EndPoint remoteEP)
-
-                    var listenerEndpoint = (System.Net.IPEndPoint)socket.LocalEndPoint;
-                    var sb = new StringBuilder();
-                    sb.AppendLine(ex.ToString());
-                    sb.AppendLine(String.Format("[{5}] Sending Packet (Len: {0}) [{1}:{2}=>{3}:{4}]", buffer.Length, listenerEndpoint.Address, listenerEndpoint.Port, endPoint.Address, endPoint.Port, session.Network.ClientId));
-                    log.Error(sb.ToString());
-
-                    session.Terminate(SessionTerminationReason.SendToSocketException, null, null, ex.Message);
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer, true);
-            }
-        }
+        protected abstract void SendPacketRaw(ServerPacket packet);
 
         /// <summary>
         /// This function handles turning a bundle of messages (representing all messages accrued in a timeslice),
@@ -918,7 +854,21 @@ namespace ACE.Server.Network
         }
 
 
-        private bool isReleased;
+        public NetworkSessionBase(ISession session, ushort clientId, ushort serverId)
+        {
+            this.session = session;
+            ClientId = clientId;
+            ServerId = serverId;
+
+            // New network auth session timeouts will always be low.
+            TimeoutTick = DateTime.UtcNow.AddSeconds(AuthenticationHandler.DefaultAuthTimeout).Ticks;
+
+            for (int i = 0; i < currentBundles.Length; i++)
+            {
+                currentBundleLocks[i] = new object();
+                currentBundles[i] = new NetworkBundle();
+            }
+        }
 
         /// <summary>
         /// This will empty out arrays, collections and dictionaries, and mark the object as released.
@@ -940,6 +890,119 @@ namespace ACE.Server.Network
             packetQueue.Clear();
 
             ConnectionData.CryptoClient.ReleaseResources();
+        }
+    }
+
+    public class NetworkSession : NetworkSessionBase
+    {
+        private readonly ConnectionListener connectionC2S; // This is the connection the client transmits on. In retail this would be port 9000 for GLS; For world servers, examples would be port 9002 / 9004 / 9006 / 9008.
+        private readonly ConnectionListener connectionS2C; // This is the connection the server transmits on. In retail this would be port 9001 for GLS; For world servers, examples would be port 9003 / 9005 / 9007 / 9009.
+
+        public NetworkSession(ISession session, ConnectionListener connectionListener, ushort clientId, ushort serverId)
+            : base(session, clientId, serverId)
+        {
+            connectionC2S = connectionListener;
+            connectionS2C = SocketManager.GetMatchedConnectionListener(connectionC2S);
+        }
+
+        /// <summary>
+        /// Enequeues a GameMessage for sending to this client.
+        /// This may be called from many threads.
+        /// </summary>
+        /// <param name="messages">One or more GameMessages to send</param>
+        public override void EnqueueSend(params GameMessage[] messages)
+        {
+            if (isReleased) // Session has been removed
+                return;
+
+            foreach (var message in messages)
+            {
+                if (message is TraceMessage)
+                    continue;
+                var grp = message.Group;
+                var currentBundleLock = currentBundleLocks[(int)grp];
+                lock (currentBundleLock)
+                {
+                    var currentBundle = currentBundles[(int)grp];
+                    currentBundle.EncryptedChecksum = true;
+                    packetLog.DebugFormat("[{0}] Enqueuing Message {1}", session.LoggingIdentifier, message.Opcode);
+                    currentBundle.Enqueue(message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Enequeues a GameMessage for sending to this client.
+        /// This may be called from many threads.
+        /// </summary>
+        /// <param name="messages">One or more GameMessages to send</param>
+        public override void EnqueueSend(IEnumerable<GameMessage> messages)
+        {
+            if (isReleased) // Session has been removed
+                return;
+
+            foreach (var message in messages)
+            {
+                if (message is TraceMessage)
+                    continue;
+                var grp = message.Group;
+                var currentBundleLock = currentBundleLocks[(int)grp];
+                lock (currentBundleLock)
+                {
+                    var currentBundle = currentBundles[(int)grp];
+                    currentBundle.EncryptedChecksum = true;
+                    packetLog.DebugFormat("[{0}] Enqueuing Message {1}", session.LoggingIdentifier, message.Opcode);
+                    currentBundle.Enqueue(message);
+                }
+            }
+        }
+
+        protected override void SendPacketRaw(ServerPacket packet)
+        {
+            byte[] buffer = ArrayPool<byte>.Shared.Rent((int)(PacketHeader.HeaderSize + (packet.Data?.Length ?? 0) + (packet.Fragments.Count * PacketFragment.MaxFragementSize)));
+
+            try
+            {
+                // On connection to server, client expects response on the connection it initiated, once that occurs, the client connects to the +1 port and then the server transmits on that connection, while the client continues to transmit on the initial port.
+                var socket = (session.EndPointS2C is null) ? connectionC2S.Socket : connectionS2C.Socket;
+                var endPoint = (session.EndPointS2C is null) ? session.EndPointC2S : session.EndPointS2C;
+
+                packet.CreateReadyToSendPacket(buffer, out var size);
+
+                packetLog.DebugFormat("{0}", packet);
+
+                if (packetLog.IsDebugEnabled)
+                {
+                    var listenerEndpoint = (System.Net.IPEndPoint)socket.LocalEndPoint;
+                    var sb = new StringBuilder();
+                    sb.AppendLine(String.Format("[{5}] Sending Packet (Len: {0}) [{1}:{2}=>{3}:{4}]", size, listenerEndpoint.Address, listenerEndpoint.Port, endPoint.Address, endPoint.Port, session.Network.ClientId));
+                    sb.AppendLine(buffer.BuildPacketString(0, size));
+                    packetLog.DebugFormat("{0}", sb);
+                }
+
+                try
+                {
+                    socket.SendTo(buffer, size, SocketFlags.None, endPoint);
+                }
+                catch (SocketException ex)
+                {
+                    // Unhandled Exception: System.Net.Sockets.SocketException: A message sent on a datagram socket was larger than the internal message buffer or some other network limit, or the buffer used to receive a datagram into was smaller than the datagram itself
+                    // at System.Net.Sockets.Socket.UpdateStatusAfterSocketErrorAndThrowException(SocketError error, String callerName)
+                    // at System.Net.Sockets.Socket.SendTo(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, EndPoint remoteEP)
+
+                    var listenerEndpoint = (System.Net.IPEndPoint)socket.LocalEndPoint;
+                    var sb = new StringBuilder();
+                    sb.AppendLine(ex.ToString());
+                    sb.AppendLine(String.Format("[{5}] Sending Packet (Len: {0}) [{1}:{2}=>{3}:{4}]", buffer.Length, listenerEndpoint.Address, listenerEndpoint.Port, endPoint.Address, endPoint.Port, session.Network.ClientId));
+                    log.Error(sb.ToString());
+
+                    session.Terminate(SessionTerminationReason.SendToSocketException, null, null, ex.Message);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer, true);
+            }
         }
     }
 }

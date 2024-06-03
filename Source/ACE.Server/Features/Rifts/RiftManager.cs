@@ -185,7 +185,7 @@ namespace ACE.Server.Features.Rifts
         {
             var rules = new List<Realm>()
             {
-                RealmManager.GetRealm(1016).Realm // rift ruleset
+                RealmManager.GetRealm(1016, includeRulesets: true).Realm // rift ruleset
             };
             var ephemeralRealm = RealmManager.GetNewEphemeralLandblock(realmId, dungeon.DropPosition.LandblockId, rules, true);
 

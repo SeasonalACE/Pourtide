@@ -42,7 +42,7 @@ namespace ACE.Server.WorldObjects
 
         public Character Character { get; }
 
-        public Session Session { get; }
+        public ISession Session { get; }
 
         public ContractManager ContractManager;
 
@@ -136,7 +136,7 @@ namespace ACE.Server.WorldObjects
         /// <summary>
         /// Restore a WorldObject from the database.
         /// </summary>
-        public Player(Biota biota, IEnumerable<ACE.Database.Models.Shard.Biota> inventory, IEnumerable<ACE.Database.Models.Shard.Biota> wieldedItems, Character character, Session session) : base(biota)
+        public Player(Biota biota, IEnumerable<ACE.Database.Models.Shard.Biota> inventory, IEnumerable<ACE.Database.Models.Shard.Biota> wieldedItems, Character character, ISession session) : base(biota)
         {
             Character = character;
             Session = session;
@@ -312,7 +312,7 @@ namespace ACE.Server.WorldObjects
 
             if (wo == null)
             {
-                //log.Debug($"{Name}.HandleActionIdentifyObject({objectGuid:X8}): couldn't find object");
+                //log.DebugFormat("{0}.HandleActionIdentifyObject({1:X16}): couldn't find object", Name, objectGuid);
                 Session.Network.EnqueueSend(new GameEventIdentifyObjectResponse(Session, objectGuid.ClientGUID));
                 return;
             }
@@ -603,7 +603,7 @@ namespace ACE.Server.WorldObjects
                 log.Error(ex.Message);
                 log.Error(System.Environment.StackTrace);
 
-                CustomCommands.HandleForceLogoffStuckCharacter(Session, Name);
+                ACRealmsCommands.HandleForceLogoffStuckCharacter(Session, Name);
                 return false;
             }
 
@@ -811,7 +811,7 @@ namespace ACE.Server.WorldObjects
             SavePlayerToDatabase();
             PlayerManager.SwitchPlayerFromOnlineToOffline(this);
 
-            log.Debug($"[LOGOUT] Account {Account.AccountName} exited the world with character {Name} (0x{Guid}) at {DateTime.Now}.");
+            log.DebugFormat("[LOGOUT] Account {0} exited the world with character {1} (0x{2}) at {3}.", Account.AccountName, Name, Guid, DateTime.Now);
         }
 
         public void HandleMRT()
@@ -851,7 +851,7 @@ namespace ACE.Server.WorldObjects
             var wo = FindObject(itemGuid, SearchLocations.Everywhere);
             if (wo == null)
             {
-                //log.Debug($"HandleActionForceObjDescSend() - couldn't find object {itemGuid:X8}");
+                //log.DebugFormat("HandleActionForceObjDescSend() - couldn't find object {0:X16}", itemGuid);
                 return;
             }
             Session.Network.EnqueueSend(new GameMessageObjDescEvent(wo));

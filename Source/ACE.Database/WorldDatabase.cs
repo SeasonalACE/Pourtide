@@ -40,7 +40,7 @@ namespace ACE.Database
                 {
                     if (((RelationalDatabaseCreator)context.Database.GetService<IDatabaseCreator>()).Exists())
                     {
-                        log.Debug($"[DATABASE] Successfully connected to {config.Database} database on {config.Host}:{config.Port}.");
+                        log.DebugFormat("[DATABASE] Successfully connected to {0} database on {1}:{2}.", config.Database, config.Host, config.Port);
                         return true;
                     }
                 }
@@ -614,13 +614,13 @@ namespace ACE.Database
             }
         }
 
-        public virtual Realm GetRealm(uint id)
+        public virtual Realm GetRealm(ushort id)
         {
             using (var context = ContextFactory.CreateDbContext())
                 return GetRealm(context, id);
         }
 
-        private Realm GetRealm(WorldDbContext context, uint id)
+        private Realm GetRealm(WorldDbContext context, ushort id)
         {
             var realm = context.Realm
                 .FirstOrDefault(r => r.Id == id);

@@ -5,8 +5,8 @@ namespace ACE.Server.Network.GameEvent.Events
     /// </summary>
     public class GameEventMagicPurgeEnchantments : GameEventMessage
     {
-        public GameEventMagicPurgeEnchantments(Session session)
-            : base(GameEventType.MagicPurgeEnchantments, GameMessageGroup.UIQueue, session)
+        public GameEventMagicPurgeEnchantments(ISession session)
+            : base(GameEventType.MagicPurgeEnchantments, GameMessageGroup.UIQueue, session, 4)
         {
             // nothing else to send here
         }

@@ -10,14 +10,14 @@ namespace ACE.Server.Network.GameEvent.Events
     /// </summary>
     public class GameEventMagicDispelMultipleEnchantments : GameEventMessage
     {
-        public GameEventMagicDispelMultipleEnchantments(Session session, List<LayeredSpell> spells)
-            : base(GameEventType.MagicDispelMultipleEnchantments, GameMessageGroup.UIQueue, session)
+        public GameEventMagicDispelMultipleEnchantments(ISession session, List<LayeredSpell> spells)
+            : base(GameEventType.MagicDispelMultipleEnchantments, GameMessageGroup.UIQueue, session, 204) // 204 is the max seen in retail pcaps
         {
             Writer.Write(spells);
         }
 
-        public GameEventMagicDispelMultipleEnchantments(Session session, List<PropertiesEnchantmentRegistry> enchantments)
-            : base(GameEventType.MagicDispelMultipleEnchantments, GameMessageGroup.UIQueue, session)
+        public GameEventMagicDispelMultipleEnchantments(ISession session, List<PropertiesEnchantmentRegistry> enchantments)
+            : base(GameEventType.MagicDispelMultipleEnchantments, GameMessageGroup.UIQueue, session, 204) // 204 is the max seen in retail pcaps
         {
             Writer.Write(enchantments);
         }

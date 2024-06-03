@@ -21,15 +21,55 @@ using ACE.Server.Network.Managers;
 
 namespace ACE.Server.Network
 {
-    public class Session
+    public interface ISession
     {
-        private static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        AccessLevel AccessLevel { get; }
+        string Account { get; }
+        uint AccountId { get; }
+        string BootSessionReason { get; }
+        List<Character> Characters { get; }
+        IPEndPoint EndPointC2S { get; }
+        IPEndPoint EndPointS2C { get; }
+        uint GameEventSequence { get; set; }
+        DateTime LastPassTime { get; set; }
+        string LoggingIdentifier { get; }
+        INetworkSession Network { get; set; }
+        SessionTerminationDetails PendingTermination { get; set; }
+        Player Player { get; }
+        SessionState State { get; set; }
+        public bool DatWarnCell { get; set; }
+        public bool DatWarnPortal { get; set; }
+        public bool DatWarnLanguage { get; set; }
+        public DateTime logOffRequestTime { get; set; }
+        public DateTime lastCharacterSelectPingReply { get; set; }
+        public bool BeginDDDSent { get; set; }
+        public DateTime BeginDDDSentTime { get; set; }
+
+        bool AddToDDDQueue(uint datFileId, DatDatabaseType datDatabaseType);
+        void CheckCharactersForDeletion();
+        void DropSession();
+        void InitSessionForWorldLogin();
+        void LogOffPlayer(bool forceImmediate = false);
+        void ProcessPacket(ClientPacket packet);
+        void SendCharacterError(CharacterError error);
+        void SetAccessLevel(AccessLevel accountAccesslevel);
+        void SetAccount(uint accountId, string account, AccessLevel accountAccesslevel);
+        void SetPlayer(Player player);
+        void SetS2CEndpoint(IPEndPoint endPoint);
+        void Terminate(SessionTerminationReason reason, GameMessage message = null, ServerPacket packet = null, string extraReason = "");
+        void TickOutbound();
+        void UpdateCharacters(IEnumerable<Character> characters);
+        void WorldBroadcast(string broadcastMessage);
+    }
+
+    public abstract class SessionBase : ISession
+    {
+        protected static readonly ILog log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public IPEndPoint EndPointC2S { get; }
+        public abstract IPEndPoint EndPointS2C { get; protected set; }
 
-        public IPEndPoint EndPointS2C { get; private set; }
-
-        public NetworkSession Network { get; set; }
+        public INetworkSession Network { get; set; }
 
         public uint GameEventSequence { get; set; }
 
@@ -49,26 +89,26 @@ namespace ACE.Server.Network
         public Player Player { get; private set; }
 
 
-        public DateTime logOffRequestTime;
+        public DateTime logOffRequestTime { get; set; }
 
-        public DateTime lastCharacterSelectPingReply;
+        public DateTime lastCharacterSelectPingReply { get; set; }
 
         public SessionTerminationDetails PendingTermination { get; set; } = null;
 
         public string BootSessionReason { get; private set; }
 
-        public bool DatWarnCell;
-        public bool DatWarnPortal;
-        public bool DatWarnLanguage;
+        public bool DatWarnCell { get; set; }
+        public bool DatWarnPortal { get; set; }
+        public bool DatWarnLanguage { get; set; }
 
         /// <summary>
         /// This boolean is set to true if GameMessageDDDBeginDDD is sent to the client. Used to determine when response is needed for DDD_EndDDD
         /// </summary>
-        public bool BeginDDDSent;
+        public bool BeginDDDSent { get; set; }
         /// <summary>
         /// The time at which the BeginDDD message was sent to the client. Used to determine when to start processing dddDataQueue initially.
         /// </summary>
-        public DateTime BeginDDDSentTime;
+        public DateTime BeginDDDSentTime { get; set; }
         /// <summary>
         /// Queue for data files missing at time of connection (Portal/Cell/Language DAT), and data files requested by client (Cell DAT)
         /// </summary>
@@ -78,17 +118,15 @@ namespace ACE.Server.Network
         /// </summary>
         private static readonly RateLimiter dddDataQueueRateLimiter = new RateLimiter(1000, TimeSpan.FromMinutes(1));
 
+        public SessionBase(IPEndPoint endPoint)
+        {
+            EndPointC2S = endPoint;
+        }
+
         /// <summary>
         /// Rate limiter for /passwd command
         /// </summary>
         public DateTime LastPassTime { get; set; }
-
-        public Session(ConnectionListener connectionListener, IPEndPoint endPoint, ushort clientId, ushort serverId)
-        {
-            EndPointC2S = endPoint;
-            Network = new NetworkSession(this, connectionListener, clientId, serverId);
-        }
-
 
         private bool CheckState(ClientPacket packet)
         {
@@ -118,55 +156,62 @@ namespace ACE.Server.Network
         /// </summary>
         public void TickOutbound()
         {
-            // Check if the player has been booted
-            if (PendingTermination != null)
+            try
             {
-                if (PendingTermination.TerminationStatus == SessionTerminationPhase.Initialized)
+                // Check if the player has been booted
+                if (PendingTermination != null)
                 {
-                    State = SessionState.TerminationStarted;
-                    Network.Update(); // boot messages may need sending
-                    if (DateTime.UtcNow.Ticks > PendingTermination.TerminationEndTicks)
-                        PendingTermination.TerminationStatus = SessionTerminationPhase.SessionWorkCompleted;
+                    if (PendingTermination.TerminationStatus == SessionTerminationPhase.Initialized)
+                    {
+                        State = SessionState.TerminationStarted;
+                        Network.Update(); // boot messages may need sending
+                        if (DateTime.UtcNow.Ticks > PendingTermination.TerminationEndTicks)
+                            PendingTermination.TerminationStatus = SessionTerminationPhase.SessionWorkCompleted;
+                    }
+                    return;
                 }
-                return;
-            }
 
-            if (State == SessionState.TerminationStarted)
-                return;
+                if (State == SessionState.TerminationStarted)
+                    return;
 
-            // Checks if the session has stopped responding.
-            if (DateTime.UtcNow.Ticks >= Network.TimeoutTick)
-            {
-                // The Session has reached a timeout.  Send the client the error disconnect signal, and then drop the session
-                Terminate(SessionTerminationReason.NetworkTimeout);
-                return;
-            }
-
-            Network.Update();
-
-            // Live server seemed to take about 6 seconds. 4 seconds is nice because it has smooth animation, and saves the user 2 seconds every logoff
-            // This could be made 0 for instant logoffs.
-            if (logOffRequestTime != DateTime.MinValue && logOffRequestTime.AddSeconds(6) <= DateTime.UtcNow)
-                SendFinalLogOffMessages();
-
-            // This section deviates from known retail pcaps/behavior, but appears to be the least harmful way to work around something that seemingly didn't occur to players using ThwargLauncher connecting to retail servers.
-            // In order to prevent the launcher from thinking the session is dead, we will send a Ping Response every 100 seconds, this will in effect make the client appear active to the launcher and allow players to create characters in peace.
-            if (State == SessionState.AuthConnected) // TODO: why is this needed? Why didn't retail have this problem? Is this fuzzy memory?
-            {
-                if (lastCharacterSelectPingReply == DateTime.MinValue)
-                    lastCharacterSelectPingReply = DateTime.UtcNow.AddSeconds(100);
-                else if (DateTime.UtcNow > lastCharacterSelectPingReply)
+                // Checks if the session has stopped responding.
+                if (DateTime.UtcNow.Ticks >= Network.TimeoutTick)
                 {
-                    Network.EnqueueSend(new GameEventPingResponse(this));
-                    lastCharacterSelectPingReply = DateTime.UtcNow.AddSeconds(100);
+                    // The Session has reached a timeout.  Send the client the error disconnect signal, and then drop the session
+                    Terminate(SessionTerminationReason.NetworkTimeout);
+                    return;
                 }
-            }
-            else if (lastCharacterSelectPingReply != DateTime.MinValue)
-                lastCharacterSelectPingReply = DateTime.MinValue;
 
-            ProcessDDDQueue();
+                Network.Update();
+
+                // Live server seemed to take about 6 seconds. 4 seconds is nice because it has smooth animation, and saves the user 2 seconds every logoff
+                // This could be made 0 for instant logoffs.
+                if (logOffRequestTime != DateTime.MinValue && logOffRequestTime.AddSeconds(6) <= DateTime.UtcNow)
+                    SendFinalLogOffMessages();
+
+                // This section deviates from known retail pcaps/behavior, but appears to be the least harmful way to work around something that seemingly didn't occur to players using ThwargLauncher connecting to retail servers.
+                // In order to prevent the launcher from thinking the session is dead, we will send a Ping Response every 100 seconds, this will in effect make the client appear active to the launcher and allow players to create characters in peace.
+                if (State == SessionState.AuthConnected) // TODO: why is this needed? Why didn't retail have this problem? Is this fuzzy memory?
+                {
+                    if (lastCharacterSelectPingReply == DateTime.MinValue)
+                        lastCharacterSelectPingReply = DateTime.UtcNow.AddSeconds(100);
+                    else if (DateTime.UtcNow > lastCharacterSelectPingReply)
+                    {
+                        Network.EnqueueSend(new GameEventPingResponse(this));
+                        lastCharacterSelectPingReply = DateTime.UtcNow.AddSeconds(100);
+                    }
+                }
+                else if (lastCharacterSelectPingReply != DateTime.MinValue)
+                    lastCharacterSelectPingReply = DateTime.MinValue;
+
+                ProcessDDDQueue();
+            }
+            catch (Exception ex)
+            {
+                log.ErrorFormat("Session TickOutbound {0} that threw an exception.", EndPointC2S);
+                log.Error(ex);
+            }
         }
-
 
         public void SetAccount(uint accountId, string account, AccessLevel accountAccesslevel)
         {
@@ -304,7 +349,7 @@ namespace ACE.Server.Network
                 if (WorldManager.WorldStatus == WorldManager.WorldStatusState.Open)
                     log.Info($"Session {Network?.ClientId}\\{EndPointC2S} dropped. Account: {Account}, Player: {Player?.Name}{reas}");
                 else
-                    log.Debug($"Session {Network?.ClientId}\\{EndPointC2S} dropped. Account: {Account}, Player: {Player?.Name}{reas}");
+                    log.DebugFormat("Session {0}\\{1} dropped. Account: {2}, Player: {3}{4}", Network?.ClientId, EndPointC2S, Account, Player?.Name, reas);
             }
 
             if (Player != null)
@@ -317,7 +362,7 @@ namespace ACE.Server.Network
                 // At this point, if the player was on a landblock, they'll still exist on that landblock until the logout animation completes (~6s).
             }
 
-            NetworkManager.RemoveSession(this);
+            NetworkManager.Instance.RemoveSession(this);
 
             // This is a temp fix to mark the Session.Network portion of the Session as released
             // What this means is that we will release any network related resources, as well as avoid taking on additional resources
@@ -345,7 +390,7 @@ namespace ACE.Server.Network
         {
             EndPointS2C = endPoint;
         }
-      
+
         /// <summary>
         /// This will enqueue a file to be sent by ProcessDDDQueue.
         /// </summary>
@@ -385,6 +430,17 @@ namespace ACE.Server.Network
                 Network.EnqueueSend(new GameMessageDDDDataMessage(dataFile.DatFileId, dataFile.DatDatabaseType));
                 dddDataQueueRateLimiter.RegisterEvent();
             }
+        }
+    }
+
+    public class Session : SessionBase, ISession
+    {
+        public override IPEndPoint EndPointS2C { get; protected set; }
+
+        public Session(ConnectionListener connectionListener, IPEndPoint endPoint, ushort clientId, ushort serverId)
+            : base(endPoint)
+        {
+            Network = new NetworkSession(this, connectionListener, clientId, serverId);
         }
     }
 }

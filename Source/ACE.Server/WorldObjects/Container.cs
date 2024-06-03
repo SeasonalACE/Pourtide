@@ -808,7 +808,7 @@ namespace ACE.Server.WorldObjects
             foreach (var container in Inventory.Values.Where(i => i is Container))
                 player.Session.Network.EnqueueSend(new GameEventViewContents(player.Session, (Container)container));
 
-            player.Session.Network.EnqueueSend(itemsToSend.ToArray());
+            player.Session.Network.EnqueueSend(itemsToSend);
         }
 
         private void SendDeletesForMyInventory(Player player)
@@ -828,7 +828,7 @@ namespace ACE.Server.WorldObjects
                 }
             }
 
-            player.Session.Network.EnqueueSend(itemsToSend.ToArray());
+            player.Session.Network.EnqueueSend(itemsToSend);
         }
 
         public virtual void Close(Player player)

@@ -26,7 +26,7 @@ namespace ACE.Server.Command.Handlers
         [CommandHandler("pop", AccessLevel.Player, CommandHandlerFlag.None, 0,
             "Show current world population",
             "")]
-        public static void HandlePop(Session session, params string[] parameters)
+        public static void HandlePop(ISession session, params string[] parameters)
         {
             if (session != null)
             {
@@ -41,7 +41,7 @@ namespace ACE.Server.Command.Handlers
 
         // quest info (uses GDLe formatting to match plugin expectations)
         [CommandHandler("myquests", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Shows your quest log")]
-        public static void HandleQuests(Session session, params string[] parameters)
+        public static void HandleQuests(ISession session, params string[] parameters)
         {
             if (!PropertyManager.GetBool("quest_info_enabled").Item)
             {
@@ -83,12 +83,12 @@ namespace ACE.Server.Command.Handlers
         /// For characters/accounts who currently own multiple houses, used to select which house they want to keep
         /// </summary>
         [CommandHandler("house-select", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 1, "For characters/accounts who currently own multiple houses, used to select which house they want to keep")]
-        public static void HandleHouseSelect(Session session, params string[] parameters)
+        public static void HandleHouseSelect(ISession session, params string[] parameters)
         {
             HandleHouseSelect(session, false, parameters);
         }
 
-        public static void HandleHouseSelect(Session session, bool confirmed, params string[] parameters)
+        public static void HandleHouseSelect(ISession session, bool confirmed, params string[] parameters)
         {
             if (!int.TryParse(parameters[0], out var houseIdx))
                 return;
@@ -157,7 +157,7 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("debugcast", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Shows debug information about the current magic casting state")]
-        public static void HandleDebugCast(Session session, params string[] parameters)
+        public static void HandleDebugCast(ISession session, params string[] parameters)
         {
             var physicsObj = session.Player.PhysicsObj;
 
@@ -171,7 +171,7 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("fixcast", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Fixes magic casting if locked up for an extended time")]
-        public static void HandleFixCast(Session session, params string[] parameters)
+        public static void HandleFixCast(ISession session, params string[] parameters)
         {
             var magicState = session.Player.MagicState;
 
@@ -184,7 +184,7 @@ namespace ACE.Server.Command.Handlers
         }
 
         [CommandHandler("castmeter", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Shows the fast casting efficiency meter")]
-        public static void HandleCastMeter(Session session, params string[] parameters)
+        public static void HandleCastMeter(ISession session, params string[] parameters)
         {
             if (parameters.Length == 0)
             {
@@ -285,7 +285,7 @@ namespace ACE.Server.Command.Handlers
         /// Manually sets a character option on the server. Use /config list to see a list of settings.
         /// </summary>
         [CommandHandler("config", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 1, "Manually sets a character option on the server.\nUse /config list to see a list of settings.", "<setting> <on/off>")]
-        public static void HandleConfig(Session session, params string[] parameters)
+        public static void HandleConfig(ISession session, params string[] parameters)
         {
             if (!PropertyManager.GetBool("player_config_command").Item)
             {
@@ -346,7 +346,7 @@ namespace ACE.Server.Command.Handlers
         /// Can only be used once every 5 mins max.
         /// </summary>
         [CommandHandler("objsend", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Force resend of all visible objects known to this player. Can fix rare cases of invisible object bugs. Can only be used once every 5 mins max.")]
-        public static void HandleObjSend(Session session, params string[] parameters)
+        public static void HandleObjSend(ISession session, params string[] parameters)
         {
             // a good repro spot for this is the first room after the door in facility hub
             // in the portal drop / staircase room, the VisibleCells do not have the room after the door
@@ -376,7 +376,7 @@ namespace ACE.Server.Command.Handlers
 
         // show player ace server versions
         [CommandHandler("aceversion", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, "Shows this server's version data")]
-        public static void HandleACEversion(Session session, params string[] parameters)
+        public static void HandleACEversion(ISession session, params string[] parameters)
         {
             if (!PropertyManager.GetBool("version_info_enabled").Item)
             {
@@ -413,7 +413,7 @@ namespace ACE.Server.Command.Handlers
             "/reportbug recipe I cannot combine Bundle of Arrowheads with Bundle of Arrowshafts\n" +
             "/reportbug code I was killed by a Non-Player Killer\n"
             )]
-        public static void HandleReportbug(Session session, params string[] parameters)
+        public static void HandleReportbug(ISession session, params string[] parameters)
         {
             if (!PropertyManager.GetBool("reportbug_enabled").Item)
             {
