@@ -421,6 +421,8 @@ namespace ACE.Server.WorldObjects
         /// <returns>TRUE if object moves to a different landblock</returns>
         public bool UpdatePlayerPosition(InstancedPosition newPosition, bool forceUpdate = false)
         {
+
+
             //Console.WriteLine($"{Name}.UpdatePlayerPhysics({newPosition}, {forceUpdate}, {Teleporting})");
             bool verifyContact = false;
 
@@ -517,6 +519,9 @@ namespace ACE.Server.WorldObjects
                 var landblockUpdate = Location.Cell >> 16 != newPosition.Cell >> 16;
 
                 Location = newPosition;
+
+                if (!newPosition.Indoors)
+                    LastOutdoorPosition = Location;
 
                 if (RecordCast.Enabled)
                     RecordCast.Log($"CurPos: {Location.ToLOCString()}");

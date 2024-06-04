@@ -41,6 +41,8 @@ namespace ACE.Server.WorldObjects
         {
             get { return new LocalPosition(0x7308001Fu, 80f, 163.4f, 12.004999f, 0f, 0f, 0.4475889f, 0.8942394f); }
         }
+
+        public InstancedPosition LastOutdoorPosition = null;
         
         public bool DebugLoc { get; set; }
 

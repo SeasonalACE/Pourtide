@@ -17,6 +17,7 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
 using ACE.Server.Factories.Tables;
 using ACE.Server.Features.HotDungeons.Managers;
+using ACE.Server.Features.Rifts;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
@@ -3229,12 +3230,12 @@ namespace ACE.Server.WorldObjects
 
             if (target.WeenieClassId == 3000381 && item.WeenieClassId == 2626)
             {
-                if (DateTime.UtcNow - PlayerBountySearchTimestamp < TimeSpan.FromMinutes(1))
+                /*if (DateTime.UtcNow - PlayerBountySearchTimestamp < TimeSpan.FromSeconds(5))
                 {
                     Session.Network.EnqueueSend(new GameEventCommunicationTransientString(Session, $"Bounty information is only available once every minute, try again in {Formatting.FormatTimeRemaining(PlayerBountySearchTimestamp.AddMinutes(1) - DateTime.UtcNow)}!"));
                     Session.Network.EnqueueSend(new GameEventInventoryServerSaveFailed(Session, itemGuid));
                     return;
-                }
+                }*/
             }
 
             CreateMoveToChain(target, (success) =>
@@ -3397,11 +3398,11 @@ namespace ACE.Server.WorldObjects
         {
             try
             {
-                if (DateTime.UtcNow - currentPlayer.PlayerBountySearchTimestamp <= TimeSpan.FromMinutes(1))
+                /*if (DateTime.UtcNow - currentPlayer.PlayerBountySearchTimestamp <= TimeSpan.FromSeconds(5))
                 {
                     currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"I only give bounty information once every minute, try again in {Formatting.FormatTimeRemaining(currentPlayer.PlayerBountySearchTimestamp.AddMinutes(1) - DateTime.UtcNow)}!.\"", ChatMessageType.Tell));
                     return false;
-                }
+                }*/
 
                 currentPlayer.PlayerBountySearchTimestamp = DateTime.UtcNow;
 
@@ -3429,10 +3430,9 @@ namespace ACE.Server.WorldObjects
                 {
                     var players = PlayerManager.GetEnemyOnlinePlayers(currentPlayer).Where(p =>
                                  p.Guid.Full != currentPlayer.Guid.Full &&
-                                 !(p is Admin) &&
+                                 (PropertyManager.GetBool("test_server").Item || !(p is Admin)) &&
                                  !p.IsLoggingOut &&
-                                 p.IsPK &&
-                                 !HouseManager.ValidatePourHousing(p.Location.LandblockId.Landblock)).ToList();
+                                 p.IsPK).ToList();
 
                     if (players.Count <= 0)
                     {
@@ -3451,11 +3451,23 @@ namespace ACE.Server.WorldObjects
                     return false;
                 }
 
+                if (bountyPlayer.PhysicsObj == null)
+                {
+                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"A bounty for {bountyPlayer.Name} was found but may be stuck in game.\"", ChatMessageType.Tell));
+                    return false;
+                }
+
                 var coords = bountyPlayer.Location.GetMapCoordStr();
 
-                if (DungeonManager.TryGetDungeonLandblock(bountyPlayer.Location.LandblockHex, out DungeonLandblock landblock))
+
+                if (RiftManager.TryGetActiveRift(bountyPlayer.Location.Instance, out Rift activeRift))
                 {
-                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Tell));
+                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at rift {activeRift.Name} - {activeRift.Coords}.\"", ChatMessageType.Tell));
+                    currentPlayer.BountyGuid = (int?)bountyPlayer.Guid.Full;
+                }
+                else if (DungeonManager.TryGetDungeonLandblock(bountyPlayer.Location.LandblockHex, out DungeonLandblock landblock))
+                {
+                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at dungeon {landblock.Name} - {landblock.Coords}.\"", ChatMessageType.Tell));
                     currentPlayer.BountyGuid = (int?)bountyPlayer.Guid.Full;
                 }
                 else if (coords != null && coords.Length > 0)
@@ -3463,12 +3475,17 @@ namespace ACE.Server.WorldObjects
                     currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} was last seen at {bountyPlayer.Location.GetMapCoordStr()}.\"", ChatMessageType.Tell));
                     currentPlayer.BountyGuid = (int?)bountyPlayer.Guid.Full;
                 }
+                else if (bountyPlayer.LastOutdoorPosition != null)
+                {
+                    currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Player {bountyPlayer.Name} is in an unknown dungeon landblock ({bountyPlayer.Location.LandblockHex}) and was last seen outdoors near {bountyPlayer.LastOutdoorPosition.GetMapCoordStr()}.\"", ChatMessageType.Tell));
+                    currentPlayer.BountyGuid = (int?)bountyPlayer.Guid.Full;
+                }
                 else
                 {
                     if (getCached)
                         currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Sorry, I could not find your bounty {bountyPlayer?.Name} at this time ... Try again later.\"", ChatMessageType.Tell));
                     else 
-                        currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Sorry, I could not find you a bounty ... Try again later.\"", ChatMessageType.Tell));
+                        currentPlayer.Session.Network.EnqueueSend(new GameMessageSystemChat($"{collector.Name} tells you, \"Sorry, a bounty was found for {bountyPlayer?.Name} but they are in an unknown location  ... Try again later.\"", ChatMessageType.Tell));
 
                     return false;
                 }
