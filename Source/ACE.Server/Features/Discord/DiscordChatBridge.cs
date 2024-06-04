@@ -153,7 +153,7 @@ namespace ACE.Server.Features.Discord
                                 return Task.CompletedTask;
 
                             case "pop":
-                                SendMessage(message.Channel.Id, $"Current world population: {PlayerManager.GetOnlineCount():N0}");
+                                SendMessage(message.Channel.Id, $"Current world population: {PlayerManager.GetOnlineCount(RealmManager.CurrentSeason.Realm.Id):N0}");
                                 return Task.CompletedTask;
                         }
                     }

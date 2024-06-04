@@ -311,7 +311,8 @@ namespace ACE.Server.Command.Handlers
             message.Append("<Showing Top 10 Kills Leaderboard>\n");
             message.Append("-----------------------\n");
 
-            var players = DatabaseManager.Shard.BaseDatabase.GetTopTenPlayersWithMostKills();
+            var homeRealm = session?.Player.HomeRealm != null ? (ushort)session.Player.HomeRealm : RealmManager.CurrentSeason.Realm.Id;
+            var players = DatabaseManager.Shard.BaseDatabase.GetTopTenPlayersWithMostKills(homeRealm);
 
             for (var i = 0; i < players.Count; i++)
             {
@@ -403,7 +404,8 @@ namespace ACE.Server.Command.Handlers
             message.Append("-----------------------\n");
 
 
-            var players = DatabaseManager.Shard.BaseDatabase.GetPlayerWithMostDeaths();
+            var homeRealm = session?.Player.HomeRealm != null ? (ushort)session.Player.HomeRealm : RealmManager.CurrentSeason.Realm.Id;
+            var players = DatabaseManager.Shard.BaseDatabase.GetPlayerWithMostDeaths(homeRealm);
 
             for (var i = 0; i < players.Count; i++)
             {
@@ -446,7 +448,10 @@ namespace ACE.Server.Command.Handlers
             message.Append("-----------------------\n");
 
             var players = PlayerManager.GetAllPlayers()
-                .Where(player => player.Account.AccessLevel == (uint)AccessLevel.Player)
+                .Where(player => {
+                    var homeRealm = player.GetProperty(PropertyInt.HomeRealm);
+                    return player.Account.AccessLevel == (uint)AccessLevel.Player && homeRealm != null && (ushort)homeRealm == RealmManager.CurrentSeason.Realm.Id;
+                })
                 .OrderByDescending(player => player.Level)
                 .Take(10)
                 .ToList();

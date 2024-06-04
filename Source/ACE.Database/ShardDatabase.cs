@@ -1074,11 +1074,12 @@ namespace ACE.Database
             public int Level { get; set; }
         }
 
-        public List<(uint PlayerId, int DeathCount)> GetPlayerWithMostDeaths()
+        public List<(uint PlayerId, int DeathCount)> GetPlayerWithMostDeaths(ushort realmId)
         {
             using (var context = new ShardDbContext())
             {
                 var topTenPlayers = context.PKStatsKills
+                    .Where(stats => stats.HomeRealmId == realmId)
                     .GroupBy(kill => kill.VictimId)
                     .Select(group => new
                     {
@@ -1093,11 +1094,12 @@ namespace ACE.Database
             }
         }
 
-        public List<(uint PlayerId, int KillCount)> GetTopTenPlayersWithMostKills()
+        public List<(uint PlayerId, int KillCount)> GetTopTenPlayersWithMostKills(ushort realmId)
         {
             using (var context = new ShardDbContext())
             {
                 var topTenPlayers = context.PKStatsKills
+                    .Where(stats => stats.HomeRealmId == realmId)
                     .GroupBy(kill => kill.KillerId)
                     .Select(group => new
                     {
