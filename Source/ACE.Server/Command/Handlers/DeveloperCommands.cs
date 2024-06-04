@@ -2872,6 +2872,9 @@ namespace ACE.Server.Command.Handlers
         {
             var slumlord = CommandHandlerHelper.GetLastAppraisedObject(session) as SlumLord;
 
+            if (!HouseManager.ValidatePourHousing(slumlord.Location.LandblockId.Landblock))
+                return;
+
             if (slumlord == null)
             {
                 session.Network.EnqueueSend(new GameMessageSystemChat("Couldn't find slumlord", ChatMessageType.Broadcast));
