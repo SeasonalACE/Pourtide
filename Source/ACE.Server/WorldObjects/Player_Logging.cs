@@ -93,11 +93,9 @@ namespace ACE.Server.WorldObjects
         public string PlayerName { get; set; }
         public string LandblockFrom { get; set; }
         public uint Instance { get; set; }
-        public LogoutState MaterializeLogoutState { get; set; }
-        public LogoutState PkLogoutState { get; set; }
 
         public override string ToString() =>
-            $"{W("CHAR", PlayerName)}  {W("LBPORTFROM", LandblockFrom)} {W("INST", Instance)} {W("MATSTATE", MaterializeLogoutState)} {W("PKSTATE", PkLogoutState)}";
+            $"{W("CHAR", PlayerName)}  {W("LBPORTFROM", LandblockFrom)} {W("INST", Instance)}";
     }
 
 

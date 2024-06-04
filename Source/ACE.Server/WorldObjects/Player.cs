@@ -85,23 +85,6 @@ namespace ACE.Server.WorldObjects
 
         public float CurrentRadarRange => Location.Indoors ? MaxRadarRange_Indoors : MaxRadarRange_Outdoors;
 
-        public bool ForceMaterialization = PropertyManager.GetBool("force_materialization").Item;
-
-        public long MaterializedDuration = PropertyManager.GetLong("force_materialization_duration").Item;
-
-        public enum LogoutState
-        {
-            Pending,
-            InProgress,
-            Ready
-        }
-
-        public LogoutState MaterializedLogoutState = LogoutState.Pending;
-
-        public LogoutState PkLogoutState = LogoutState.Pending;
-
-
-
         /// <summary>
         /// A new biota be created taking all of its values from weenie.
         /// </summary>
@@ -555,7 +538,7 @@ namespace ACE.Server.WorldObjects
 
             foreach(var player in knownPlayers)
             {
-                if (IsPK && player.IsPK && !player.IsAdmin && player.Location.SquaredDistanceTo(Location) <= 80000 && !player.IsAlly(HomeRealm, this))
+                if (IsPK && player.IsPK && (PropertyManager.GetBool("test_server").Item || !player.IsAdmin) && player.Location.SquaredDistanceTo(Location) <= 80000 && !player.IsAlly(HomeRealm, this))
                 {
                     UpdatePKTimer();
                     return true;
@@ -571,116 +554,37 @@ namespace ACE.Server.WorldObjects
         /// </summary>
         public bool LogOut(bool clientSessionTerminatedAbruptly = false, bool forceImmediate = false)
         {
-            try
+            VerifyPkEnemyInVicinity();
+
+            if (PKLogoutActive && !forceImmediate)
             {
-                Trace(new PlayerLogoutEntry()
-                {
-                    PlayerName = Name,
-                    Instance = Location.Instance,
-                    LandblockFrom = Location.LandblockId.Landblock.ToString("X2"),
-                    PkLogoutState = PkLogoutState,
-                    MaterializeLogoutState = MaterializedLogoutState
-                });
+                //Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
+                Session.Network.EnqueueSend(new GameMessageSystemChat("Beginning delayed player killer logoff...", ChatMessageType.Broadcast));
 
-                VerifyPkEnemyInVicinity();
-
-                if (PKLogoutActive && !forceImmediate || PkLogoutState != LogoutState.Pending)
+                if (!PKLogout)
                 {
-                    return HandlePKLogout();
+                    PKLogout = true;
+
+                    IsFrozen = true;
+                    EnqueueBroadcastPhysicsState();
+
+                    LogoffTimestamp = Time.GetFutureUnixTime(PropertyManager.GetLong("pk_timer").Item);
+                    PlayerManager.AddPlayerToLogoffQueue(this);
                 }
-
-                if (ForceMaterialization || MaterializedLogoutState != LogoutState.Pending)
-                {
-                    return HandleMaterializeLogout();
-                }
-
-                LogOut_Inner(clientSessionTerminatedAbruptly);
-
-                return true;
-            } catch (Exception ex)
-            {
-                log.Error($"Error: Failed to logout player {Name}");
-                log.Error(ex.Message);
-                log.Error(System.Environment.StackTrace);
-
-                ACRealmsCommands.HandleForceLogoffStuckCharacter(Session, Name);
                 return false;
             }
 
-        }
-
-        private bool HandlePKLogout()
-        {
-            log.Debug($"HandlePkLogout -> State -> ${PkLogoutState}");
-            if (PkLogoutState is LogoutState.Ready)
+            Trace(new PlayerLogoutEntry()
             {
-                LogOut_Inner();
-                return true;
-            }
+                PlayerName = Name,
+                Instance = Location.Instance,
+                LandblockFrom = Location.LandblockId.Landblock.ToString("X2"),
+            });
 
-            if (PkLogoutState is LogoutState.InProgress)
-                return false;
+            LogOut_Inner(clientSessionTerminatedAbruptly);
 
-            if (!PKLogout && PkLogoutState is LogoutState.Pending)
-            {
-                QueuePlayerToLogoff();
-            }
-
-            return false;
-
-        }
-
-        private void QueuePlayerToLogoff()
-        {
-            PkLogoutState = LogoutState.InProgress;
-            PKLogout = true;
-
-            if (ForceMaterialization)
-                OnTeleportComplete();
-
-            var seconds = PropertyManager.GetLong("pk_timer").Item;
-            LogoffTimestamp = Time.GetFutureUnixTime(seconds);
-
-            //Session.Network.EnqueueSend(new GameEventWeenieError(Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
-            Session.Network.EnqueueSend(new GameMessageSystemChat($"Logging out in {seconds} seconds ...", ChatMessageType.Magic));
-
-
-            PlayerManager.AddPlayerToLogoffQueue(this);
-        }
-
-        private bool HandleMaterializeLogout()
-        {
-            log.Debug($"HandleMaterialize -> State -> ${MaterializedLogoutState}");
-            if (MaterializedLogoutState is LogoutState.Ready)
-            {
-                LogOut_Inner();
-                return true;
-            }
-
-            if (MaterializedLogoutState is LogoutState.InProgress)
-            {
-                return false;
-            }
-
-            if (Teleporting && MaterializedLogoutState is LogoutState.Pending)
-            {
-                ForceMaterialize();
-                return false;
-            }
-
-            LogOut_Inner();
             return true;
         }
-
-        public void ForceMaterialize()
-        {
-            MaterializedLogoutState = LogoutState.InProgress;
-            OnTeleportComplete();
-            LogoffTimestamp = Time.GetFutureUnixTime(MaterializedDuration);
-            PlayerManager.AddPlayerToLogoffQueue(this);
-        }
-
-
 
         public void LogOut_Inner(bool clientSessionTerminatedAbruptly = false)
         {
@@ -732,7 +636,6 @@ namespace ACE.Server.WorldObjects
                 return;
 
             LogOut_Final();
-
         }
 
         private void LogOut_Final(bool skipAnimations = false)
